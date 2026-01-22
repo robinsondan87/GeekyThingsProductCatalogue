@@ -1,0 +1,367 @@
+#!/usr/bin/env python3
+import csv
+import json
+import mimetypes
+import os
+from http.server import BaseHTTPRequestHandler, HTTPServer
+from pathlib import Path
+from urllib.parse import urlparse, parse_qs, unquote
+
+BASE_DIR = Path(__file__).resolve().parent
+ROOT_DIR = BASE_DIR.parent
+CSV_PATH = ROOT_DIR / 'categories_index.csv'
+CATEGORIES_DIR = ROOT_DIR / 'Categories'
+DELETED_DIR = CATEGORIES_DIR / '_Deleted'
+CATEGORY_PREFIXES = {
+    'Automotive': 'GT-AUT',
+    'Bookish & Stationery': 'GT-BKS',
+    'Gaming & Tech': 'GT-TCH',
+    'Health & Medical': 'GT-HLT',
+    'Home & Living': 'GT-HOM',
+    'Jewelry & Accessories': 'GT-JWL',
+    'Office & Storage': 'GT-OFF',
+    'Tools & Workshop': 'GT-TLW',
+    'Toys & Games': 'GT-TOY',
+    'Uncategorized': 'GT-UNC',
+}
+
+
+def read_csv():
+    if not CSV_PATH.exists():
+        return [], []
+    with CSV_PATH.open(newline='') as f:
+        reader = csv.DictReader(f)
+        rows = list(reader)
+        headers = reader.fieldnames or []
+    if 'tags' not in headers:
+        headers.append('tags')
+    if 'Listings' not in headers:
+        headers.append('Listings')
+    for row in rows:
+        row.setdefault('tags', '')
+        row.setdefault('Listings', '')
+    return headers, rows
+
+
+def write_csv(headers, rows):
+    if 'tags' not in headers:
+        headers.append('tags')
+    if 'Listings' not in headers:
+        headers.append('Listings')
+    with CSV_PATH.open('w', newline='') as f:
+        writer = csv.DictWriter(f, fieldnames=headers)
+        writer.writeheader()
+        for row in rows:
+            row.setdefault('tags', '')
+            row.setdefault('Listings', '')
+            writer.writerow(row)
+
+
+def safe_path_component(name: str) -> str:
+    # Prevent path traversal by normalizing
+    return name.replace('..', '').strip()
+
+
+def sanitize_folder_name(name: str) -> str:
+    cleaned = name.replace('/', '-').replace('\\', '-').strip()
+    return ' '.join(cleaned.split())
+
+
+def readme_template(title: str, sku: str) -> str:
+    return (
+        f"# {title}\n\n"
+        f"SKU: {sku}\n\n"
+        "## Short Description\n\n"
+        "## Long Description\n\n"
+        "## Features / Bullet Points\n"
+        "- \n- \n- \n\n"
+        "## Variations / Sizes\n\n"
+        "## Colours\n\n"
+        "## Materials\n\n"
+        "## Print Settings\n\n"
+        "## Assembly\n\n"
+        "## Packaging\n\n"
+        "## Listing Keywords / Tags\n\n"
+        "## UKCA Notes\n\n"
+        "## Change Log\n- \n"
+    )
+
+
+def next_sku_for_category(category: str) -> str:
+    prefix = CATEGORY_PREFIXES.get(category)
+    if not prefix:
+        return ''
+    cat_dir = CATEGORIES_DIR / category
+    if not cat_dir.exists():
+        return f'{prefix}-00001'
+    max_num = 0
+    for entry in cat_dir.iterdir():
+        if not entry.is_dir():
+            continue
+        name = entry.name
+        if not name.startswith(prefix + '-'):
+            continue
+        parts = name.split(' - ', 1)[0]
+        try:
+            num = int(parts.replace(prefix + '-', ''))
+        except ValueError:
+            continue
+        if num > max_num:
+            max_num = num
+    return f'{prefix}-{max_num + 1:05d}'
+
+
+class Handler(BaseHTTPRequestHandler):
+    def _send_json(self, status, payload):
+        data = json.dumps(payload).encode('utf-8')
+        self.send_response(status)
+        self.send_header('Content-Type', 'application/json; charset=utf-8')
+        self.send_header('Content-Length', str(len(data)))
+        self.end_headers()
+        self.wfile.write(data)
+
+    def _send_file(self, path: Path):
+        if not path.exists() or not path.is_file():
+            self.send_error(404)
+            return
+        content = path.read_bytes()
+        mime = 'text/plain'
+        if path.suffix == '.html':
+            mime = 'text/html; charset=utf-8'
+        elif path.suffix == '.css':
+            mime = 'text/css; charset=utf-8'
+        elif path.suffix == '.js':
+            mime = 'text/javascript; charset=utf-8'
+        self.send_response(200)
+        self.send_header('Content-Type', mime)
+        self.send_header('Content-Length', str(len(content)))
+        self.end_headers()
+        self.wfile.write(content)
+
+    def _send_file_dynamic(self, path: Path):
+        if not path.exists() or not path.is_file():
+            self.send_error(404)
+            return
+        content = path.read_bytes()
+        mime, _ = mimetypes.guess_type(str(path))
+        if not mime:
+            mime = 'application/octet-stream'
+        self.send_response(200)
+        self.send_header('Content-Type', mime)
+        self.send_header('Content-Length', str(len(content)))
+        self.end_headers()
+        self.wfile.write(content)
+
+    def do_GET(self):
+        parsed = urlparse(self.path)
+        if parsed.path == '/api/rows':
+            headers, rows = read_csv()
+            self._send_json(200, {'headers': headers, 'rows': rows})
+            return
+
+        if parsed.path == '/api/media':
+            query = parse_qs(parsed.query)
+            category = safe_path_component(query.get('category', [''])[0])
+            folder_name = safe_path_component(query.get('folder', [''])[0])
+            if not category or not folder_name:
+                self._send_json(400, {'error': 'Missing category/folder'})
+                return
+            media_dir = CATEGORIES_DIR / category / folder_name / 'Media'
+            if not media_dir.exists():
+                self._send_json(200, {'files': []})
+                return
+            files = []
+            for entry in sorted(media_dir.iterdir()):
+                if not entry.is_file():
+                    continue
+                rel = entry.relative_to(CATEGORIES_DIR)
+                url = f"/files/{rel.as_posix()}"
+                files.append({
+                    'name': entry.name,
+                    'url': url,
+                })
+            self._send_json(200, {'files': files})
+            return
+
+        if parsed.path.startswith('/files/'):
+            rel = unquote(parsed.path.replace('/files/', '', 1))
+            rel_path = Path(*[p for p in rel.split('/') if p and p not in ('.', '..')])
+            file_path = (CATEGORIES_DIR / rel_path).resolve()
+            if not str(file_path).startswith(str(CATEGORIES_DIR.resolve())):
+                self.send_error(403)
+                return
+            self._send_file_dynamic(file_path)
+            return
+
+        if parsed.path == '/':
+            self._send_file(BASE_DIR / 'index.html')
+            return
+
+        # Serve static files from ProductMgmt folder
+        rel = parsed.path.lstrip('/')
+        if rel:
+            self._send_file(BASE_DIR / rel)
+            return
+
+        self.send_error(404)
+
+    def do_POST(self):
+        parsed = urlparse(self.path)
+        length = int(self.headers.get('Content-Length', '0'))
+        body = self.rfile.read(length) if length > 0 else b''
+        try:
+            data = json.loads(body.decode('utf-8') or '{}')
+        except json.JSONDecodeError:
+            self._send_json(400, {'error': 'Invalid JSON'})
+            return
+
+        if parsed.path == '/api/save':
+            headers = data.get('headers') or []
+            rows = data.get('rows') or []
+            write_csv(headers, rows)
+            self._send_json(200, {'ok': True})
+            return
+
+        if parsed.path == '/api/rename':
+            category = safe_path_component(data.get('category', ''))
+            old_name = safe_path_component(data.get('old_name', ''))
+            new_name = safe_path_component(data.get('new_name', ''))
+            if not category or not old_name or not new_name:
+                self._send_json(400, {'error': 'Missing category/old_name/new_name'})
+                return
+            old_path = CATEGORIES_DIR / category / old_name
+            new_path = CATEGORIES_DIR / category / new_name
+            if not old_path.exists():
+                self._send_json(404, {'error': 'Source folder not found'})
+                return
+            if new_path.exists():
+                self._send_json(409, {'error': 'Destination already exists'})
+                return
+            old_path.rename(new_path)
+            self._send_json(200, {'ok': True})
+            return
+
+        if parsed.path == '/api/update_row':
+            old_category = safe_path_component(data.get('old_category', ''))
+            old_product_folder = safe_path_component(data.get('old_product_folder', ''))
+            row = data.get('row') or {}
+            if not old_category or not old_product_folder:
+                self._send_json(400, {'error': 'Missing old_category/old_product_folder'})
+                return
+            headers, rows = read_csv()
+            updated = False
+            for existing in rows:
+                if existing.get('category') == old_category and existing.get('product_folder') == old_product_folder:
+                    existing.update(row)
+                    updated = True
+                    break
+            if not updated:
+                self._send_json(404, {'error': 'Row not found'})
+                return
+            write_csv(headers, rows)
+            self._send_json(200, {'ok': True})
+            return
+
+        if parsed.path == '/api/readme':
+            category = safe_path_component(data.get('category', ''))
+            folder_name = safe_path_component(data.get('folder_name', ''))
+            action = data.get('action')
+            if not category or not folder_name or action not in ('read', 'write'):
+                self._send_json(400, {'error': 'Missing category/folder_name/action'})
+                return
+            readme_path = CATEGORIES_DIR / category / folder_name / 'README.md'
+            if action == 'read':
+                content = readme_path.read_text(encoding='utf-8') if readme_path.exists() else ''
+                self._send_json(200, {'ok': True, 'content': content})
+                return
+            content = data.get('content', '')
+            readme_path.write_text(content, encoding='utf-8')
+            self._send_json(200, {'ok': True})
+            return
+
+        if parsed.path == '/api/add_product':
+            category = safe_path_component(data.get('category', ''))
+            description = sanitize_folder_name(data.get('description', ''))
+            tags = (data.get('tags') or '').strip()
+            requires_ukca = bool(data.get('requires_ukca'))
+            notes = (data.get('notes') or '').strip()
+            if not category or not description:
+                self._send_json(400, {'error': 'Missing category/description'})
+                return
+            if category not in CATEGORY_PREFIXES:
+                self._send_json(400, {'error': 'Unknown category'})
+                return
+            sku = next_sku_for_category(category)
+            if not sku:
+                self._send_json(500, {'error': 'Failed to create SKU'})
+                return
+            product_folder = f'{sku} - {description}'
+            product_dir = CATEGORIES_DIR / category / product_folder
+            if product_dir.exists():
+                self._send_json(409, {'error': 'Folder already exists'})
+                return
+            product_dir.mkdir(parents=True, exist_ok=True)
+            (product_dir / 'Media').mkdir(exist_ok=True)
+            (product_dir / 'STL').mkdir(exist_ok=True)
+            (product_dir / 'MISC').mkdir(exist_ok=True)
+            if requires_ukca:
+                (product_dir / 'UKCA').mkdir(exist_ok=True)
+            readme_path = product_dir / 'README.md'
+            if not readme_path.exists():
+                content = readme_template(description, sku)
+                if notes:
+                    content = f"{content}\n## Notes\n{notes}\n"
+                readme_path.write_text(content, encoding='utf-8')
+
+            headers, rows = read_csv()
+            if 'tags' not in headers:
+                headers.append('tags')
+            row = {
+                'category': category,
+                'product_folder': product_folder,
+                'sku': sku,
+                'UKCA': 'No' if requires_ukca else 'N/A',
+                'Listings': '',
+                'tags': tags,
+                'Facebook URL': '',
+                'TikTok URL': '',
+                'Ebay URL': '',
+                'Etsy URL': '',
+            }
+            rows.append(row)
+            write_csv(headers, rows)
+            self._send_json(200, {'ok': True, 'headers': headers, 'row': row})
+            return
+
+        if parsed.path == '/api/archive':
+            category = safe_path_component(data.get('category', ''))
+            folder_name = safe_path_component(data.get('folder_name', ''))
+            if not category or not folder_name:
+                self._send_json(400, {'error': 'Missing category/folder_name'})
+                return
+            src_path = CATEGORIES_DIR / category / folder_name
+            if not src_path.exists():
+                self._send_json(404, {'error': 'Source folder not found'})
+                return
+            dest_dir = DELETED_DIR / category
+            dest_dir.mkdir(parents=True, exist_ok=True)
+            dest_path = dest_dir / folder_name
+            if dest_path.exists():
+                self._send_json(409, {'error': 'Destination already exists'})
+                return
+            src_path.rename(dest_path)
+            self._send_json(200, {'ok': True})
+            return
+
+        self.send_error(404)
+
+
+def main():
+    port = int(os.environ.get('CSV_EDITOR_PORT', '8555'))
+    server = HTTPServer(('0.0.0.0', port), Handler)
+    print(f'Serving CSV editor at: http://localhost:{port}/')
+    server.serve_forever()
+
+
+if __name__ == '__main__':
+    main()

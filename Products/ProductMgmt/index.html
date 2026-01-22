@@ -1,0 +1,1136 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>GeekyThings Product Manager</title>
+    <link rel="icon" type="image/png" href="logo.png" />
+    <style>
+      :root {
+        --ink: #1b1b1f;
+        --muted: #4b4e57;
+        --surface: #ffffff;
+        --panel: #f2f0ea;
+        --accent: #d86a2a;
+        --accent-2: #2c6a4f;
+        --ring: #ffb366;
+        --shadow: rgba(15, 18, 24, 0.12);
+      }
+
+      * {
+        box-sizing: border-box;
+      }
+
+      body {
+        margin: 0;
+        font-family: "Segoe UI", Arial, sans-serif;
+        color: var(--ink);
+        background: #f2f2f2;
+        min-height: 100vh;
+      }
+
+      header {
+        padding: 32px clamp(20px, 4vw, 64px);
+        display: flex;
+        flex-direction: column;
+        gap: 16px;
+        align-items: center;
+        text-align: center;
+      }
+
+      .linktree-logo {
+        width: 120px;
+        height: 120px;
+        border-radius: 50%;
+        margin-top: 12px;
+        box-shadow: 0 2px 12px rgba(0,0,0,0.10);
+        object-fit: cover;
+      }
+
+      .title {
+        font-size: clamp(24px, 3vw, 34px);
+        font-weight: 700;
+        margin: 0;
+        color: #0a663b;
+      }
+
+      .subtitle {
+        margin: 0;
+        color: var(--muted);
+      }
+
+      .controls {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+        gap: 12px;
+      }
+
+      .panel {
+        background: var(--surface);
+        border-radius: 18px;
+        box-shadow: 0 2px 16px rgba(0,0,0,0.10), 0 1.5px 4px rgba(0,0,0,0.08);
+        padding: 20px;
+        width: min(1100px, 100%);
+      }
+
+      .controls button,
+      .controls input,
+      .controls select {
+        width: 100%;
+        padding: 10px 12px;
+        border-radius: 10px;
+        border: 1px solid #d2d2d8;
+        font-family: inherit;
+        font-size: 14px;
+      }
+
+      .controls button {
+        background: #0a663b;
+        color: white;
+        border: none;
+        font-weight: 600;
+        cursor: pointer;
+        transition: transform 0.15s ease, box-shadow 0.15s ease;
+      }
+
+      .controls button.secondary {
+        background: #00796b;
+      }
+
+      .controls button.ghost {
+        background: #ffffff;
+        color: #0a663b;
+        border: 1px solid #cfe6dc;
+      }
+
+      button.ghost {
+        background: #ffffff;
+        color: #0a663b;
+        border: 1px solid #cfe6dc;
+        padding: 6px 10px;
+        border-radius: 8px;
+        cursor: pointer;
+      }
+
+      .ghost-link {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        text-decoration: none;
+        background: #ffffff;
+        color: #0a663b;
+        border: 1px solid #cfe6dc;
+        padding: 10px 12px;
+        border-radius: 10px;
+        font-weight: 600;
+        font-size: 14px;
+      }
+
+      .controls button:focus-visible,
+      .controls input:focus-visible,
+      .controls select:focus-visible {
+        outline: 3px solid var(--ring);
+        outline-offset: 2px;
+      }
+
+      .status {
+        font-size: 14px;
+        color: var(--muted);
+        margin-top: 8px;
+      }
+
+      main {
+        padding: 0 clamp(20px, 4vw, 64px) 48px;
+      }
+
+      .table-wrap {
+        overflow: auto;
+        border-radius: 18px;
+        background: var(--surface);
+        box-shadow: 0 2px 16px rgba(0,0,0,0.10), 0 1.5px 4px rgba(0,0,0,0.08);
+      }
+
+      table {
+        width: 100%;
+        border-collapse: collapse;
+        min-width: 720px;
+        table-layout: fixed;
+      }
+
+      thead th {
+        text-align: left;
+        font-size: 12px;
+        text-transform: uppercase;
+        letter-spacing: 0.06em;
+        padding: 14px;
+        background: #f0f7f5;
+        position: sticky;
+        top: 0;
+        z-index: 1;
+        position: relative;
+      }
+
+      thead th button {
+        all: unset;
+        cursor: pointer;
+        font-weight: 600;
+        display: inline-flex;
+        align-items: center;
+        gap: 6px;
+      }
+
+      .resizer {
+        position: absolute;
+        right: 2px;
+        top: 0;
+        height: 100%;
+        width: 6px;
+        cursor: col-resize;
+      }
+
+      thead tr.filters th {
+        padding: 10px 12px;
+        background: #ffffff;
+      }
+
+      thead tr.filters input,
+      thead tr.filters select {
+        width: 100%;
+        padding: 6px 8px;
+        border-radius: 8px;
+        border: 1px solid #e4d3c1;
+        font-family: inherit;
+        font-size: 13px;
+      }
+
+      tbody tr {
+        border-top: 1px solid #eee3d8;
+      }
+
+      tbody td {
+        padding: 10px 12px;
+        vertical-align: top;
+      }
+
+      tbody input,
+      tbody select {
+        width: 100%;
+        padding: 8px 10px;
+        border: 1px solid #e2e6e8;
+        background: #ffffff;
+        border-radius: 8px;
+        font-family: inherit;
+      }
+
+      tbody input:focus {
+        border-color: #f0c49f;
+        background: white;
+      }
+
+      .row-actions button {
+        background: #ffffff;
+        border: 1px solid #cfe6dc;
+        color: #0a663b;
+        padding: 8px 10px;
+        border-radius: 8px;
+        cursor: pointer;
+      }
+
+      .path-cell {
+        display: grid;
+        grid-template-columns: 1fr auto auto;
+        gap: 6px;
+        align-items: center;
+      }
+
+      .path-cell button {
+        background: #ffffff;
+        border: 1px solid #cfe6dc;
+        color: #0a663b;
+        padding: 6px 10px;
+        border-radius: 8px;
+        cursor: pointer;
+        font-size: 12px;
+      }
+
+      .listing-group {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(90px, 1fr));
+        gap: 6px;
+      }
+
+      .listing-option {
+        display: inline-flex;
+        align-items: center;
+        gap: 6px;
+        font-size: 12px;
+        background: #f7faf9;
+        border: 1px solid #cfe6dc;
+        padding: 4px 6px;
+        border-radius: 8px;
+      }
+
+      .listing-option input {
+        margin: 0;
+      }
+
+      .listing-links {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 6px;
+        font-size: 12px;
+        color: var(--muted);
+      }
+
+      .listing-links a {
+        text-decoration: none;
+        color: #0a663b;
+        border: 1px solid #cfe6dc;
+        padding: 4px 8px;
+        border-radius: 999px;
+        background: #ffffff;
+        font-weight: 600;
+      }
+
+      dialog#readmeDialog {
+        border: none;
+        border-radius: 16px;
+        padding: 0;
+        width: min(720px, 92vw);
+        box-shadow: 0 12px 36px rgba(0,0,0,0.18);
+      }
+
+      dialog#readmeDialog::backdrop {
+        background: rgba(10, 30, 20, 0.35);
+      }
+
+      .dialog-header {
+        padding: 16px 20px;
+        background: #f0f7f5;
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 12px;
+      }
+
+      .dialog-header h2 {
+        margin: 0;
+        font-size: 18px;
+        color: #0a663b;
+      }
+
+      .dialog-subtitle {
+        margin: 4px 0 0;
+        font-size: 12px;
+        color: var(--muted);
+      }
+
+      .dialog-body {
+        padding: 16px 20px;
+      }
+
+      .dialog-body textarea {
+        width: 100%;
+        min-height: 260px;
+        border-radius: 10px;
+        border: 1px solid #d2d2d8;
+        font-family: inherit;
+        font-size: 14px;
+        padding: 12px;
+      }
+
+      .dialog-actions {
+        padding: 0 20px 20px;
+        display: flex;
+        justify-content: flex-end;
+        gap: 10px;
+      }
+
+      .empty {
+        padding: 28px;
+        text-align: center;
+        color: var(--muted);
+      }
+
+      .footnote {
+        margin-top: 12px;
+        color: var(--muted);
+        font-size: 13px;
+        text-align: center;
+      }
+
+      @media (max-width: 720px) {
+        header {
+          padding-top: 24px;
+        }
+
+        table {
+          min-width: 520px;
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <header>
+      <img src="logo.png" alt="Geeky Things logo" class="linktree-logo" />
+      <div>
+        <h1 class="title">GeekyThings Product Manager</h1>
+        <p class="subtitle">Manage products, tags, and listing status from one place.</p>
+      </div>
+      <div class="panel">
+        <div class="controls">
+          <button id="openBtn">Open CSV</button>
+          <button id="saveBtn" class="secondary" disabled>Save to file</button>
+          <button id="downloadBtn" class="ghost" disabled>Download CSV</button>
+          <button id="addRowBtn" class="ghost" disabled>Add row</button>
+          <input id="searchInput" type="search" placeholder="Search folder/sku/tags" />
+          <select id="categoryFilter">
+            <option value="">All categories</option>
+          </select>
+          <a class="ghost-link" href="/add.html">Add New Product</a>
+        </div>
+        <div class="status" id="status">No file loaded.</div>
+      </div>
+    </header>
+
+    <main>
+      <div class="table-wrap">
+        <table id="dataTable">
+          <colgroup id="colgroup"></colgroup>
+          <thead></thead>
+          <tbody></tbody>
+        </table>
+        <div class="empty" id="emptyState">Open a CSV to start editing.</div>
+      </div>
+      <div class="footnote">Tip: launch with the provided server to enable rename actions and auto-load.</div>
+    </main>
+
+    <dialog id="readmeDialog">
+      <div class="dialog-header">
+        <div>
+          <h2 id="readmeTitle">README.md</h2>
+          <p id="readmePath" class="dialog-subtitle"></p>
+        </div>
+        <button id="closeReadmeBtn" class="ghost" type="button">Close</button>
+      </div>
+      <div class="dialog-body">
+        <textarea id="readmeContent" placeholder="README.md contents..."></textarea>
+      </div>
+      <div class="dialog-actions">
+        <button id="saveReadmeBtn" class="secondary" type="button">Save README</button>
+      </div>
+    </dialog>
+
+    <script>
+      const openBtn = document.getElementById("openBtn");
+      const saveBtn = document.getElementById("saveBtn");
+      const downloadBtn = document.getElementById("downloadBtn");
+      const addRowBtn = document.getElementById("addRowBtn");
+      const searchInput = document.getElementById("searchInput");
+      const categoryFilter = document.getElementById("categoryFilter");
+      const readmeDialog = document.getElementById("readmeDialog");
+      const readmeContent = document.getElementById("readmeContent");
+      const readmeTitle = document.getElementById("readmeTitle");
+      const readmePath = document.getElementById("readmePath");
+      const closeReadmeBtn = document.getElementById("closeReadmeBtn");
+      const saveReadmeBtn = document.getElementById("saveReadmeBtn");
+      const statusEl = document.getElementById("status");
+      const table = document.getElementById("dataTable");
+      const colgroup = document.getElementById("colgroup");
+      const thead = table.querySelector("thead");
+      const tbody = table.querySelector("tbody");
+      const emptyState = document.getElementById("emptyState");
+
+      let fileHandle = null;
+      let headers = [];
+      let rows = [];
+      const dropdownColumns = new Set(["UKCA"]);
+      const listingOptions = ["Facebook", "TikTok", "Ebay", "Etsy"];
+      const columnFilters = new Map();
+      let sortIndex = -1;
+      let sortDirection = 1;
+      let columnWidths = [];
+      const baseCategoriesPath = "/Users/dan/GeekyThings/Products/Categories";
+      let originalNames = [];
+      const hiddenColumns = new Set(["Facebook URL", "TikTok URL", "Ebay URL", "Etsy URL"]);
+
+      const getListingsForRow = (row) => {
+        const facebookUrl = row[headers.indexOf("Facebook URL")] || "";
+        const tiktokUrl = row[headers.indexOf("TikTok URL")] || "";
+        const ebayUrl = row[headers.indexOf("Ebay URL")] || "";
+        const etsyUrl = row[headers.indexOf("Etsy URL")] || "";
+        const listings = [];
+        if (facebookUrl) listings.push({ name: "Facebook", url: facebookUrl });
+        if (tiktokUrl) listings.push({ name: "TikTok", url: tiktokUrl });
+        if (ebayUrl) listings.push({ name: "Ebay", url: ebayUrl });
+        if (etsyUrl) listings.push({ name: "Etsy", url: etsyUrl });
+        return listings;
+      };
+
+      const getVisibleHeaders = () => headers.filter((header) => !hiddenColumns.has(header));
+      let readmeRowIndex = null;
+
+      const parseCSV = (text) => {
+        const output = [];
+        let row = [];
+        let value = "";
+        let inQuotes = false;
+
+        for (let i = 0; i < text.length; i += 1) {
+          const char = text[i];
+          const next = text[i + 1];
+
+          if (char === '"') {
+            if (inQuotes && next === '"') {
+              value += '"';
+              i += 1;
+            } else {
+              inQuotes = !inQuotes;
+            }
+          } else if (char === "," && !inQuotes) {
+            row.push(value);
+            value = "";
+          } else if ((char === "\n" || char === "\r") && !inQuotes) {
+            if (char === "\r" && next === "\n") {
+              i += 1;
+            }
+            row.push(value);
+            if (row.length > 1 || row[0] !== "") {
+              output.push(row);
+            }
+            row = [];
+            value = "";
+          } else {
+            value += char;
+          }
+        }
+
+        row.push(value);
+        if (row.length > 1 || row[0] !== "") {
+          output.push(row);
+        }
+
+        return output;
+      };
+
+      const csvEscape = (value) => {
+        if (value == null) return "";
+        const stringValue = String(value);
+        if (/["]|,|\n|\r/.test(stringValue)) {
+          return `"${stringValue.replace(/"/g, '""')}"`;
+        }
+        return stringValue;
+      };
+
+      const toCSV = (headers, rows) => {
+        const headerLine = headers.map(csvEscape).join(",");
+        const rowLines = rows.map((row) => row.map(csvEscape).join(","));
+        return [headerLine, ...rowLines].join("\n");
+      };
+
+      const updateStatus = () => {
+        const total = rows.length;
+        const visible = tbody.querySelectorAll("tr").length;
+        statusEl.textContent = headers.length
+          ? `Loaded ${total} rows. Showing ${visible}.`
+          : "No file loaded.";
+      };
+
+      const renderColgroup = () => {
+        colgroup.innerHTML = "";
+        const totalColumns = getVisibleHeaders().length + 1;
+        for (let i = 0; i < totalColumns; i += 1) {
+          const col = document.createElement("col");
+          if (columnWidths[i]) {
+            col.style.width = columnWidths[i];
+          }
+          colgroup.appendChild(col);
+        }
+      };
+
+      const attachResizer = (th, colIndex) => {
+        const resizer = document.createElement("div");
+        resizer.className = "resizer";
+        let startX = 0;
+        let startWidth = 0;
+
+        const onMouseMove = (event) => {
+          const delta = event.clientX - startX;
+          const newWidth = Math.max(90, startWidth + delta);
+          columnWidths[colIndex] = `${newWidth}px`;
+          renderColgroup();
+        };
+
+        const onMouseUp = () => {
+          document.removeEventListener("mousemove", onMouseMove);
+          document.removeEventListener("mouseup", onMouseUp);
+        };
+
+        resizer.addEventListener("mousedown", (event) => {
+          startX = event.clientX;
+          startWidth = th.offsetWidth;
+          document.addEventListener("mousemove", onMouseMove);
+          document.addEventListener("mouseup", onMouseUp);
+        });
+
+        th.appendChild(resizer);
+      };
+
+      const renderHeader = () => {
+        thead.innerHTML = "";
+        if (headers.length === 0) return;
+        const row = document.createElement("tr");
+        getVisibleHeaders().forEach((header, visibleIndex) => {
+          const headerIndex = headers.indexOf(header);
+          const th = document.createElement("th");
+          const button = document.createElement("button");
+          const indicator =
+            sortIndex === headerIndex ? (sortDirection === 1 ? "▲" : "▼") : "↕";
+          button.textContent = `${header} ${indicator}`;
+          button.addEventListener("click", () => {
+            if (sortIndex === headerIndex) {
+              sortDirection *= -1;
+            } else {
+              sortIndex = headerIndex;
+              sortDirection = 1;
+            }
+            renderHeader();
+            renderBody();
+          });
+          th.appendChild(button);
+          attachResizer(th, visibleIndex);
+          row.appendChild(th);
+        });
+        const th = document.createElement("th");
+        th.textContent = "Actions";
+        row.appendChild(th);
+        thead.appendChild(row);
+
+        const filterRow = document.createElement("tr");
+        filterRow.className = "filters";
+        getVisibleHeaders().forEach((header) => {
+          const colIndex = headers.indexOf(header);
+          const th = document.createElement("th");
+          if (header === "Listings") {
+            const select = document.createElement("select");
+            const options = [""].concat(listingOptions);
+            options.forEach((value) => {
+              const option = document.createElement("option");
+              option.value = value;
+              option.textContent = value === "" ? "Any" : value;
+              select.appendChild(option);
+            });
+            select.value = columnFilters.get(colIndex) || "";
+            select.addEventListener("change", (event) => {
+              const value = event.target.value;
+              if (value) {
+                columnFilters.set(colIndex, value);
+              } else {
+                columnFilters.delete(colIndex);
+              }
+              renderBody();
+              updateStatus();
+            });
+            th.appendChild(select);
+          } else if (dropdownColumns.has(header)) {
+            const select = document.createElement("select");
+            const options = ["", "Yes", "No", "N/A"];
+            options.forEach((value) => {
+              const option = document.createElement("option");
+              option.value = value;
+              option.textContent = value === "" ? "All" : value;
+              select.appendChild(option);
+            });
+            select.value = columnFilters.get(colIndex) || "";
+            select.addEventListener("change", (event) => {
+              const value = event.target.value;
+              if (value) {
+                columnFilters.set(colIndex, value);
+              } else {
+                columnFilters.delete(colIndex);
+              }
+              renderBody();
+              updateStatus();
+            });
+            th.appendChild(select);
+          } else {
+            const input = document.createElement("input");
+            input.type = "search";
+            input.placeholder = `Filter ${header}`;
+            input.value = columnFilters.get(colIndex) || "";
+            input.addEventListener("input", (event) => {
+              const value = event.target.value.trim();
+              if (value) {
+                columnFilters.set(colIndex, value);
+              } else {
+                columnFilters.delete(colIndex);
+              }
+              renderBody();
+              updateStatus();
+            });
+            th.appendChild(input);
+          }
+          filterRow.appendChild(th);
+        });
+        const actionsTh = document.createElement("th");
+        actionsTh.textContent = "";
+        filterRow.appendChild(actionsTh);
+        thead.appendChild(filterRow);
+        renderColgroup();
+      };
+
+      const applyFilter = (row) => {
+        const category = categoryFilter.value;
+        const query = searchInput.value.trim().toLowerCase();
+        const categoryIndex = headers.indexOf("category");
+        const folderIndex = headers.indexOf("product_folder");
+        const skuIndex = headers.indexOf("sku");
+        const tagsIndex = headers.indexOf("tags");
+        const listingsIndex = headers.indexOf("Listings");
+
+        if (category && categoryIndex > -1 && row[categoryIndex] !== category) {
+          return false;
+        }
+
+        if (query) {
+          const combined = [
+            row[categoryIndex] || "",
+            row[folderIndex] || "",
+            skuIndex > -1 ? row[skuIndex] || "" : "",
+            tagsIndex > -1 ? row[tagsIndex] || "" : "",
+            listingsIndex > -1 ? getListingsForRow(row).map((item) => item.name).join(", ") : "",
+          ]
+            .join(" ")
+            .toLowerCase();
+          return combined.includes(query);
+        }
+
+        for (const [colIndex, value] of columnFilters.entries()) {
+          let cell = (row[colIndex] ?? "").toString();
+          if (headers[colIndex] === "Listings") {
+            cell = getListingsForRow(row).map((item) => item.name).join(", ");
+            if (!cell.toLowerCase().includes(value.toLowerCase())) return false;
+          } else if (dropdownColumns.has(headers[colIndex])) {
+            if (cell !== value) return false;
+          } else if (!cell.toLowerCase().includes(value.toLowerCase())) {
+            return false;
+          }
+        }
+
+        return true;
+      };
+
+      const renderBody = () => {
+        tbody.innerHTML = "";
+        const fragment = document.createDocumentFragment();
+        const indexedRows = rows.map((row, index) => ({ row, index }));
+        if (sortIndex > -1) {
+          indexedRows.sort((a, b) => {
+            const aValue = (a.row[sortIndex] ?? "").toString().toLowerCase();
+            const bValue = (b.row[sortIndex] ?? "").toString().toLowerCase();
+            if (aValue < bValue) return -1 * sortDirection;
+            if (aValue > bValue) return 1 * sortDirection;
+            return a.index - b.index;
+          });
+        }
+        const productFolderIndex = headers.indexOf("product_folder");
+        const categoryIndex = headers.indexOf("category");
+        indexedRows.forEach(({ row, index: rowIndex }) => {
+          if (!applyFilter(row)) return;
+          const tr = document.createElement("tr");
+          tr.dataset.index = String(rowIndex);
+          getVisibleHeaders().forEach((header) => {
+            const colIndex = headers.indexOf(header);
+            const td = document.createElement("td");
+            if (header === "Listings") {
+              const wrapper = document.createElement("div");
+              wrapper.className = "listing-links";
+              const listings = getListingsForRow(row);
+              if (listings.length === 0) {
+                wrapper.textContent = "—";
+              } else {
+                listings.forEach((item) => {
+                  const link = document.createElement("a");
+                  link.href = item.url;
+                  link.target = "_blank";
+                  link.rel = "noopener noreferrer";
+                  link.textContent = item.name;
+                  wrapper.appendChild(link);
+                });
+              }
+              td.appendChild(wrapper);
+            } else if (dropdownColumns.has(header)) {
+              const select = document.createElement("select");
+              ["No", "Yes", "N/A"].forEach((optionValue) => {
+                const option = document.createElement("option");
+                option.value = optionValue;
+                option.textContent = optionValue;
+                select.appendChild(option);
+              });
+              select.value = row[colIndex] || "No";
+              select.addEventListener("change", (event) => {
+                rows[rowIndex][colIndex] = event.target.value;
+              });
+              td.appendChild(select);
+            } else if (colIndex === productFolderIndex) {
+              const wrapper = document.createElement("div");
+              wrapper.className = "path-cell";
+              const input = document.createElement("input");
+              input.value = row[colIndex] ?? "";
+              input.addEventListener("input", (event) => {
+                rows[rowIndex][colIndex] = event.target.value;
+              });
+              const openBtn = document.createElement("button");
+              openBtn.type = "button";
+              openBtn.textContent = "Open";
+              openBtn.addEventListener("click", () => {
+                const category = rows[rowIndex][categoryIndex] || "";
+                const productFolder = rows[rowIndex][productFolderIndex] || "";
+                if (!category || !productFolder) return;
+                const rawPath = `${baseCategoriesPath}/${category}/${productFolder}`;
+                const url = encodeURI(`file://${rawPath}`);
+                const popup = window.open(url, "_blank");
+                if (!popup) {
+                  navigator.clipboard?.writeText(rawPath).catch(() => {});
+                  alert("Popup blocked. Path copied to clipboard.");
+                }
+              });
+              const viewBtn = document.createElement("button");
+              viewBtn.type = "button";
+              viewBtn.textContent = "View";
+              viewBtn.addEventListener("click", () => {
+                const category = rows[rowIndex][categoryIndex] || "";
+                const productFolder = rows[rowIndex][productFolderIndex] || "";
+                if (!category || !productFolder) return;
+                const url = `/product.html?category=${encodeURIComponent(category)}&folder=${encodeURIComponent(productFolder)}`;
+                window.location.href = url;
+              });
+              const renameBtn = document.createElement("button");
+              renameBtn.type = "button";
+              renameBtn.textContent = "Rename";
+              renameBtn.addEventListener("click", async () => {
+                const category = rows[rowIndex][categoryIndex] || "";
+                const newName = rows[rowIndex][productFolderIndex] || "";
+                const oldName = originalNames[rowIndex] || "";
+                if (!category || !newName || !oldName) return;
+                if (newName === oldName) return;
+                try {
+                  const response = await fetch("/api/rename", {
+                    method: "POST",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify({
+                      category,
+                      old_name: oldName,
+                      new_name: newName,
+                    }),
+                  });
+                  const payload = await response.json();
+                  if (!response.ok) {
+                    alert(payload.error || "Rename failed.");
+                    return;
+                  }
+                  originalNames[rowIndex] = newName;
+                  statusEl.textContent = "Folder renamed.";
+                  setTimeout(updateStatus, 1500);
+                } catch (error) {
+                  console.error(error);
+                  alert("Rename failed.");
+                }
+              });
+              wrapper.appendChild(input);
+              wrapper.appendChild(openBtn);
+              wrapper.appendChild(viewBtn);
+              wrapper.appendChild(renameBtn);
+              td.appendChild(wrapper);
+            } else {
+              const input = document.createElement("input");
+              input.value = row[colIndex] ?? "";
+              input.addEventListener("input", (event) => {
+                rows[rowIndex][colIndex] = event.target.value;
+              });
+              td.appendChild(input);
+            }
+            tr.appendChild(td);
+          });
+          const actions = document.createElement("td");
+          actions.className = "row-actions";
+          const deleteBtn = document.createElement("button");
+          deleteBtn.type = "button";
+          deleteBtn.textContent = "Delete";
+          deleteBtn.addEventListener("click", async () => {
+            const category = rows[rowIndex][categoryIndex] || "";
+            const productFolder = rows[rowIndex][productFolderIndex] || "";
+            if (!category || !productFolder) return;
+            if (!confirm("Move this folder to _Deleted?")) return;
+            try {
+              const response = await fetch("/api/archive", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({
+                  category,
+                  folder_name: productFolder,
+                }),
+              });
+              const payload = await response.json();
+              if (!response.ok) {
+                alert(payload.error || "Archive failed.");
+                return;
+              }
+              rows.splice(rowIndex, 1);
+              originalNames.splice(rowIndex, 1);
+              renderBody();
+              updateStatus();
+              refreshCategoryFilter();
+            } catch (error) {
+              console.error(error);
+              alert("Archive failed.");
+            }
+          });
+          actions.appendChild(deleteBtn);
+          tr.appendChild(actions);
+          fragment.appendChild(tr);
+        });
+        tbody.appendChild(fragment);
+        emptyState.style.display = rows.length === 0 ? "block" : "none";
+      };
+
+      const refreshCategoryFilter = () => {
+        const categoryIndex = headers.indexOf("category");
+        if (categoryIndex === -1) return;
+        const categories = new Set();
+        rows.forEach((row) => {
+          if (row[categoryIndex]) {
+            categories.add(row[categoryIndex]);
+          }
+        });
+        const current = categoryFilter.value;
+        categoryFilter.innerHTML = "";
+        const optionAll = document.createElement("option");
+        optionAll.value = "";
+        optionAll.textContent = "All categories";
+        categoryFilter.appendChild(optionAll);
+        [...categories].sort().forEach((category) => {
+          const option = document.createElement("option");
+          option.value = category;
+          option.textContent = category;
+          categoryFilter.appendChild(option);
+        });
+        categoryFilter.value = current;
+      };
+
+      const loadCSVText = (text) => {
+        const parsed = parseCSV(text);
+        headers = parsed.shift() || [];
+        rows = parsed;
+        originalNames = rows.map((row) => row[headers.indexOf("product_folder")] || "");
+        renderHeader();
+        renderBody();
+        refreshCategoryFilter();
+        updateStatus();
+        emptyState.style.display = headers.length ? "none" : "block";
+        saveBtn.disabled = !fileHandle;
+        downloadBtn.disabled = headers.length === 0;
+        addRowBtn.disabled = headers.length === 0;
+      };
+
+      const openFile = async () => {
+        if (!window.showOpenFilePicker) {
+          alert("File picker not supported. Use the download button after loading CSV text manually.");
+          return;
+        }
+        const [handle] = await window.showOpenFilePicker({
+          types: [
+            {
+              description: "CSV files",
+              accept: { "text/csv": [".csv"] },
+            },
+          ],
+        });
+        fileHandle = handle;
+        const file = await handle.getFile();
+        const text = await file.text();
+        loadCSVText(text);
+        saveBtn.disabled = false;
+      };
+
+      const saveFile = async () => {
+        if (!fileHandle) {
+          await saveViaApi();
+          return;
+        }
+        const writable = await fileHandle.createWritable();
+        await writable.write(toCSV(headers, rows));
+        await writable.close();
+        statusEl.textContent = "Saved changes to file.";
+        setTimeout(updateStatus, 1500);
+      };
+
+      const downloadCSV = () => {
+        const blob = new Blob([toCSV(headers, rows)], { type: "text/csv" });
+        const url = URL.createObjectURL(blob);
+        const link = document.createElement("a");
+        link.href = url;
+        link.download = "categories_index.csv";
+        document.body.appendChild(link);
+        link.click();
+        link.remove();
+        URL.revokeObjectURL(url);
+      };
+
+      const addRow = () => {
+        const newRow = headers.map(() => "");
+        rows.push(newRow);
+        originalNames.push("");
+        renderBody();
+        updateStatus();
+      };
+
+      const autoLoadDefault = async () => {
+        try {
+          const response = await fetch("/api/rows", { cache: "no-store" });
+          if (!response.ok) return;
+          const data = await response.json();
+          if (!data.headers || !data.rows) return;
+          headers = data.headers;
+          rows = data.rows.map((row) => headers.map((h) => row[h] ?? ""));
+          originalNames = rows.map((row) => row[headers.indexOf("product_folder")] || "");
+          renderHeader();
+          renderBody();
+          refreshCategoryFilter();
+          updateStatus();
+          emptyState.style.display = headers.length ? "none" : "block";
+          saveBtn.disabled = false;
+          downloadBtn.disabled = headers.length === 0;
+          addRowBtn.disabled = headers.length === 0;
+          statusEl.textContent = "Auto-loaded categories_index.csv via server.";
+        } catch (error) {
+          // Ignore if running on file:// or blocked by CORS.
+        }
+      };
+
+      const openReadmeEditor = async (rowIndex) => {
+        const categoryIndex = headers.indexOf("category");
+        const productFolderIndex = headers.indexOf("product_folder");
+        const category = rows[rowIndex]?.[categoryIndex] || "";
+        const folderName = rows[rowIndex]?.[productFolderIndex] || "";
+        if (!category || !folderName) return;
+        try {
+          const response = await fetch("/api/readme", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+              category,
+              folder_name: folderName,
+              action: "read",
+            }),
+          });
+          const payload = await response.json();
+          if (!response.ok) {
+            alert(payload.error || "Failed to load README.");
+            return;
+          }
+          readmeRowIndex = rowIndex;
+          readmeTitle.textContent = "README.md";
+          readmePath.textContent = `${category}/${folderName}/README.md`;
+          readmeContent.value = payload.content || "";
+          if (readmeDialog.showModal) {
+            readmeDialog.showModal();
+          } else {
+            readmeDialog.setAttribute("open", "true");
+          }
+        } catch (error) {
+          console.error(error);
+          alert("Failed to load README.");
+        }
+      };
+
+      const closeReadmeEditor = () => {
+        readmeRowIndex = null;
+        if (readmeDialog.close) {
+          readmeDialog.close();
+        } else {
+          readmeDialog.removeAttribute("open");
+        }
+      };
+
+      const saveReadme = async () => {
+        if (readmeRowIndex == null) return;
+        const categoryIndex = headers.indexOf("category");
+        const productFolderIndex = headers.indexOf("product_folder");
+        const category = rows[readmeRowIndex]?.[categoryIndex] || "";
+        const folderName = rows[readmeRowIndex]?.[productFolderIndex] || "";
+        if (!category || !folderName) return;
+        try {
+          const response = await fetch("/api/readme", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+              category,
+              folder_name: folderName,
+              action: "write",
+              content: readmeContent.value,
+            }),
+          });
+          const payload = await response.json();
+          if (!response.ok) {
+            alert(payload.error || "Failed to save README.");
+            return;
+          }
+          statusEl.textContent = "README saved.";
+          setTimeout(updateStatus, 1500);
+          closeReadmeEditor();
+        } catch (error) {
+          console.error(error);
+          alert("Failed to save README.");
+        }
+      };
+
+
+      const saveViaApi = async () => {
+        try {
+          const response = await fetch("/api/save", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+              headers,
+              rows: rows.map((row) => {
+                const out = {};
+                headers.forEach((header, index) => {
+                  out[header] = row[index] ?? "";
+                });
+                return out;
+              }),
+            }),
+          });
+          const payload = await response.json();
+          if (!response.ok) {
+            alert(payload.error || "Save failed.");
+            return;
+          }
+          statusEl.textContent = "Saved changes to file.";
+          setTimeout(updateStatus, 1500);
+        } catch (error) {
+          console.error(error);
+          alert("Save failed.");
+        }
+      };
+
+      openBtn.addEventListener("click", () => openFile().catch(console.error));
+      saveBtn.addEventListener("click", () => saveFile().catch(console.error));
+      downloadBtn.addEventListener("click", downloadCSV);
+      addRowBtn.addEventListener("click", addRow);
+      closeReadmeBtn.addEventListener("click", closeReadmeEditor);
+      saveReadmeBtn.addEventListener("click", () => saveReadme().catch(console.error));
+      searchInput.addEventListener("input", () => {
+        renderBody();
+        updateStatus();
+      });
+      categoryFilter.addEventListener("change", () => {
+        renderBody();
+        updateStatus();
+      });
+
+      autoLoadDefault();
+    </script>
+  </body>
+</html>

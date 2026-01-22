@@ -1,0 +1,23 @@
+.DS_Store
+
+# Large asset folders
+Products/Categories/**
+Products/_Workflow/**
+
+# Large binary assets
+*.stl
+*.3mf
+*.zip
+*.mp4
+*.mov
+*.mkv
+*.avi
+*.webm
+*.m4v
+*.png
+*.jpg
+*.jpeg
+*.gif
+*.webp
+*.tiff
+*.heic

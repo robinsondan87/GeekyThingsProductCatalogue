@@ -1,0 +1,533 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Product Details - GeekyThings</title>
+    <link rel="icon" type="image/png" href="logo.png" />
+    <style>
+      :root {
+        --ink: #1b1b1f;
+        --muted: #4b4e57;
+        --surface: #ffffff;
+      }
+
+      * {
+        box-sizing: border-box;
+      }
+
+      body {
+        margin: 0;
+        font-family: "Segoe UI", Arial, sans-serif;
+        color: var(--ink);
+        background: #f2f2f2;
+        min-height: 100vh;
+      }
+
+      header {
+        padding: 24px clamp(20px, 4vw, 64px) 0;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        text-align: center;
+        gap: 12px;
+      }
+
+      .logo {
+        width: 110px;
+        height: 110px;
+        border-radius: 50%;
+        box-shadow: 0 2px 12px rgba(0,0,0,0.10);
+        object-fit: cover;
+      }
+
+      h1 {
+        margin: 0;
+        color: #0a663b;
+        font-size: clamp(22px, 3vw, 32px);
+      }
+
+      main {
+        padding: 24px clamp(20px, 4vw, 64px) 48px;
+        display: grid;
+        gap: 20px;
+      }
+
+      .card {
+        background: var(--surface);
+        border-radius: 18px;
+        box-shadow: 0 2px 16px rgba(0,0,0,0.10), 0 1.5px 4px rgba(0,0,0,0.08);
+        padding: 20px;
+      }
+
+      .grid {
+        display: grid;
+        gap: 14px;
+        grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+      }
+
+      label {
+        font-size: 12px;
+        color: var(--muted);
+        text-transform: uppercase;
+        letter-spacing: 0.06em;
+        margin-bottom: 6px;
+        display: block;
+      }
+
+      input,
+      select,
+      textarea {
+        width: 100%;
+        padding: 10px 12px;
+        border-radius: 10px;
+        border: 1px solid #d2d2d8;
+        font-family: inherit;
+        font-size: 14px;
+      }
+
+      textarea {
+        min-height: 240px;
+      }
+
+      .listing-group {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
+        gap: 8px;
+      }
+
+      .listing-option {
+        display: inline-flex;
+        align-items: center;
+        gap: 6px;
+        font-size: 12px;
+        background: #f7faf9;
+        border: 1px solid #cfe6dc;
+        padding: 6px 8px;
+        border-radius: 8px;
+        opacity: 0.7;
+      }
+
+      .listing-option input {
+        margin: 0;
+      }
+
+      .listing-links {
+        margin-top: 10px;
+        display: flex;
+        flex-wrap: wrap;
+        gap: 8px;
+      }
+
+      .listing-links a {
+        text-decoration: none;
+        color: #0a663b;
+        border: 1px solid #cfe6dc;
+        padding: 6px 10px;
+        border-radius: 999px;
+        font-size: 12px;
+        background: #ffffff;
+        font-weight: 600;
+      }
+
+      .url-grid {
+        display: grid;
+        gap: 12px;
+        grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+        margin-top: 12px;
+      }
+
+      .actions {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 10px;
+        justify-content: flex-end;
+      }
+
+      .btn {
+        background: #0a663b;
+        color: #fff;
+        border: none;
+        border-radius: 10px;
+        padding: 10px 16px;
+        font-weight: 600;
+        cursor: pointer;
+      }
+
+      .btn.secondary {
+        background: #00796b;
+      }
+
+      .btn.ghost {
+        background: #ffffff;
+        color: #0a663b;
+        border: 1px solid #cfe6dc;
+      }
+
+      .status {
+        font-size: 13px;
+        color: var(--muted);
+      }
+
+      .media-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+        gap: 10px;
+      }
+
+      .media-grid img,
+      .media-grid video {
+        width: 100%;
+        border-radius: 12px;
+        border: 1px solid #e2e6e8;
+        background: #fff;
+      }
+
+      .top-links {
+        display: flex;
+        gap: 12px;
+        justify-content: center;
+        margin-bottom: 10px;
+      }
+
+      .top-links a {
+        color: #0a663b;
+        text-decoration: none;
+        font-weight: 600;
+      }
+    </style>
+  </head>
+  <body>
+    <header>
+      <img src="logo.png" alt="Geeky Things logo" class="logo" />
+      <div class="top-links">
+        <a href="/">Back to Products</a>
+      </div>
+      <h1 id="productTitle">Product Details</h1>
+    </header>
+
+    <main>
+      <section class="card">
+        <div class="grid">
+          <div>
+            <label for="category">Category</label>
+            <input id="category" type="text" disabled />
+          </div>
+          <div>
+            <label for="sku">SKU</label>
+            <input id="sku" type="text" />
+          </div>
+          <div>
+            <label for="ukca">UKCA</label>
+            <select id="ukca">
+              <option>No</option>
+              <option>Yes</option>
+              <option>N/A</option>
+            </select>
+          </div>
+        </div>
+        <div class="grid" style="margin-top: 12px;">
+          <div>
+            <label for="productFolder">Product folder</label>
+            <input id="productFolder" type="text" />
+          </div>
+          <div>
+            <label for="tags">Tags</label>
+            <input id="tags" type="text" placeholder="comma,separated,tags" />
+          </div>
+        </div>
+        <div style="margin-top: 12px;">
+          <label>Listings (auto from URLs)</label>
+          <div class="listing-group" id="listingGroup"></div>
+          <div class="listing-links" id="listingLinks"></div>
+        </div>
+        <div class="url-grid">
+          <div>
+            <label for="facebookUrl">Facebook URL</label>
+            <input id="facebookUrl" type="url" placeholder="https://..." />
+          </div>
+          <div>
+            <label for="tiktokUrl">TikTok URL</label>
+            <input id="tiktokUrl" type="url" placeholder="https://..." />
+          </div>
+          <div>
+            <label for="ebayUrl">Ebay URL</label>
+            <input id="ebayUrl" type="url" placeholder="https://..." />
+          </div>
+          <div>
+            <label for="etsyUrl">Etsy URL</label>
+            <input id="etsyUrl" type="url" placeholder="https://..." />
+          </div>
+        </div>
+        <div class="actions" style="margin-top: 16px;">
+          <button class="btn ghost" id="openFolderBtn" type="button">Open Folder</button>
+          <button class="btn ghost" id="renameBtn" type="button">Rename Folder</button>
+          <button class="btn secondary" id="saveDetailsBtn" type="button">Save Details</button>
+        </div>
+        <div class="status" id="status"></div>
+      </section>
+
+      <section class="card">
+        <label for="readme">README.md</label>
+        <textarea id="readme"></textarea>
+        <div class="actions" style="margin-top: 12px;">
+          <button class="btn" id="saveReadmeBtn" type="button">Save README</button>
+        </div>
+      </section>
+
+      <section class="card">
+        <h2 style="margin-top:0;color:#0a663b;">Media</h2>
+        <div class="media-grid" id="mediaGrid"></div>
+      </section>
+    </main>
+
+    <script>
+      const params = new URLSearchParams(window.location.search);
+      const categoryParam = params.get("category") || "";
+      const folderParam = params.get("folder") || "";
+
+      const productTitle = document.getElementById("productTitle");
+      const categoryInput = document.getElementById("category");
+      const skuInput = document.getElementById("sku");
+      const ukcaSelect = document.getElementById("ukca");
+      const productFolderInput = document.getElementById("productFolder");
+      const tagsInput = document.getElementById("tags");
+      const listingGroup = document.getElementById("listingGroup");
+      const listingLinks = document.getElementById("listingLinks");
+      const facebookUrlInput = document.getElementById("facebookUrl");
+      const tiktokUrlInput = document.getElementById("tiktokUrl");
+      const ebayUrlInput = document.getElementById("ebayUrl");
+      const etsyUrlInput = document.getElementById("etsyUrl");
+      const saveDetailsBtn = document.getElementById("saveDetailsBtn");
+      const renameBtn = document.getElementById("renameBtn");
+      const openFolderBtn = document.getElementById("openFolderBtn");
+      const statusEl = document.getElementById("status");
+      const readmeArea = document.getElementById("readme");
+      const saveReadmeBtn = document.getElementById("saveReadmeBtn");
+      const mediaGrid = document.getElementById("mediaGrid");
+
+      const listingOptions = ["Facebook", "TikTok", "Ebay", "Etsy"];
+      const baseCategoriesPath = "/Users/dan/GeekyThings/Products/Categories";
+
+      let headers = [];
+      let rows = [];
+      let rowIndex = -1;
+      let originalCategory = categoryParam;
+      let originalFolder = folderParam;
+
+      const loadData = async () => {
+        const response = await fetch("/api/rows", { cache: "no-store" });
+        if (!response.ok) return;
+        const data = await response.json();
+        headers = data.headers || [];
+        rows = data.rows || [];
+        rowIndex = rows.findIndex(
+          (row) => row.category === categoryParam && row.product_folder === folderParam
+        );
+        if (rowIndex === -1) {
+          statusEl.textContent = "Product not found.";
+          return;
+        }
+        const row = rows[rowIndex];
+        productTitle.textContent = row.product_folder || "Product Details";
+        categoryInput.value = row.category || "";
+        skuInput.value = row.sku || "";
+        ukcaSelect.value = row.UKCA || "No";
+        productFolderInput.value = row.product_folder || "";
+        tagsInput.value = row.tags || "";
+        facebookUrlInput.value = row["Facebook URL"] || "";
+        tiktokUrlInput.value = row["TikTok URL"] || "";
+        ebayUrlInput.value = row["Ebay URL"] || "";
+        etsyUrlInput.value = row["Etsy URL"] || "";
+
+        listingGroup.innerHTML = "";
+        const updateListingLinks = () => {
+          listingLinks.innerHTML = "";
+          const urlMap = {
+            Facebook: facebookUrlInput.value.trim(),
+            TikTok: tiktokUrlInput.value.trim(),
+            Ebay: ebayUrlInput.value.trim(),
+            Etsy: etsyUrlInput.value.trim(),
+          };
+          listingGroup.querySelectorAll("input[type=checkbox]").forEach((checkbox) => {
+            const platform = checkbox.dataset.platform;
+            checkbox.checked = Boolean(urlMap[platform]);
+          });
+          Object.entries(urlMap).forEach(([platform, url]) => {
+            if (!url) return;
+            const link = document.createElement("a");
+            link.href = url;
+            link.target = "_blank";
+            link.rel = "noopener noreferrer";
+            link.textContent = platform;
+            listingLinks.appendChild(link);
+          });
+        };
+        listingOptions.forEach((option) => {
+          const label = document.createElement("label");
+          label.className = "listing-option";
+          const checkbox = document.createElement("input");
+          checkbox.type = "checkbox";
+          checkbox.disabled = true;
+          checkbox.dataset.platform = option;
+          const text = document.createElement("span");
+          text.textContent = option;
+          label.appendChild(checkbox);
+          label.appendChild(text);
+          listingGroup.appendChild(label);
+        });
+        updateListingLinks();
+        [facebookUrlInput, tiktokUrlInput, ebayUrlInput, etsyUrlInput].forEach((input) => {
+          input.addEventListener("input", updateListingLinks);
+        });
+
+        await loadReadme();
+        await loadMedia();
+      };
+
+      const loadReadme = async () => {
+        const response = await fetch("/api/readme", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            category: categoryParam,
+            folder_name: productFolderInput.value,
+            action: "read",
+          }),
+        });
+        const payload = await response.json();
+        if (!response.ok) return;
+        readmeArea.value = payload.content || "";
+      };
+
+      const loadMedia = async () => {
+        const response = await fetch(
+          `/api/media?category=${encodeURIComponent(categoryParam)}&folder=${encodeURIComponent(productFolderInput.value)}`
+        );
+        if (!response.ok) return;
+        const payload = await response.json();
+        const files = payload.files || [];
+        mediaGrid.innerHTML = "";
+        files.forEach((file) => {
+          const ext = file.name.split(".").pop().toLowerCase();
+          if (["mp4", "mov", "webm", "m4v"].includes(ext)) {
+            const video = document.createElement("video");
+            video.src = file.url;
+            video.controls = true;
+            mediaGrid.appendChild(video);
+          } else {
+            const img = document.createElement("img");
+            img.src = file.url;
+            img.alt = file.name;
+            mediaGrid.appendChild(img);
+          }
+        });
+      };
+
+      const saveDetails = async () => {
+        const selectedListings = listingOptions.filter((platform) => {
+          if (platform === "Facebook") return facebookUrlInput.value.trim();
+          if (platform === "TikTok") return tiktokUrlInput.value.trim();
+          if (platform === "Ebay") return ebayUrlInput.value.trim();
+          if (platform === "Etsy") return etsyUrlInput.value.trim();
+          return false;
+        });
+
+        const row = {
+          category: categoryInput.value,
+          product_folder: productFolderInput.value.trim(),
+          sku: skuInput.value.trim(),
+          UKCA: ukcaSelect.value,
+          Listings: selectedListings.join(", "),
+          tags: tagsInput.value.trim(),
+          "Facebook URL": facebookUrlInput.value.trim(),
+          "TikTok URL": tiktokUrlInput.value.trim(),
+          "Ebay URL": ebayUrlInput.value.trim(),
+          "Etsy URL": etsyUrlInput.value.trim(),
+        };
+
+        const response = await fetch("/api/update_row", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            old_category: originalCategory,
+            old_product_folder: originalFolder,
+            row,
+          }),
+        });
+        const payload = await response.json();
+        if (!response.ok) {
+          statusEl.textContent = payload.error || "Save failed.";
+          return;
+        }
+        statusEl.textContent = "Details saved.";
+        originalCategory = row.category;
+        originalFolder = row.product_folder;
+        history.replaceState({}, "", `/product.html?category=${encodeURIComponent(row.category)}&folder=${encodeURIComponent(row.product_folder)}`);
+      };
+
+      const renameFolder = async () => {
+        const newName = productFolderInput.value.trim();
+        if (!newName || newName === originalFolder) return;
+        const response = await fetch("/api/rename", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            category: originalCategory,
+            old_name: originalFolder,
+            new_name: newName,
+          }),
+        });
+        const payload = await response.json();
+        if (!response.ok) {
+          statusEl.textContent = payload.error || "Rename failed.";
+          return;
+        }
+        statusEl.textContent = "Folder renamed.";
+        originalFolder = newName;
+        await saveDetails();
+        await loadMedia();
+      };
+
+      const openFolder = () => {
+        const rawPath = `${baseCategoriesPath}/${categoryParam}/${productFolderInput.value}`;
+        const url = encodeURI(`file://${rawPath}`);
+        const popup = window.open(url, "_blank");
+        if (!popup) {
+          navigator.clipboard?.writeText(rawPath).catch(() => {});
+          alert("Popup blocked. Path copied to clipboard.");
+        }
+      };
+
+      const saveReadme = async () => {
+        const response = await fetch("/api/readme", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            category: categoryParam,
+            folder_name: productFolderInput.value,
+            action: "write",
+            content: readmeArea.value,
+          }),
+        });
+        const payload = await response.json();
+        if (!response.ok) {
+          statusEl.textContent = payload.error || "Save README failed.";
+          return;
+        }
+        statusEl.textContent = "README saved.";
+      };
+
+      saveDetailsBtn.addEventListener("click", () => saveDetails().catch(console.error));
+      renameBtn.addEventListener("click", () => renameFolder().catch(console.error));
+      openFolderBtn.addEventListener("click", openFolder);
+      saveReadmeBtn.addEventListener("click", () => saveReadme().catch(console.error));
+
+      if (!categoryParam || !folderParam) {
+        statusEl.textContent = "Missing product details in URL.";
+      } else {
+        loadData().catch(console.error);
+      }
+    </script>
+  </body>
+</html>

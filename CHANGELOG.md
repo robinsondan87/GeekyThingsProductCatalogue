@@ -3,6 +3,7 @@
 ## Unreleased
 - Minor: Documented site context in `AGENTS.md` (link hub, socials/marketplaces, location note, social metadata).
 - Minor: Added platform listing context templates in `agents/`.
+- Minor: Linked listing context files from `AGENTS.md`.
 
 ## V1.0.0
 - Major: Product folder restructure (Media/STL/MISC + README templates).

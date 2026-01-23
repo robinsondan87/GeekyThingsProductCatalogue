@@ -2,6 +2,9 @@
 
 ## Unreleased
 
+## V1.2.2
+- Minor: Documented the draft-to-live product workflow.
+
 ## V1.2.1
 - Fix: Draft readme/media loads (avoid local variable shadowing).
 

@@ -2,6 +2,9 @@
 
 ## Unreleased
 
+## V1.3.0
+- Minor: Added drag-and-drop upload for media and 3MF files.
+
 ## V1.2.9
 - Minor: Added separate Open (Bambu Studio) and Download actions for 3MFs.
 

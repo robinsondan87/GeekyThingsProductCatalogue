@@ -1,8 +1,10 @@
 #!/usr/bin/env python3
+import cgi
 import csv
 import json
 import mimetypes
 import os
+import shutil
 from http.server import BaseHTTPRequestHandler, HTTPServer
 from pathlib import Path
 from urllib.parse import urlparse, parse_qs, unquote, quote
@@ -308,6 +310,45 @@ class Handler(BaseHTTPRequestHandler):
 
     def do_POST(self):
         parsed = urlparse(self.path)
+        if parsed.path == '/api/upload':
+            form = cgi.FieldStorage(
+                fp=self.rfile,
+                headers=self.headers,
+                environ={
+                    'REQUEST_METHOD': 'POST',
+                    'CONTENT_TYPE': self.headers.get('Content-Type'),
+                    'CONTENT_LENGTH': self.headers.get('Content-Length'),
+                },
+            )
+            category = safe_path_component(form.getvalue('category', ''))
+            folder_name = safe_path_component(form.getvalue('folder_name', ''))
+            status = form.getvalue('status', '')
+            if not category or not folder_name:
+                self._send_json(400, {'error': 'Missing category/folder_name'})
+                return
+            files_field = form['files'] if 'files' in form else []
+            if not isinstance(files_field, list):
+                files_field = [files_field]
+            saved = []
+            for item in files_field:
+                filename = item.filename
+                if not filename:
+                    continue
+                name = os.path.basename(filename)
+                ext = os.path.splitext(name)[1].lower()
+                if ext in ('.png', '.jpg', '.jpeg', '.gif', '.webp', '.tiff', '.heic', '.mp4', '.mov', '.mkv', '.avi', '.webm', '.m4v'):
+                    dest_dir = product_dir(category, folder_name, status) / 'Media'
+                elif ext == '.3mf':
+                    dest_dir = product_dir(category, folder_name, status) / 'STL'
+                else:
+                    dest_dir = product_dir(category, folder_name, status) / 'MISC'
+                dest_dir.mkdir(parents=True, exist_ok=True)
+                dest_path = dest_dir / name
+                with dest_path.open('wb') as f:
+                    shutil.copyfileobj(item.file, f)
+                saved.append(str(dest_path))
+            self._send_json(200, {'ok': True, 'saved': saved})
+            return
         length = int(self.headers.get('Content-Length', '0'))
         body = self.rfile.read(length) if length > 0 else b''
         try:

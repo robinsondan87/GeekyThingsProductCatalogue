@@ -44,6 +44,7 @@ Then open `http://localhost:8555` in a browser.
 - `POST /api/readme`: Read/write per-product `README.md`.
 - `POST /api/approve`: Move a draft product into live categories and mark Status = Live.
 - `POST /api/move_to_draft`: Move a live product into drafts and mark Status = Draft.
+- `POST /api/upload`: Upload media and 3MF files (category, folder_name, status).
 
 ## Notes
 - This is a local-only tool. It serves files directly from disk.

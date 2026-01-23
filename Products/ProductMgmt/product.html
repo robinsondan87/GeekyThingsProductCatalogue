@@ -281,6 +281,26 @@
         font-size: 12px;
       }
 
+      .upload-zone {
+        border: 2px dashed #cfe6dc;
+        border-radius: 14px;
+        padding: 20px;
+        text-align: center;
+        color: var(--muted);
+        background: #f7faf9;
+        cursor: pointer;
+      }
+
+      .upload-zone.dragover {
+        border-color: #0a663b;
+        color: #0a663b;
+        background: #e0f2f1;
+      }
+
+      .upload-zone strong {
+        color: #0a663b;
+      }
+
       @media (min-width: 720px) {
         .file-item {
           grid-template-columns: minmax(0, 1fr) auto;
@@ -305,7 +325,7 @@
       <img src="logo.png" alt="Geeky Things logo" class="logo" />
       <h1 id="productTitle">Product Details</h1>
       <div class="version">
-        Version <a href="https://github.com/robinsondan87/GeekyThingsProductCatalogue/blob/main/CHANGELOG.md" target="_blank" rel="noopener noreferrer">v1.2.9</a>
+        Version <a href="https://github.com/robinsondan87/GeekyThingsProductCatalogue/blob/main/CHANGELOG.md" target="_blank" rel="noopener noreferrer">v1.3.0</a>
       </div>
     </header>
 
@@ -387,6 +407,14 @@
         <h2 style="margin-top:0;color:#0a663b;">3MF Files</h2>
         <div class="file-list" id="threeMfList"></div>
       </section>
+
+      <section class="card">
+        <h2 style="margin-top:0;color:#0a663b;">Upload Media / 3MF</h2>
+        <div class="upload-zone" id="uploadZone">
+          <strong>Drop files here</strong> or click to choose
+        </div>
+        <input id="uploadInput" type="file" multiple hidden />
+      </section>
     </main>
 
     <script>
@@ -415,6 +443,8 @@
       const saveReadmeBtn = document.getElementById("saveReadmeBtn");
       const mediaGrid = document.getElementById("mediaGrid");
       const threeMfList = document.getElementById("threeMfList");
+      const uploadZone = document.getElementById("uploadZone");
+      const uploadInput = document.getElementById("uploadInput");
 
       const listingOptions = ["Facebook", "TikTok", "Ebay", "Etsy"];
       const baseCategoriesPath = "/Users/dan/GeekyThings/Products/Categories";
@@ -707,6 +737,51 @@
       renameBtn.addEventListener("click", () => renameFolder().catch(console.error));
       openFolderBtn.addEventListener("click", openFolder);
       saveReadmeBtn.addEventListener("click", () => saveReadme().catch(console.error));
+
+      const uploadFiles = async (files) => {
+        if (!files || !files.length) return;
+        const formData = new FormData();
+        formData.append("category", categoryParam);
+        formData.append("folder_name", productFolderInput.value);
+        formData.append("status", statusParam);
+        Array.from(files).forEach((file) => formData.append("files", file));
+        statusEl.textContent = "Uploading files...";
+        try {
+          const response = await fetch("/api/upload", {
+            method: "POST",
+            body: formData,
+          });
+          const payload = await response.json();
+          if (!response.ok) {
+            statusEl.textContent = payload.error || "Upload failed.";
+            return;
+          }
+          statusEl.textContent = `Uploaded ${payload.saved?.length || 0} file(s).`;
+          await loadMedia();
+          await load3mf();
+        } catch (error) {
+          console.error(error);
+          statusEl.textContent = "Upload failed.";
+        }
+      };
+
+      uploadZone.addEventListener("click", () => uploadInput.click());
+      uploadInput.addEventListener("change", (event) => {
+        uploadFiles(event.target.files).catch(console.error);
+        uploadInput.value = "";
+      });
+      uploadZone.addEventListener("dragover", (event) => {
+        event.preventDefault();
+        uploadZone.classList.add("dragover");
+      });
+      uploadZone.addEventListener("dragleave", () => {
+        uploadZone.classList.remove("dragover");
+      });
+      uploadZone.addEventListener("drop", (event) => {
+        event.preventDefault();
+        uploadZone.classList.remove("dragover");
+        uploadFiles(event.dataTransfer.files).catch(console.error);
+      });
 
       if (!categoryParam || !folderParam) {
         statusEl.textContent = "Missing product details in URL.";

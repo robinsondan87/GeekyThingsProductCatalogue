@@ -1,6 +1,11 @@
 # Changelog
 
 ## Unreleased
+
+## V1.1.1
+- Minor: Displayed ProductMgmt version in the UI header.
+
+## V1.1.0
 - Minor: Documented site context in `AGENTS.md` (link hub, socials/marketplaces, location note, social metadata).
 - Minor: Added platform listing context templates in `agents/`.
 - Minor: Linked listing context files from `AGENTS.md`.

@@ -33,6 +33,51 @@
         gap: 12px;
       }
 
+      .nav {
+        width: 100%;
+        max-width: 1100px;
+        margin: 0 auto 12px;
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 16px;
+      }
+
+      .nav-brand {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+      }
+
+      .nav-brand img {
+        width: 48px;
+        height: 48px;
+        border-radius: 50%;
+        box-shadow: 0 2px 10px rgba(0,0,0,0.10);
+        object-fit: cover;
+      }
+
+      .nav-links {
+        display: flex;
+        gap: 12px;
+        flex-wrap: wrap;
+      }
+
+      .nav-links a {
+        text-decoration: none;
+        font-weight: 600;
+        color: #0a663b;
+        padding: 6px 12px;
+        border-radius: 999px;
+        border: 1px solid #cfe6dc;
+        background: #ffffff;
+      }
+
+      .nav-links a:hover {
+        background: #e0f2f1;
+        color: #00796b;
+      }
+
       .logo {
         width: 110px;
         height: 110px;
@@ -243,29 +288,24 @@
         }
       }
 
-      .top-links {
-        display: flex;
-        gap: 12px;
-        justify-content: center;
-        margin-bottom: 10px;
-      }
-
-      .top-links a {
-        color: #0a663b;
-        text-decoration: none;
-        font-weight: 600;
-      }
     </style>
   </head>
   <body>
     <header>
+      <nav class="nav">
+        <div class="nav-brand">
+          <img src="logo.png" alt="Geeky Things logo" />
+          <strong>GeekyThings</strong>
+        </div>
+        <div class="nav-links">
+          <a href="/">Products</a>
+          <a href="/add.html">Add Product</a>
+        </div>
+      </nav>
       <img src="logo.png" alt="Geeky Things logo" class="logo" />
-      <div class="top-links">
-        <a href="/">Back to Products</a>
-      </div>
       <h1 id="productTitle">Product Details</h1>
       <div class="version">
-        Version <a href="https://github.com/robinsondan87/GeekyThingsProductCatalogue/blob/main/CHANGELOG.md" target="_blank" rel="noopener noreferrer">v1.1.4</a>
+        Version <a href="https://github.com/robinsondan87/GeekyThingsProductCatalogue/blob/main/CHANGELOG.md" target="_blank" rel="noopener noreferrer">v1.1.5</a>
       </div>
     </header>
 

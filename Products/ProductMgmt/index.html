@@ -30,12 +30,57 @@
       }
 
       header {
-        padding: 32px clamp(20px, 4vw, 64px);
+        padding: 24px clamp(20px, 4vw, 64px);
         display: flex;
         flex-direction: column;
         gap: 16px;
         align-items: center;
         text-align: center;
+      }
+
+      .nav {
+        width: 100%;
+        max-width: 1100px;
+        margin: 0 auto 8px;
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 16px;
+      }
+
+      .nav-brand {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+      }
+
+      .nav-brand img {
+        width: 48px;
+        height: 48px;
+        border-radius: 50%;
+        box-shadow: 0 2px 10px rgba(0,0,0,0.10);
+        object-fit: cover;
+      }
+
+      .nav-links {
+        display: flex;
+        gap: 12px;
+        flex-wrap: wrap;
+      }
+
+      .nav-links a {
+        text-decoration: none;
+        font-weight: 600;
+        color: #0a663b;
+        padding: 6px 12px;
+        border-radius: 999px;
+        border: 1px solid #cfe6dc;
+        background: #ffffff;
+      }
+
+      .nav-links a:hover {
+        background: #e0f2f1;
+        color: #00796b;
       }
 
       .linktree-logo {
@@ -445,12 +490,22 @@
   </head>
   <body>
     <header>
+      <nav class="nav">
+        <div class="nav-brand">
+          <img src="logo.png" alt="Geeky Things logo" />
+          <strong>GeekyThings</strong>
+        </div>
+        <div class="nav-links">
+          <a href="/">Products</a>
+          <a href="/add.html">Add Product</a>
+        </div>
+      </nav>
       <img src="logo.png" alt="Geeky Things logo" class="linktree-logo" />
       <div>
         <h1 class="title">GeekyThings Product Manager</h1>
         <p class="subtitle">Manage products, tags, and listing status from one place.</p>
         <p class="version">
-          Version <a href="https://github.com/robinsondan87/GeekyThingsProductCatalogue/blob/main/CHANGELOG.md" target="_blank" rel="noopener noreferrer">v1.1.4</a>
+          Version <a href="https://github.com/robinsondan87/GeekyThingsProductCatalogue/blob/main/CHANGELOG.md" target="_blank" rel="noopener noreferrer">v1.1.5</a>
         </p>
         <div class="tabs" id="viewTabs">
           <button class="tab-btn active" type="button" data-view="live">Live</button>
@@ -461,10 +516,8 @@
       </div>
       <div class="panel">
         <div class="controls">
-          <button id="openBtn">Open CSV</button>
           <button id="saveBtn" class="secondary" disabled>Save to file</button>
           <button id="downloadBtn" class="ghost" disabled>Download CSV</button>
-          <button id="addRowBtn" class="ghost" disabled>Add row</button>
           <input id="searchInput" type="search" placeholder="Search folder/sku/tags" />
           <select id="categoryFilter">
             <option value="">All categories</option>
@@ -509,10 +562,8 @@
     </dialog>
 
     <script>
-      const openBtn = document.getElementById("openBtn");
       const saveBtn = document.getElementById("saveBtn");
       const downloadBtn = document.getElementById("downloadBtn");
-      const addRowBtn = document.getElementById("addRowBtn");
       const searchInput = document.getElementById("searchInput");
       const categoryFilter = document.getElementById("categoryFilter");
       const viewTabs = document.getElementById("viewTabs");
@@ -1050,27 +1101,6 @@
         emptyState.style.display = headers.length ? "none" : "block";
         saveBtn.disabled = !fileHandle;
         downloadBtn.disabled = headers.length === 0;
-        addRowBtn.disabled = headers.length === 0;
-      };
-
-      const openFile = async () => {
-        if (!window.showOpenFilePicker) {
-          alert("File picker not supported. Use the download button after loading CSV text manually.");
-          return;
-        }
-        const [handle] = await window.showOpenFilePicker({
-          types: [
-            {
-              description: "CSV files",
-              accept: { "text/csv": [".csv"] },
-            },
-          ],
-        });
-        fileHandle = handle;
-        const file = await handle.getFile();
-        const text = await file.text();
-        loadCSVText(text);
-        saveBtn.disabled = false;
       };
 
       const saveFile = async () => {
@@ -1095,14 +1125,6 @@
         link.click();
         link.remove();
         URL.revokeObjectURL(url);
-      };
-
-      const addRow = () => {
-        const newRow = headers.map(() => "");
-        rows.push(newRow);
-        originalNames.push("");
-        renderBody();
-        updateStatus();
       };
 
       const renderFolderList = (items) => {
@@ -1212,7 +1234,6 @@
           emptyState.style.display = headers.length ? "none" : "block";
           saveBtn.disabled = false;
           downloadBtn.disabled = headers.length === 0;
-          addRowBtn.disabled = headers.length === 0;
           statusEl.textContent = "Auto-loaded categories_index.csv via server.";
           setViewMode(viewMode);
         } catch (error) {
@@ -1327,10 +1348,8 @@
         }
       };
 
-      openBtn.addEventListener("click", () => openFile().catch(console.error));
       saveBtn.addEventListener("click", () => saveFile().catch(console.error));
       downloadBtn.addEventListener("click", downloadCSV);
-      addRowBtn.addEventListener("click", addRow);
       closeReadmeBtn.addEventListener("click", closeReadmeEditor);
       saveReadmeBtn.addEventListener("click", () => saveReadme().catch(console.error));
       searchInput.addEventListener("input", () => {

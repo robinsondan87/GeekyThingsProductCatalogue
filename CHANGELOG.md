@@ -2,6 +2,10 @@
 
 ## Unreleased
 
+## V1.1.5
+- Minor: Added a shared top navigation bar across ProductMgmt pages.
+- Minor: Removed Open CSV and Add row controls; CSV is now always the master.
+
 ## V1.1.4
 - Fix: New products start as Draft in `_Draft` and show in Draft tab.
 - Fix: Archive updates Status to Archived so items appear in Archived tab only.

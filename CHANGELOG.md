@@ -2,6 +2,9 @@
 
 ## Unreleased
 
+## V1.2.7
+- Minor: Open 3MFs via Bambu Studio URL scheme.
+
 ## V1.2.6
 - Minor: Open the New Draft Product dialog immediately on Add Product.
 

@@ -2,6 +2,9 @@
 
 ## Unreleased
 
+## V1.4.6
+- Minor: Added default EN71-1 notes in templates and form helper.
+
 ## V1.4.5
 - Minor: Added inline EN71-1 form helper and UKCA pack printing.
 

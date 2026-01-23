@@ -461,7 +461,7 @@
       </nav>
       <h1 id="productTitle">Product Details</h1>
       <div class="version">
-        Version <a href="https://github.com/robinsondan87/GeekyThingsProductCatalogue/blob/main/CHANGELOG.md" target="_blank" rel="noopener noreferrer">v1.4.5</a>
+        Version <a href="https://github.com/robinsondan87/GeekyThingsProductCatalogue/blob/main/CHANGELOG.md" target="_blank" rel="noopener noreferrer">v1.4.6</a>
       </div>
     </header>
 
@@ -691,12 +691,12 @@
         smallParts: "No",
         warningLabel: "Yes",
         finalResult: "PASS",
-        visualNotes: "",
-        dropNotes: "",
-        tensionNotes: "",
-        torsionNotes: "",
-        smallPartsNotes: "",
-        conclusionNotes: "",
+        visualNotes: "Visual inspection completed. No sharp edges, burrs, or defects observed. Surface finish smooth.",
+        dropNotes: "Drop testing completed. No hazardous breakage observed; any minor separation was blunt with no sharp edges.",
+        tensionNotes: "Tension test completed. No hazardous detachment observed; joints remained secure under manual force.",
+        torsionNotes: "Torsion test completed. No hazardous fracture observed; no sharp edges created.",
+        smallPartsNotes: "Small parts not created. Warning label remains applicable for 3+ age grading.",
+        conclusionNotes: "Product either withstood testing or fractured in a non-hazardous manner. No sharp edges or points created.",
       });
 
       const generateEn71Markdown = (data) => {
@@ -1126,6 +1126,12 @@
             const torsionNotes = notesLabel("Torsion test notes");
             const smallPartsNotes = notesLabel("Small parts notes");
             const conclusionNotes = notesLabel("Conclusion notes");
+            visualNotes.area.value = data.visualNotes;
+            dropNotes.area.value = data.dropNotes;
+            tensionNotes.area.value = data.tensionNotes;
+            torsionNotes.area.value = data.torsionNotes;
+            smallPartsNotes.area.value = data.smallPartsNotes;
+            conclusionNotes.area.value = data.conclusionNotes;
             form.appendChild(visualNotes.wrapper);
             form.appendChild(dropNotes.wrapper);
             form.appendChild(tensionNotes.wrapper);

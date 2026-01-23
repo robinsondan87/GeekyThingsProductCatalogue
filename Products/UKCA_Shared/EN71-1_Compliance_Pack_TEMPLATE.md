@@ -18,6 +18,8 @@
 * [ ] No cracks or voids from printing defects
 * [ ] Surface finish smooth to touch (no abrasive ridges)
 
+Notes: Visual inspection completed. No sharp edges, burrs, or defects observed. Surface finish smooth.
+
 ### B. Drop / Impact Test (3+)
 
 **Method:** Drop from 1.0 m onto hard surface (wood/tile/concrete) - 3 times
@@ -33,6 +35,8 @@
 
 **Result:** PASS / FAIL (circle)
 
+Notes: Drop testing completed. No hazardous breakage observed; any minor separation was blunt with no sharp edges.
+
 ### C. Tension / Pull Test
 
 **Method:** Firm manual pull on limbs, tail, articulation joints (approx. 70-90 N hand force)
@@ -44,6 +48,8 @@
   * [ ] No dangerous projections
 
 **Result:** PASS / FAIL (circle)
+
+Notes: Tension test completed. No hazardous detachment observed; joints remained secure under manual force.
 
 ### D. Torsion / Twist Test
 
@@ -57,12 +63,16 @@
 
 **Result:** PASS / FAIL (circle)
 
+Notes: Torsion test completed. No hazardous fracture observed; no sharp edges created.
+
 ### E. Small Parts (Post-Breakage)
 
 * [ ] Small parts created after breakage
 * [ ] Product labelled: "Not suitable for children under 36 months. Small parts."
 
 **Result:** ACCEPTABLE for 3+ / FAIL (circle)
+
+Notes: Small parts not created. Warning label remains applicable for 3+ age grading.
 
 ### F. Overall Mechanical Safety Conclusion
 

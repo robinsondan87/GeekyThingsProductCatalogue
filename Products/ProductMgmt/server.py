@@ -399,17 +399,17 @@ class Handler(BaseHTTPRequestHandler):
                 self._send_json(500, {'error': 'Failed to create SKU'})
                 return
             product_folder = f'{sku} - {description}'
-            product_dir = DRAFT_DIR / category / product_folder
-            if product_dir.exists():
+            product_path = DRAFT_DIR / category / product_folder
+            if product_path.exists():
                 self._send_json(409, {'error': 'Folder already exists'})
                 return
-            product_dir.mkdir(parents=True, exist_ok=True)
-            (product_dir / 'Media').mkdir(exist_ok=True)
-            (product_dir / 'STL').mkdir(exist_ok=True)
-            (product_dir / 'MISC').mkdir(exist_ok=True)
+            product_path.mkdir(parents=True, exist_ok=True)
+            (product_path / 'Media').mkdir(exist_ok=True)
+            (product_path / 'STL').mkdir(exist_ok=True)
+            (product_path / 'MISC').mkdir(exist_ok=True)
             if requires_ukca:
-                (product_dir / 'UKCA').mkdir(exist_ok=True)
-            readme_path = product_dir / 'README.md'
+                (product_path / 'UKCA').mkdir(exist_ok=True)
+            readme_path = product_path / 'README.md'
             if not readme_path.exists():
                 content = readme_template(description, sku)
                 if notes:

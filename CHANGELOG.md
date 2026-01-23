@@ -2,6 +2,9 @@
 
 ## Unreleased
 
+## V1.2.1
+- Fix: Draft readme/media loads (avoid local variable shadowing).
+
 ## V1.2.0
 - Minor: Draft list items now have View, and draft product pages load their assets.
 

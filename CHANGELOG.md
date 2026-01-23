@@ -2,6 +2,9 @@
 
 ## Unreleased
 
+## V1.4.1
+- Fix: Updated upload handling to avoid deprecated `cgi` module on Python 3.13.
+
 ## V1.4.0
 - Minor: Added UKCA pack workflow on product pages with templates.
 - Minor: Added UKCA best-practice guidance in shared UKCA folder.

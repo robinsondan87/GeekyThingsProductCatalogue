@@ -1,11 +1,12 @@
 #!/usr/bin/env python3
-import cgi
 import csv
 import json
 import mimetypes
 import os
 import re
 import shutil
+from email import message_from_bytes
+from email.policy import default
 from http.server import BaseHTTPRequestHandler, HTTPServer
 from pathlib import Path
 from urllib.parse import urlparse, parse_qs, unquote, quote
@@ -193,6 +194,34 @@ def apply_replacements(template: str, replacements: dict) -> str:
     return content
 
 
+def parse_multipart_form_data(content_type: str, body: bytes) -> tuple[dict, list]:
+    if not content_type or 'multipart/form-data' not in content_type:
+        return {}, []
+    message = message_from_bytes(
+        f"Content-Type: {content_type}\r\n\r\n".encode("utf-8") + body,
+        policy=default,
+    )
+    fields = {}
+    files = []
+    for part in message.iter_parts():
+        if part.get_content_disposition() != 'form-data':
+            continue
+        name = part.get_param('name', header='content-disposition')
+        filename = part.get_filename()
+        if filename:
+            files.append({
+                'name': name,
+                'filename': filename,
+                'content': part.get_payload(decode=True) or b'',
+            })
+        else:
+            value = part.get_content()
+            if isinstance(value, bytes):
+                value = value.decode(part.get_content_charset() or 'utf-8', errors='replace')
+            fields[name] = value
+    return fields, files
+
+
 class Handler(BaseHTTPRequestHandler):
     def _send_json(self, status, payload):
         data = json.dumps(payload).encode('utf-8')
@@ -352,28 +381,22 @@ class Handler(BaseHTTPRequestHandler):
     def do_POST(self):
         parsed = urlparse(self.path)
         if parsed.path == '/api/upload':
-            form = cgi.FieldStorage(
-                fp=self.rfile,
-                headers=self.headers,
-                environ={
-                    'REQUEST_METHOD': 'POST',
-                    'CONTENT_TYPE': self.headers.get('Content-Type'),
-                    'CONTENT_LENGTH': self.headers.get('Content-Length'),
-                },
+            content_length = int(self.headers.get('Content-Length', '0'))
+            body = self.rfile.read(content_length) if content_length > 0 else b''
+            fields, files_field = parse_multipart_form_data(
+                self.headers.get('Content-Type', ''),
+                body,
             )
-            category = safe_path_component(form.getvalue('category', ''))
-            folder_name = safe_path_component(form.getvalue('folder_name', ''))
-            status = form.getvalue('status', '')
-            sku = (form.getvalue('sku', '') or '').strip()
+            category = safe_path_component(fields.get('category', ''))
+            folder_name = safe_path_component(fields.get('folder_name', ''))
+            status = fields.get('status', '')
+            sku = (fields.get('sku', '') or '').strip()
             if not category or not folder_name:
                 self._send_json(400, {'error': 'Missing category/folder_name'})
                 return
-            files_field = form['files'] if 'files' in form else []
-            if not isinstance(files_field, list):
-                files_field = [files_field]
             saved = []
             for item in files_field:
-                filename = item.filename
+                filename = item.get('filename')
                 if not filename:
                     continue
                 name = os.path.basename(filename)
@@ -388,7 +411,7 @@ class Handler(BaseHTTPRequestHandler):
                 new_name = next_sku_filename(dest_dir, sku, ext) or name
                 dest_path = dest_dir / new_name
                 with dest_path.open('wb') as f:
-                    shutil.copyfileobj(item.file, f)
+                    f.write(item.get('content') or b'')
                 saved.append(str(dest_path))
             self._send_json(200, {'ok': True, 'saved': saved})
             return

@@ -48,4 +48,5 @@ Then open `http://localhost:8555` in a browser.
 ## Notes
 - This is a local-only tool. It serves files directly from disk.
 - New products are created as Drafts under `Products/Categories/_Draft/<Category>/...`.
+- Draft product pages should include `status=draft` in the query string.
 - The `.3mf` list is recursive under each product folder.

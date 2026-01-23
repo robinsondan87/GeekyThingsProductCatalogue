@@ -84,6 +84,16 @@ def normalize_status(value: str) -> str:
     return 'Live'
 
 
+def product_base_dir(status: str) -> Path:
+    if normalize_status(status) == 'Draft':
+        return DRAFT_DIR
+    return CATEGORIES_DIR
+
+
+def product_dir(category: str, folder_name: str, status: str) -> Path:
+    return product_base_dir(status) / category / folder_name
+
+
 def list_folder_entries(base_dir: Path):
     entries = []
     if not base_dir.exists():
@@ -224,10 +234,11 @@ class Handler(BaseHTTPRequestHandler):
             query = parse_qs(parsed.query)
             category = safe_path_component(query.get('category', [''])[0])
             folder_name = safe_path_component(query.get('folder', [''])[0])
+            status = query.get('status', [''])[0]
             if not category or not folder_name:
                 self._send_json(400, {'error': 'Missing category/folder'})
                 return
-            media_dir = CATEGORIES_DIR / category / folder_name / 'Media'
+            media_dir = product_dir(category, folder_name, status) / 'Media'
             if not media_dir.exists():
                 self._send_json(200, {'files': []})
                 return
@@ -248,21 +259,22 @@ class Handler(BaseHTTPRequestHandler):
             query = parse_qs(parsed.query)
             category = safe_path_component(query.get('category', [''])[0])
             folder_name = safe_path_component(query.get('folder', [''])[0])
+            status = query.get('status', [''])[0]
             if not category or not folder_name:
                 self._send_json(400, {'error': 'Missing category/folder'})
                 return
-            product_dir = CATEGORIES_DIR / category / folder_name
-            if not product_dir.exists():
+            product_path = product_dir(category, folder_name, status)
+            if not product_path.exists():
                 self._send_json(200, {'files': []})
                 return
             files = []
-            for entry in sorted(product_dir.rglob('*')):
+            for entry in sorted(product_path.rglob('*')):
                 if not entry.is_file():
                     continue
                 if entry.suffix.lower() != '.3mf':
                     continue
                 rel = entry.relative_to(CATEGORIES_DIR)
-                url = f"/files/{rel.as_posix()}"
+                url = f"/files/{quote(rel.as_posix())}"
                 files.append({
                     'name': entry.name,
                     'rel_path': rel.as_posix(),
@@ -314,12 +326,13 @@ class Handler(BaseHTTPRequestHandler):
         if parsed.path == '/api/rename':
             category = safe_path_component(data.get('category', ''))
             old_name = safe_path_component(data.get('old_name', ''))
-            new_name = safe_path_component(data.get('new_name', ''))
+            new_name = sanitize_folder_name(data.get('new_name', ''))
+            status = data.get('status', '')
             if not category or not old_name or not new_name:
                 self._send_json(400, {'error': 'Missing category/old_name/new_name'})
                 return
-            old_path = CATEGORIES_DIR / category / old_name
-            new_path = CATEGORIES_DIR / category / new_name
+            old_path = product_dir(category, old_name, status)
+            new_path = product_dir(category, new_name, status)
             if not old_path.exists():
                 self._send_json(404, {'error': 'Source folder not found'})
                 return
@@ -355,10 +368,11 @@ class Handler(BaseHTTPRequestHandler):
             category = safe_path_component(data.get('category', ''))
             folder_name = safe_path_component(data.get('folder_name', ''))
             action = data.get('action')
+            status = data.get('status', '')
             if not category or not folder_name or action not in ('read', 'write'):
                 self._send_json(400, {'error': 'Missing category/folder_name/action'})
                 return
-            readme_path = CATEGORIES_DIR / category / folder_name / 'README.md'
+            readme_path = product_dir(category, folder_name, status) / 'README.md'
             if action == 'read':
                 content = readme_path.read_text(encoding='utf-8') if readme_path.exists() else ''
                 self._send_json(200, {'ok': True, 'content': content})

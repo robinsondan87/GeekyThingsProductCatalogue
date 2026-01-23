@@ -305,7 +305,7 @@
       <img src="logo.png" alt="Geeky Things logo" class="logo" />
       <h1 id="productTitle">Product Details</h1>
       <div class="version">
-        Version <a href="https://github.com/robinsondan87/GeekyThingsProductCatalogue/blob/main/CHANGELOG.md" target="_blank" rel="noopener noreferrer">v1.1.9</a>
+        Version <a href="https://github.com/robinsondan87/GeekyThingsProductCatalogue/blob/main/CHANGELOG.md" target="_blank" rel="noopener noreferrer">v1.2.0</a>
       </div>
     </header>
 
@@ -393,6 +393,7 @@
       const params = new URLSearchParams(window.location.search);
       const categoryParam = params.get("category") || "";
       const folderParam = params.get("folder") || "";
+      const statusParam = (params.get("status") || "").toLowerCase();
 
       const productTitle = document.getElementById("productTitle");
       const categoryInput = document.getElementById("category");
@@ -417,6 +418,7 @@
 
       const listingOptions = ["Facebook", "TikTok", "Ebay", "Etsy"];
       const baseCategoriesPath = "/Users/dan/GeekyThings/Products/Categories";
+      const draftBasePath = "/Users/dan/GeekyThings/Products/Categories/_Draft";
 
       let headers = [];
       let rows = [];
@@ -502,6 +504,7 @@
           body: JSON.stringify({
             category: categoryParam,
             folder_name: productFolderInput.value,
+            status: statusParam,
             action: "read",
           }),
         });
@@ -512,7 +515,7 @@
 
       const loadMedia = async () => {
         const response = await fetch(
-          `/api/media?category=${encodeURIComponent(categoryParam)}&folder=${encodeURIComponent(productFolderInput.value)}`
+          `/api/media?category=${encodeURIComponent(categoryParam)}&folder=${encodeURIComponent(productFolderInput.value)}&status=${encodeURIComponent(statusParam)}`
         );
         if (!response.ok) return;
         const payload = await response.json();
@@ -536,7 +539,7 @@
 
       const load3mf = async () => {
         const response = await fetch(
-          `/api/3mf?category=${encodeURIComponent(categoryParam)}&folder=${encodeURIComponent(productFolderInput.value)}`
+          `/api/3mf?category=${encodeURIComponent(categoryParam)}&folder=${encodeURIComponent(productFolderInput.value)}&status=${encodeURIComponent(statusParam)}`
         );
         if (!response.ok) return;
         const payload = await response.json();
@@ -627,7 +630,12 @@
         statusEl.textContent = "Details saved.";
         originalCategory = row.category;
         originalFolder = row.product_folder;
-        history.replaceState({}, "", `/product.html?category=${encodeURIComponent(row.category)}&folder=${encodeURIComponent(row.product_folder)}`);
+        const statusQuery = statusParam ? `&status=${encodeURIComponent(statusParam)}` : "";
+        history.replaceState(
+          {},
+          "",
+          `/product.html?category=${encodeURIComponent(row.category)}&folder=${encodeURIComponent(row.product_folder)}${statusQuery}`
+        );
       };
 
       const renameFolder = async () => {
@@ -640,6 +648,7 @@
             category: originalCategory,
             old_name: originalFolder,
             new_name: newName,
+            status: statusParam,
           }),
         });
         const payload = await response.json();
@@ -655,7 +664,8 @@
       };
 
       const openFolder = () => {
-        const rawPath = `${baseCategoriesPath}/${categoryParam}/${productFolderInput.value}`;
+        const basePath = statusParam === "draft" ? draftBasePath : baseCategoriesPath;
+        const rawPath = `${basePath}/${categoryParam}/${productFolderInput.value}`;
         const url = encodeURI(`file://${rawPath}`);
         const popup = window.open(url, "_blank");
         if (!popup) {
@@ -671,6 +681,7 @@
           body: JSON.stringify({
             category: categoryParam,
             folder_name: productFolderInput.value,
+            status: statusParam,
             action: "write",
             content: readmeArea.value,
           }),

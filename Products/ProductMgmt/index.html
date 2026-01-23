@@ -495,7 +495,7 @@
           <h1 class="title">GeekyThings Product Manager</h1>
           <p class="subtitle">Manage products, tags, and listing status from one place.</p>
           <p class="version">
-          Version <a href="https://github.com/robinsondan87/GeekyThingsProductCatalogue/blob/main/CHANGELOG.md" target="_blank" rel="noopener noreferrer">v1.1.9</a>
+          Version <a href="https://github.com/robinsondan87/GeekyThingsProductCatalogue/blob/main/CHANGELOG.md" target="_blank" rel="noopener noreferrer">v1.2.0</a>
           </p>
         </div>
         <div class="nav-links">
@@ -1078,6 +1078,16 @@
           if (viewMode === "draft") {
             const actions = document.createElement("div");
             actions.className = "row-actions";
+            const viewBtn = document.createElement("button");
+            viewBtn.type = "button";
+            viewBtn.textContent = "View";
+            viewBtn.addEventListener("click", () => {
+              const category = item.category || "";
+              const productFolder = item.product_folder || "";
+              if (!category || !productFolder) return;
+              const url = `/product.html?category=${encodeURIComponent(category)}&folder=${encodeURIComponent(productFolder)}&status=draft`;
+              window.location.href = url;
+            });
             const approveBtn = document.createElement("button");
             approveBtn.type = "button";
             approveBtn.textContent = "Approve";
@@ -1104,6 +1114,7 @@
                 alert("Approve failed.");
               }
             });
+            actions.appendChild(viewBtn);
             actions.appendChild(approveBtn);
             row.appendChild(actions);
           }

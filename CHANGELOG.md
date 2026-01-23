@@ -2,6 +2,9 @@
 
 ## Unreleased
 
+## V1.2.0
+- Minor: Draft list items now have View, and draft product pages load their assets.
+
 ## V1.1.9
 - Minor: Added "To Draft" action for live items.
 

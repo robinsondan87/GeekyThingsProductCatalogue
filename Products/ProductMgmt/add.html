@@ -121,12 +121,7 @@
         padding: 24px;
         display: grid;
         gap: 16px;
-      }
-
-      .row {
-        display: grid;
-        grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
-        gap: 14px;
+        text-align: center;
       }
 
       label {
@@ -149,21 +144,9 @@
         font-size: 14px;
       }
 
-      textarea {
-        min-height: 120px;
-      }
-
-      .checkbox {
-        display: inline-flex;
-        align-items: center;
-        gap: 8px;
-        font-size: 14px;
-        color: var(--muted);
-      }
-
       .actions {
         display: flex;
-        justify-content: space-between;
+        justify-content: center;
         gap: 12px;
         flex-wrap: wrap;
       }
@@ -192,6 +175,35 @@
         font-size: 13px;
         color: var(--muted);
       }
+
+      dialog {
+        border: none;
+        border-radius: 16px;
+        padding: 0;
+        width: min(520px, 90vw);
+        box-shadow: 0 12px 30px rgba(0,0,0,0.18);
+      }
+
+      dialog::backdrop {
+        background: rgba(0,0,0,0.35);
+      }
+
+      .dialog-header {
+        padding: 16px 20px 0;
+      }
+
+      .dialog-body {
+        padding: 16px 20px;
+        display: grid;
+        gap: 12px;
+      }
+
+      .dialog-actions {
+        padding: 0 20px 20px;
+        display: flex;
+        justify-content: flex-end;
+        gap: 10px;
+      }
     </style>
   </head>
   <body>
@@ -210,50 +222,43 @@
     <img src="logo.png" alt="Geeky Things logo" class="logo" />
     <h1>Add New Product</h1>
     <div class="version">
-      Version <a href="https://github.com/robinsondan87/GeekyThingsProductCatalogue/blob/main/CHANGELOG.md" target="_blank" rel="noopener noreferrer">v1.2.2</a>
+      Version <a href="https://github.com/robinsondan87/GeekyThingsProductCatalogue/blob/main/CHANGELOG.md" target="_blank" rel="noopener noreferrer">v1.2.4</a>
     </div>
     <p>Create a folder, assign SKU, and add the product to the CSV.</p>
 
     <div class="card">
-      <div class="row">
+      <div class="actions">
+      <button id="openDialogBtn" class="btn" type="button">Create Draft Product</button>
+      </div>
+      <div class="status" id="status"></div>
+    </div>
+
+    <dialog id="createDialog">
+      <div class="dialog-header">
+        <h2>New Draft Product</h2>
+      </div>
+      <div class="dialog-body">
         <div>
           <label for="category">Category</label>
           <select id="category"></select>
         </div>
         <div>
-          <label for="description">Product description</label>
+          <label for="description">Product name</label>
           <input id="description" type="text" placeholder="e.g. Dragon Bookmark" />
         </div>
       </div>
-      <div class="row">
-        <div>
-          <label for="tags">Tags</label>
-          <input id="tags" type="text" placeholder="comma,separated,tags" />
-        </div>
-        <div>
-          <label class="checkbox">
-            <input id="ukca" type="checkbox" />
-            Requires UKCA certification
-          </label>
-        </div>
+      <div class="dialog-actions">
+        <button id="cancelBtn" class="btn ghost" type="button">Cancel</button>
+        <button id="createBtn" class="btn" type="button">Create</button>
       </div>
-      <div>
-        <label for="notes">Notes (optional)</label>
-        <textarea id="notes" placeholder="Optional notes for the README template."></textarea>
-      </div>
-      <div class="actions">
-        <a class="link" href="/">Back to Products</a>
-        <button id="createBtn" class="btn" type="button">Create Product</button>
-      </div>
-      <div class="status" id="status"></div>
-    </div>
+    </dialog>
 
     <script>
       const categorySelect = document.getElementById("category");
       const descriptionInput = document.getElementById("description");
-      const tagsInput = document.getElementById("tags");
-      const ukcaInput = document.getElementById("ukca");
-      const notesInput = document.getElementById("notes");
+      const createDialog = document.getElementById("createDialog");
+      const openDialogBtn = document.getElementById("openDialogBtn");
+      const cancelBtn = document.getElementById("cancelBtn");
       const createBtn = document.getElementById("createBtn");
       const statusEl = document.getElementById("status");
 
@@ -287,9 +292,9 @@
       const createProduct = async () => {
         const category = categorySelect.value;
         const description = descriptionInput.value.trim();
-        const tags = tagsInput.value.trim();
-        const requiresUkca = ukcaInput.checked;
-        const notes = notesInput.value.trim();
+        const tags = "";
+        const requiresUkca = false;
+        const notes = "";
         if (!category || !description) {
           statusEl.textContent = "Category and description are required.";
           return;
@@ -314,10 +319,16 @@
             return;
           }
           statusEl.textContent = `Created ${payload.row?.product_folder || "product"}.`;
-          descriptionInput.value = "";
-          tagsInput.value = "";
-          ukcaInput.checked = false;
-          notesInput.value = "";
+          const folder = payload.row?.product_folder || "";
+          if (createDialog.close) {
+            createDialog.close();
+          } else {
+            createDialog.removeAttribute("open");
+          }
+          if (folder) {
+            const url = `/product.html?category=${encodeURIComponent(category)}&folder=${encodeURIComponent(folder)}&status=draft`;
+            window.location.href = url;
+          }
         } catch (error) {
           console.error(error);
           statusEl.textContent = "Create failed.";
@@ -326,6 +337,21 @@
         }
       };
 
+      openDialogBtn.addEventListener("click", () => {
+        if (createDialog.showModal) {
+          createDialog.showModal();
+        } else {
+          createDialog.setAttribute("open", "true");
+        }
+        descriptionInput.focus();
+      });
+      cancelBtn.addEventListener("click", () => {
+        if (createDialog.close) {
+          createDialog.close();
+        } else {
+          createDialog.removeAttribute("open");
+        }
+      });
       createBtn.addEventListener("click", () => createProduct().catch(console.error));
       loadCategories().catch(console.error);
     </script>

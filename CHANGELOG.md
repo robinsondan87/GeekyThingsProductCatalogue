@@ -2,6 +2,9 @@
 
 ## Unreleased
 
+## V1.2.4
+- Minor: Simplified Add Product to a category/name dialog and auto-open draft details.
+
 ## V1.2.2
 - Minor: Documented the draft-to-live product workflow.
 

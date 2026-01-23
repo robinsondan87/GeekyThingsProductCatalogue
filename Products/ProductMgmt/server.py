@@ -4,6 +4,7 @@ import csv
 import json
 import mimetypes
 import os
+import re
 import shutil
 from http.server import BaseHTTPRequestHandler, HTTPServer
 from pathlib import Path
@@ -134,6 +135,26 @@ def readme_template(title: str, sku: str) -> str:
     )
 
 
+def next_sku_filename(dest_dir: Path, sku: str, ext: str) -> str:
+    if not sku:
+        return ''
+    pattern = re.compile(rf"^{re.escape(sku)}-(\d{{3}}){re.escape(ext)}$", re.IGNORECASE)
+    max_index = 0
+    if dest_dir.exists():
+        for entry in dest_dir.iterdir():
+            if not entry.is_file():
+                continue
+            match = pattern.match(entry.name)
+            if not match:
+                continue
+            try:
+                value = int(match.group(1))
+            except ValueError:
+                continue
+            max_index = max(max_index, value)
+    return f"{sku}-{max_index + 1:03d}{ext}"
+
+
 def next_sku_for_category(category: str) -> str:
     prefix = CATEGORY_PREFIXES.get(category)
     if not prefix:
@@ -240,7 +261,8 @@ class Handler(BaseHTTPRequestHandler):
             if not category or not folder_name:
                 self._send_json(400, {'error': 'Missing category/folder'})
                 return
-            media_dir = product_dir(category, folder_name, status) / 'Media'
+            base_path = product_dir(category, folder_name, status)
+            media_dir = base_path / 'Media'
             if not media_dir.exists():
                 self._send_json(200, {'files': []})
                 return
@@ -248,10 +270,13 @@ class Handler(BaseHTTPRequestHandler):
             for entry in sorted(media_dir.iterdir()):
                 if not entry.is_file():
                     continue
+                if entry.name == '_Deleted':
+                    continue
                 rel = entry.relative_to(CATEGORIES_DIR)
                 url = f"/files/{quote(rel.as_posix())}"
                 files.append({
                     'name': entry.name,
+                    'rel_path': entry.relative_to(base_path).as_posix(),
                     'url': url,
                 })
             self._send_json(200, {'files': files})
@@ -273,13 +298,15 @@ class Handler(BaseHTTPRequestHandler):
             for entry in sorted(product_path.rglob('*')):
                 if not entry.is_file():
                     continue
+                if '_Deleted' in entry.parts:
+                    continue
                 if entry.suffix.lower() != '.3mf':
                     continue
                 rel = entry.relative_to(CATEGORIES_DIR)
                 url = f"/files/{quote(rel.as_posix())}"
                 files.append({
                     'name': entry.name,
-                    'rel_path': rel.as_posix(),
+                    'rel_path': entry.relative_to(product_path).as_posix(),
                     'abs_path': str(entry.resolve()),
                     'url': url,
                 })
@@ -323,6 +350,7 @@ class Handler(BaseHTTPRequestHandler):
             category = safe_path_component(form.getvalue('category', ''))
             folder_name = safe_path_component(form.getvalue('folder_name', ''))
             status = form.getvalue('status', '')
+            sku = (form.getvalue('sku', '') or '').strip()
             if not category or not folder_name:
                 self._send_json(400, {'error': 'Missing category/folder_name'})
                 return
@@ -343,7 +371,8 @@ class Handler(BaseHTTPRequestHandler):
                 else:
                     dest_dir = product_dir(category, folder_name, status) / 'MISC'
                 dest_dir.mkdir(parents=True, exist_ok=True)
-                dest_path = dest_dir / name
+                new_name = next_sku_filename(dest_dir, sku, ext) or name
+                dest_path = dest_dir / new_name
                 with dest_path.open('wb') as f:
                     shutil.copyfileobj(item.file, f)
                 saved.append(str(dest_path))
@@ -355,6 +384,32 @@ class Handler(BaseHTTPRequestHandler):
             data = json.loads(body.decode('utf-8') or '{}')
         except json.JSONDecodeError:
             self._send_json(400, {'error': 'Invalid JSON'})
+            return
+
+        if parsed.path == '/api/delete_file':
+            category = safe_path_component(data.get('category', ''))
+            folder_name = safe_path_component(data.get('folder_name', ''))
+            status = data.get('status', '')
+            rel_path = data.get('rel_path', '')
+            if not category or not folder_name or not rel_path:
+                self._send_json(400, {'error': 'Missing category/folder_name/rel_path'})
+                return
+            base_path = product_dir(category, folder_name, status).resolve()
+            target_path = (base_path / rel_path).resolve()
+            if not str(target_path).startswith(str(base_path)):
+                self._send_json(403, {'error': 'Invalid path'})
+                return
+            if not target_path.exists() or not target_path.is_file():
+                self._send_json(404, {'error': 'File not found'})
+                return
+            deleted_dir = target_path.parent / '_Deleted'
+            deleted_dir.mkdir(parents=True, exist_ok=True)
+            dest_path = deleted_dir / target_path.name
+            if dest_path.exists():
+                self._send_json(409, {'error': 'Destination already exists'})
+                return
+            target_path.rename(dest_path)
+            self._send_json(200, {'ok': True})
             return
 
         if parsed.path == '/api/save':

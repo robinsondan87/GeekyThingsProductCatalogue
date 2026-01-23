@@ -49,14 +49,6 @@
         gap: 12px;
       }
 
-      .nav-brand img {
-        width: 48px;
-        height: 48px;
-        border-radius: 50%;
-        box-shadow: 0 2px 10px rgba(0,0,0,0.10);
-        object-fit: cover;
-      }
-
       .nav-links {
         display: flex;
         gap: 12px;
@@ -76,14 +68,6 @@
       .nav-links a:hover {
         background: #e0f2f1;
         color: #00796b;
-      }
-
-      .logo {
-        width: 110px;
-        height: 110px;
-        border-radius: 50%;
-        box-shadow: 0 2px 12px rgba(0,0,0,0.10);
-        object-fit: cover;
       }
 
       h1 {
@@ -237,12 +221,27 @@
         gap: 10px;
       }
 
+      .media-item {
+        display: grid;
+        gap: 8px;
+      }
+
       .media-grid img,
       .media-grid video {
         width: 100%;
         border-radius: 12px;
         border: 1px solid #e2e6e8;
         background: #fff;
+      }
+
+      .media-actions {
+        display: flex;
+        justify-content: flex-end;
+      }
+
+      .media-actions .btn {
+        padding: 6px 10px;
+        font-size: 12px;
       }
 
       .file-list {
@@ -314,7 +313,6 @@
     <header>
       <nav class="nav">
         <div class="nav-brand">
-          <img src="logo.png" alt="Geeky Things logo" />
           <strong>GeekyThings</strong>
         </div>
         <div class="nav-links">
@@ -322,10 +320,9 @@
           <a href="/add.html">Add Product</a>
         </div>
       </nav>
-      <img src="logo.png" alt="Geeky Things logo" class="logo" />
       <h1 id="productTitle">Product Details</h1>
       <div class="version">
-        Version <a href="https://github.com/robinsondan87/GeekyThingsProductCatalogue/blob/main/CHANGELOG.md" target="_blank" rel="noopener noreferrer">v1.3.0</a>
+        Version <a href="https://github.com/robinsondan87/GeekyThingsProductCatalogue/blob/main/CHANGELOG.md" target="_blank" rel="noopener noreferrer">v1.3.1</a>
       </div>
     </header>
 
@@ -553,17 +550,32 @@
         mediaGrid.innerHTML = "";
         files.forEach((file) => {
           const ext = file.name.split(".").pop().toLowerCase();
+          const wrapper = document.createElement("div");
+          wrapper.className = "media-item";
           if (["mp4", "mov", "webm", "m4v"].includes(ext)) {
             const video = document.createElement("video");
             video.src = file.url;
             video.controls = true;
-            mediaGrid.appendChild(video);
+            wrapper.appendChild(video);
           } else {
             const img = document.createElement("img");
             img.src = file.url;
             img.alt = file.name;
-            mediaGrid.appendChild(img);
+            wrapper.appendChild(img);
           }
+          const actions = document.createElement("div");
+          actions.className = "media-actions";
+          const removeBtn = document.createElement("button");
+          removeBtn.className = "btn ghost";
+          removeBtn.type = "button";
+          removeBtn.textContent = "Remove";
+          removeBtn.addEventListener("click", () => {
+            if (!confirm("Move this file to _Deleted?")) return;
+            deleteFile(file.rel_path).catch(console.error);
+          });
+          actions.appendChild(removeBtn);
+          wrapper.appendChild(actions);
+          mediaGrid.appendChild(wrapper);
         });
       };
 
@@ -619,10 +631,19 @@
             if (!text) return;
             navigator.clipboard?.writeText(text).catch(() => {});
           });
+          const removeBtn = document.createElement("button");
+          removeBtn.className = "btn ghost";
+          removeBtn.type = "button";
+          removeBtn.textContent = "Remove";
+          removeBtn.addEventListener("click", () => {
+            if (!confirm("Move this file to _Deleted?")) return;
+            deleteFile(file.rel_path).catch(console.error);
+          });
 
           actions.appendChild(openLink);
           actions.appendChild(downloadLink);
           actions.appendChild(copyBtn);
+          actions.appendChild(removeBtn);
 
           row.appendChild(info);
           row.appendChild(actions);
@@ -738,12 +759,34 @@
       openFolderBtn.addEventListener("click", openFolder);
       saveReadmeBtn.addEventListener("click", () => saveReadme().catch(console.error));
 
+      const deleteFile = async (relPath) => {
+        const response = await fetch("/api/delete_file", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            category: categoryParam,
+            folder_name: productFolderInput.value,
+            status: statusParam,
+            rel_path: relPath,
+          }),
+        });
+        const payload = await response.json();
+        if (!response.ok) {
+          statusEl.textContent = payload.error || "Delete failed.";
+          return;
+        }
+        statusEl.textContent = "File moved to _Deleted.";
+        await loadMedia();
+        await load3mf();
+      };
+
       const uploadFiles = async (files) => {
         if (!files || !files.length) return;
         const formData = new FormData();
         formData.append("category", categoryParam);
         formData.append("folder_name", productFolderInput.value);
         formData.append("status", statusParam);
+        formData.append("sku", skuInput.value.trim());
         Array.from(files).forEach((file) => formData.append("files", file));
         statusEl.textContent = "Uploading files...";
         try {

@@ -2,6 +2,10 @@
 
 ## Unreleased
 
+## V1.3.1
+- Minor: Added delete-to-_Deleted for media/3MF files and SKU-based upload naming.
+- Minor: Removed logo image from the product detail page.
+
 ## V1.3.0
 - Minor: Added drag-and-drop upload for media and 3MF files.
 

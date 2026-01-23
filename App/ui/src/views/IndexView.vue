@@ -6,7 +6,8 @@ const version = APP_VERSION
 const changeLogUrl = CHANGELOG_URL
 
 onMounted(() => {
-const searchInput = document.getElementById("searchInput");
+      const searchInput = document.getElementById("searchInput");
+      const ukcaFilter = document.getElementById("ukcaFilter");
       const viewTabs = document.getElementById("viewTabs");
       const tableView = document.getElementById("tableView");
       const folderView = document.getElementById("folderView");
@@ -337,6 +338,18 @@ const searchInput = document.getElementById("searchInput");
         }
 
         return true;
+      };
+
+      const setUkcaFilter = (value) => {
+        const colIndex = headers.indexOf("UKCA");
+        if (colIndex === -1) return;
+        if (!value) {
+          columnFilters.delete(colIndex);
+        } else {
+          columnFilters.set(colIndex, value);
+        }
+        renderBody();
+        updateStatus();
       };
 
       const renderBody = () => {
@@ -779,6 +792,9 @@ const searchInput = document.getElementById("searchInput");
         renderBody();
         updateStatus();
       });
+      ukcaFilter.addEventListener("change", (event) => {
+        setUkcaFilter(event.target.value);
+      });
       autoLoadDefault();
 
       viewTabs.addEventListener("click", (event) => {
@@ -819,6 +835,12 @@ const searchInput = document.getElementById("searchInput");
       <div class="panel">
         <div class="controls">
           <input id="searchInput" type="search" placeholder="Search everything..." />
+          <select id="ukcaFilter" aria-label="Filter by UKCA status">
+            <option value="">UKCA: Any</option>
+            <option value="Yes">UKCA: Yes</option>
+            <option value="No">UKCA: No</option>
+            <option value="N/A">UKCA: N/A</option>
+          </select>
         </div>
         <div class="status" id="status">No file loaded.</div>
       </div>

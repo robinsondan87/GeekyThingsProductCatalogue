@@ -2,6 +2,9 @@
 
 ## Unreleased
 
+## V2.1.3
+- Minor: Added UKCA filter on the main product list.
+
 ## V2.1.2
 - Minor: Styled action buttons to match dark theme.
 

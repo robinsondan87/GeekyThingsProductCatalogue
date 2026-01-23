@@ -2,6 +2,9 @@
 
 ## Unreleased
 
+## V2.1.2
+- Minor: Styled action buttons to match dark theme.
+
 ## V2.1.1
 - Minor: Styled sortable table headers to match dark theme.
 

@@ -842,7 +842,89 @@ const params = new URLSearchParams(window.location.search);
             <head><title>UKCA Pack</title><style>${styles}</style></head>
             <body>
               <h1>UKCA Pack - ${productFolderInput.value}</h1>
-              ${sections.map((section) => `<h2>${section.title}</h2><pre>${section.content}</pre>`).join("")}
+              ${sections.map((section) => '<h2>' + section.title + '</h2><pre>' + section.content + '</pre>').join('')}
+            </body>
+          </html>
+        `;
+        printWindow.document.open();
+        printWindow.document.write(html);
+        printWindow.document.close();
+        printWindow.focus();
+        printWindow.print();
+      };
+
+      const deleteFile = async (relPath) => {
+        const response = await fetch("/api/delete_file", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            category: categoryParam,
+            folder_name: productFolderInput.value,
+            status: statusParam,
+            rel_path: relPath,
+          }),
+        });
+        const payload = await response.json();
+        if (!response.ok) {
+          statusEl.textContent = payload.error || "Delete failed.";
+          return;
+        }
+        statusEl.textContent = "File moved to _Deleted.";
+        await loadMedia();
+        await load3mf();
+      };
+
+      const uploadFiles = async (files) => {
+        if (!files || !files.length) return;
+        const formData = new FormData();
+        formData.append("category", categoryParam);
+        formData.append("folder_name", productFolderInput.value);
+        formData.append("status", statusParam);
+        formData.append("sku", skuInput.value.trim());
+        Array.from(files).forEach((file) => formData.append("files", file));
+        statusEl.textContent = "Uploading files...";
+        try {
+          const response = await fetch("/api/upload", {
+            method: "POST",
+            body: formData,
+          });
+          const payload = await response.json();
+          if (!response.ok) {
+            statusEl.textContent = payload.error || "Upload failed.";
+            return;
+          }
+          statusEl.textContent = `Uploaded ${payload.saved?.length || 0} file(s).`;
+          await loadMedia();
+          await load3mf();
+        } catch (error) {
+          console.error(error);
+          statusEl.textContent = "Upload failed.";
+        }
+      };
+
+      uploadZone.addEventListener("click", () => uploadInput.click());
+      uploadInput.addEventListener("change", (event) => {
+        uploadFiles(event.target.files).catch(console.error);
+        uploadInput.value = "";
+      });
+      uploadZone.addEventListener("dragover", (event) => {
+        event.preventDefault();
+        uploadZone.classList.add("dragover");
+      });
+      uploadZone.addEventListener("dragleave", () => {
+        uploadZone.classList.remove("dragover");
+      });
+      uploadZone.addEventListener("drop", (event) => {
+        event.preventDefault();
+        uploadZone.classList.remove("dragover");
+        uploadFiles(event.dataTransfer.files).catch(console.error);
+      });
+
+      if (!categoryParam || !folderParam) {
+        statusEl.textContent = "Missing product details in URL.";
+      } else {
+        loadData().catch(console.error);
+      }
 })
 </script>
 

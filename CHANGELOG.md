@@ -2,6 +2,9 @@
 
 ## Unreleased
 
+## V2.0.1
+- Fix: Corrected ProductView template string for Vue build.
+
 ## V2.0.0
 - Major: Migrated frontend to a Vue SPA (Vite + Vue Router) and added dev proxy.
 

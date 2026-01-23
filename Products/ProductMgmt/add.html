@@ -222,14 +222,11 @@
     <img src="logo.png" alt="Geeky Things logo" class="logo" />
     <h1>Add New Product</h1>
     <div class="version">
-      Version <a href="https://github.com/robinsondan87/GeekyThingsProductCatalogue/blob/main/CHANGELOG.md" target="_blank" rel="noopener noreferrer">v1.2.5</a>
+      Version <a href="https://github.com/robinsondan87/GeekyThingsProductCatalogue/blob/main/CHANGELOG.md" target="_blank" rel="noopener noreferrer">v1.2.6</a>
     </div>
-    <p>Create a folder, assign SKU, and add the product to the CSV.</p>
+    <p>Create a draft product by entering a category and name.</p>
 
     <div class="card">
-      <div class="actions">
-      <button id="openDialogBtn" class="btn" type="button">Create Draft Product</button>
-      </div>
       <div class="status" id="status"></div>
     </div>
 
@@ -257,7 +254,7 @@
       const categorySelect = document.getElementById("category");
       const descriptionInput = document.getElementById("description");
       const createDialog = document.getElementById("createDialog");
-      const openDialogBtn = document.getElementById("openDialogBtn");
+      const openDialogBtn = null;
       const cancelBtn = document.getElementById("cancelBtn");
       const createBtn = document.getElementById("createBtn");
       const statusEl = document.getElementById("status");
@@ -337,14 +334,14 @@
         }
       };
 
-      openDialogBtn.addEventListener("click", () => {
+      const openDialog = () => {
         if (createDialog.showModal) {
           createDialog.showModal();
         } else {
           createDialog.setAttribute("open", "true");
         }
         descriptionInput.focus();
-      });
+      };
       cancelBtn.addEventListener("click", () => {
         if (createDialog.close) {
           createDialog.close();
@@ -353,7 +350,9 @@
         }
       });
       createBtn.addEventListener("click", () => createProduct().catch(console.error));
-      loadCategories().catch(console.error);
+      loadCategories()
+        .then(() => openDialog())
+        .catch(console.error);
     </script>
   </body>
 </html>

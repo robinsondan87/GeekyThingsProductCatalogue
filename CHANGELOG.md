@@ -2,6 +2,9 @@
 
 ## Unreleased
 
+## V1.2.6
+- Minor: Open the New Draft Product dialog immediately on Add Product.
+
 ## V1.2.5
 - Fix: Renaming the product folder in the main table now renames the folder on disk.
 

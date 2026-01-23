@@ -2,6 +2,9 @@
 
 ## Unreleased
 
+## V2.1.1
+- Minor: Styled sortable table headers to match dark theme.
+
 ## V2.1.0
 - Minor: Redesigned UI with dark maker dashboard styling.
 

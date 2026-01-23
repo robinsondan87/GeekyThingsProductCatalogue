@@ -32,6 +32,8 @@ Then open `http://localhost:8555` in a browser.
 
 ## API endpoints
 - `GET /api/rows`: Returns CSV headers and rows.
+- `GET /api/archived`: Lists archived folders under `_Archive`.
+- `GET /api/drafts`: Lists draft folders under `_Draft`.
 - `GET /api/media?category=...&folder=...`: Lists files in the product `Media` folder.
 - `GET /api/3mf?category=...&folder=...`: Lists `.3mf` files under the product folder.
 - `POST /api/save`: Save full table to CSV.

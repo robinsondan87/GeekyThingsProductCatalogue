@@ -12,9 +12,11 @@ ROOT_DIR = BASE_DIR.parent
 CSV_PATH = ROOT_DIR / 'categories_index.csv'
 CATEGORIES_DIR = ROOT_DIR / 'Categories'
 ARCHIVE_DIR = CATEGORIES_DIR / '_Archive'
+DRAFT_DIR = CATEGORIES_DIR / '_Draft'
 CATEGORY_PREFIXES = {
     'Automotive': 'GT-AUT',
     'Bookish & Stationery': 'GT-BKS',
+    'B2B': 'GT-B2B',
     'Gaming & Tech': 'GT-TCH',
     'Health & Medical': 'GT-HLT',
     'Home & Living': 'GT-HOM',
@@ -65,6 +67,24 @@ def safe_path_component(name: str) -> str:
 def sanitize_folder_name(name: str) -> str:
     cleaned = name.replace('/', '-').replace('\\', '-').strip()
     return ' '.join(cleaned.split())
+
+
+def list_folder_entries(base_dir: Path):
+    entries = []
+    if not base_dir.exists():
+        return entries
+    for category_dir in sorted(base_dir.iterdir()):
+        if not category_dir.is_dir():
+            continue
+        category = category_dir.name
+        for product_dir in sorted(category_dir.iterdir()):
+            if not product_dir.is_dir():
+                continue
+            entries.append({
+                'category': category,
+                'product_folder': product_dir.name,
+            })
+    return entries
 
 
 def readme_template(title: str, sku: str) -> str:
@@ -157,6 +177,16 @@ class Handler(BaseHTTPRequestHandler):
         if parsed.path == '/api/rows':
             headers, rows = read_csv()
             self._send_json(200, {'headers': headers, 'rows': rows})
+            return
+
+        if parsed.path == '/api/archived':
+            items = list_folder_entries(ARCHIVE_DIR)
+            self._send_json(200, {'items': items})
+            return
+
+        if parsed.path == '/api/drafts':
+            items = list_folder_entries(DRAFT_DIR)
+            self._send_json(200, {'items': items})
             return
 
         if parsed.path == '/api/media':

@@ -76,6 +76,62 @@
         text-decoration: underline;
       }
 
+      .tabs {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 8px;
+        margin-top: 12px;
+      }
+
+      .tab-btn {
+        border: 1px solid #cfe6dc;
+        background: #ffffff;
+        color: #0a663b;
+        padding: 6px 12px;
+        border-radius: 999px;
+        font-weight: 600;
+        cursor: pointer;
+      }
+
+      .tab-btn.active {
+        background: #0a663b;
+        color: #ffffff;
+        border-color: #0a663b;
+      }
+
+      .folder-view {
+        background: var(--surface);
+        border-radius: 18px;
+        box-shadow: 0 2px 16px rgba(0,0,0,0.10), 0 1.5px 4px rgba(0,0,0,0.08);
+        padding: 20px;
+      }
+
+      .folder-view h2 {
+        margin: 0 0 12px;
+        color: #0a663b;
+      }
+
+      .folder-list {
+        display: grid;
+        gap: 10px;
+      }
+
+      .folder-item {
+        border: 1px solid #e2e6e8;
+        border-radius: 12px;
+        padding: 10px 12px;
+        background: #ffffff;
+      }
+
+      .folder-item .folder-title {
+        font-weight: 600;
+      }
+
+      .folder-item .folder-meta {
+        font-size: 12px;
+        color: var(--muted);
+      }
+
       .controls {
         display: grid;
         grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
@@ -394,8 +450,14 @@
         <h1 class="title">GeekyThings Product Manager</h1>
         <p class="subtitle">Manage products, tags, and listing status from one place.</p>
         <p class="version">
-          Version <a href="https://github.com/robinsondan87/GeekyThingsProductCatalogue/blob/main/CHANGELOG.md" target="_blank" rel="noopener noreferrer">v1.1.2</a>
+          Version <a href="https://github.com/robinsondan87/GeekyThingsProductCatalogue/blob/main/CHANGELOG.md" target="_blank" rel="noopener noreferrer">v1.1.3</a>
         </p>
+        <div class="tabs" id="viewTabs">
+          <button class="tab-btn active" type="button" data-view="live">Live</button>
+          <button class="tab-btn" type="button" data-view="draft">Draft</button>
+          <button class="tab-btn" type="button" data-view="b2b">B2B</button>
+          <button class="tab-btn" type="button" data-view="archived">Archived</button>
+        </div>
       </div>
       <div class="panel">
         <div class="controls">
@@ -414,13 +476,18 @@
     </header>
 
     <main>
-      <div class="table-wrap">
+      <div class="table-wrap" id="tableView">
         <table id="dataTable">
           <colgroup id="colgroup"></colgroup>
           <thead></thead>
           <tbody></tbody>
         </table>
         <div class="empty" id="emptyState">Open a CSV to start editing.</div>
+      </div>
+      <div class="folder-view" id="folderView" hidden>
+        <h2 id="folderTitle">Archived Products</h2>
+        <div class="folder-list" id="folderList"></div>
+        <div class="empty" id="folderEmpty">No items found.</div>
       </div>
       <div class="footnote">Tip: launch with the provided server to enable rename actions and auto-load.</div>
     </main>
@@ -448,6 +515,12 @@
       const addRowBtn = document.getElementById("addRowBtn");
       const searchInput = document.getElementById("searchInput");
       const categoryFilter = document.getElementById("categoryFilter");
+      const viewTabs = document.getElementById("viewTabs");
+      const tableView = document.getElementById("tableView");
+      const folderView = document.getElementById("folderView");
+      const folderTitle = document.getElementById("folderTitle");
+      const folderList = document.getElementById("folderList");
+      const folderEmpty = document.getElementById("folderEmpty");
       const readmeDialog = document.getElementById("readmeDialog");
       const readmeContent = document.getElementById("readmeContent");
       const readmeTitle = document.getElementById("readmeTitle");
@@ -473,6 +546,7 @@
       const baseCategoriesPath = "/Users/dan/GeekyThings/Products/Categories";
       let originalNames = [];
       const hiddenColumns = new Set(["Facebook URL", "TikTok URL", "Ebay URL", "Etsy URL"]);
+      let viewMode = "live";
 
       const getListingsForRow = (row) => {
         const facebookUrl = row[headers.indexOf("Facebook URL")] || "";
@@ -551,9 +625,14 @@
       const updateStatus = () => {
         const total = rows.length;
         const visible = tbody.querySelectorAll("tr").length;
-        statusEl.textContent = headers.length
-          ? `Loaded ${total} rows. Showing ${visible}.`
-          : "No file loaded.";
+        if (!headers.length) {
+          statusEl.textContent = "No file loaded.";
+          return;
+        }
+        let suffix = "";
+        if (viewMode === "b2b") suffix = " (B2B)";
+        if (viewMode === "live") suffix = " (Live)";
+        statusEl.textContent = `Loaded ${total} rows. Showing ${visible}.${suffix}`;
       };
 
       const renderColgroup = () => {
@@ -707,6 +786,14 @@
         const skuIndex = headers.indexOf("sku");
         const tagsIndex = headers.indexOf("tags");
         const listingsIndex = headers.indexOf("Listings");
+
+        if (viewMode === "b2b" && categoryIndex > -1 && row[categoryIndex] !== "B2B") {
+          return false;
+        }
+
+        if (viewMode === "live" && categoryIndex > -1 && row[categoryIndex] === "B2B") {
+          return false;
+        }
 
         if (category && categoryIndex > -1 && row[categoryIndex] !== category) {
           return false;
@@ -1005,6 +1092,65 @@
         updateStatus();
       };
 
+      const renderFolderList = (items) => {
+        folderList.innerHTML = "";
+        if (!items.length) {
+          folderEmpty.style.display = "block";
+          return;
+        }
+        folderEmpty.style.display = "none";
+        items.forEach((item) => {
+          const row = document.createElement("div");
+          row.className = "folder-item";
+
+          const title = document.createElement("div");
+          title.className = "folder-title";
+          title.textContent = item.product_folder || "(untitled)";
+
+          const meta = document.createElement("div");
+          meta.className = "folder-meta";
+          meta.textContent = item.category || "Uncategorized";
+
+          row.appendChild(title);
+          row.appendChild(meta);
+          folderList.appendChild(row);
+        });
+      };
+
+      const loadFolderList = async (mode) => {
+        const endpoint = mode === "archived" ? "/api/archived" : "/api/drafts";
+        try {
+          const response = await fetch(endpoint, { cache: "no-store" });
+          if (!response.ok) return;
+          const payload = await response.json();
+          renderFolderList(payload.items || []);
+        } catch (error) {
+          console.error(error);
+        }
+      };
+
+      const setViewMode = (mode) => {
+        viewMode = mode;
+        viewTabs.querySelectorAll(".tab-btn").forEach((button) => {
+          const isActive = button.dataset.view === mode;
+          button.classList.toggle("active", isActive);
+        });
+        if (mode === "archived" || mode === "draft") {
+          tableView.hidden = true;
+          folderView.hidden = false;
+          folderTitle.textContent = mode === "archived" ? "Archived Products" : "Draft Products";
+          statusEl.textContent = mode === "archived"
+            ? "Viewing archived products."
+            : "Viewing draft products.";
+          loadFolderList(mode).catch(console.error);
+          return;
+        }
+        folderView.hidden = true;
+        tableView.hidden = false;
+        renderBody();
+        updateStatus();
+      };
+
       const autoLoadDefault = async () => {
         try {
           const response = await fetch("/api/rows", { cache: "no-store" });
@@ -1023,6 +1169,7 @@
           downloadBtn.disabled = headers.length === 0;
           addRowBtn.disabled = headers.length === 0;
           statusEl.textContent = "Auto-loaded categories_index.csv via server.";
+          setViewMode(viewMode);
         } catch (error) {
           // Ignore if running on file:// or blocked by CORS.
         }
@@ -1151,6 +1298,14 @@
       });
 
       autoLoadDefault();
+
+      viewTabs.addEventListener("click", (event) => {
+        const button = event.target.closest(".tab-btn");
+        if (!button) return;
+        const mode = button.dataset.view;
+        if (!mode) return;
+        setViewMode(mode);
+      });
     </script>
   </body>
 </html>

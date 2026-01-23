@@ -2,6 +2,10 @@
 
 ## Unreleased
 
+## V1.1.3
+- Minor: Added Live/Draft/B2B/Archived tabs plus archived/draft list views.
+- Minor: Added B2B category option for product creation and SKU prefix.
+
 ## V1.1.2
 - Minor: Link version label to the repo changelog.
 

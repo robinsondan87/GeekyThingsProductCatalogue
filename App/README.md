@@ -84,6 +84,7 @@ Set environment variables before running the server or Docker:
 
 - `AUTH_USERNAME`
 - `AUTH_PASSWORD`
+- `AUTH_TOTP_SECRET` (optional, base32 secret for 6-digit authenticator codes)
 - `SESSION_TTL_SECONDS` (optional, defaults to 12 hours)
 - `AUTH_COOKIE_SECURE` (set to `1` when running behind HTTPS)
 

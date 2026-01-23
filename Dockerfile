@@ -11,6 +11,7 @@ FROM python:3.13-slim
 WORKDIR /app
 
 COPY App/ /app/App/
+RUN pip install --no-cache-dir -r /app/App/requirements.txt
 COPY --from=ui-build /ui/dist /app/App/ui/dist
 
 ENV CSV_EDITOR_PORT=8555

@@ -2,6 +2,9 @@
 
 ## Unreleased
 
+## V2.3.0
+- Major: Added optional TOTP (authenticator app) support.
+
 ## V2.2.0
 - Major: Added login and session-based auth for UI and API.
 

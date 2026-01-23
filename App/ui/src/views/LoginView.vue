@@ -10,6 +10,7 @@ onMounted(() => {
   const statusEl = document.getElementById('loginStatus')
   const usernameInput = document.getElementById('username')
   const passwordInput = document.getElementById('password')
+  const totpInput = document.getElementById('totp')
 
   form.addEventListener('submit', async (event) => {
     event.preventDefault()
@@ -21,6 +22,7 @@ onMounted(() => {
         body: JSON.stringify({
           username: usernameInput.value.trim(),
           password: passwordInput.value,
+          totp: totpInput.value.trim(),
         }),
       })
       if (!response.ok) {
@@ -58,6 +60,10 @@ onMounted(() => {
         <div>
           <label for="password">Password</label>
           <input id="password" type="password" autocomplete="current-password" required />
+        </div>
+        <div>
+          <label for="totp">Authenticator code</label>
+          <input id="totp" type="text" inputmode="numeric" autocomplete="one-time-code" placeholder="123456" />
         </div>
         <button class="btn" type="submit">Sign in</button>
       </form>

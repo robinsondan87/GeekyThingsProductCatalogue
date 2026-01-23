@@ -8,6 +8,7 @@ import shutil
 import time
 import secrets
 import hmac
+import pyotp
 from email import message_from_bytes
 from email.policy import default
 from http.server import BaseHTTPRequestHandler, HTTPServer
@@ -20,6 +21,7 @@ PRODUCTS_DIR = Path(os.environ.get('PRODUCTS_DIR', ROOT_DIR / 'Products')).resol
 UI_DIST_DIR = BASE_DIR / 'ui' / 'dist'
 AUTH_USERNAME = os.environ.get('AUTH_USERNAME')
 AUTH_PASSWORD = os.environ.get('AUTH_PASSWORD')
+AUTH_TOTP_SECRET = os.environ.get('AUTH_TOTP_SECRET')
 AUTH_COOKIE_SECURE = os.environ.get('AUTH_COOKIE_SECURE', '').lower() in ('1', 'true', 'yes')
 SESSION_TTL_SECONDS = int(os.environ.get('SESSION_TTL_SECONDS', '43200'))
 SESSIONS = {}
@@ -260,6 +262,10 @@ def check_credentials(username: str, password: str) -> bool:
     return hmac.compare_digest(username, AUTH_USERNAME) and hmac.compare_digest(password, AUTH_PASSWORD)
 
 
+def auth_enabled() -> bool:
+    return bool(AUTH_USERNAME and AUTH_PASSWORD)
+
+
 def parse_multipart_form_data(content_type: str, body: bytes) -> tuple[dict, list]:
     if not content_type or 'multipart/form-data' not in content_type:
         return {}, []
@@ -343,20 +349,24 @@ class Handler(BaseHTTPRequestHandler):
     def do_GET(self):
         parsed = urlparse(self.path)
         session = get_session(self.headers)
-        if parsed.path.startswith('/api') and parsed.path not in ('/api/session', '/api/login'):
-            if not session:
-                self._send_unauthorized()
-                return
-        if parsed.path.startswith('/files/'):
-            if not session:
-                self._send_unauthorized()
-                return
+        if auth_enabled():
+            if parsed.path.startswith('/api') and parsed.path not in ('/api/session', '/api/login'):
+                if not session:
+                    self._send_unauthorized()
+                    return
+            if parsed.path.startswith('/files/'):
+                if not session:
+                    self._send_unauthorized()
+                    return
         if parsed.path == '/api/rows':
             headers, rows = read_csv()
             self._send_json(200, {'headers': headers, 'rows': rows})
             return
 
         if parsed.path == '/api/session':
+            if not auth_enabled():
+                self._send_json(200, {'authenticated': True, 'user': 'local', 'auth_disabled': True})
+                return
             if session:
                 self._send_json(200, {'authenticated': True, 'user': session['user']})
                 return
@@ -499,10 +509,11 @@ class Handler(BaseHTTPRequestHandler):
     def do_POST(self):
         parsed = urlparse(self.path)
         session = get_session(self.headers)
-        if parsed.path != '/api/login' and parsed.path.startswith('/api'):
-            if not session:
-                self._send_unauthorized()
-                return
+        if auth_enabled():
+            if parsed.path != '/api/login' and parsed.path.startswith('/api'):
+                if not session:
+                    self._send_unauthorized()
+                    return
         if parsed.path == '/api/upload':
             content_length = int(self.headers.get('Content-Length', '0'))
             body = self.rfile.read(content_length) if content_length > 0 else b''
@@ -547,11 +558,20 @@ class Handler(BaseHTTPRequestHandler):
             except json.JSONDecodeError:
                 self._send_json(400, {'error': 'Invalid JSON'})
                 return
+            if not auth_enabled():
+                self._send_json(200, {'ok': True})
+                return
             username = (data.get('username') or '').strip()
             password = (data.get('password') or '').strip()
             if not check_credentials(username, password):
                 self._send_unauthorized()
                 return
+            if AUTH_TOTP_SECRET:
+                totp_code = (data.get('totp') or '').strip()
+                totp = pyotp.TOTP(AUTH_TOTP_SECRET)
+                if not totp.verify(totp_code, valid_window=1):
+                    self._send_unauthorized()
+                    return
             session_id = create_session(username)
             self.send_response(200)
             cookie = f"session_id={session_id}; Path=/; Max-Age={SESSION_TTL_SECONDS}; HttpOnly; SameSite=Lax"

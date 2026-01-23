@@ -43,3 +43,4 @@ docker compose up --build
 Then open `http://localhost:8555`.
 
 Auth env vars are required when auth is enabled: `AUTH_USERNAME`, `AUTH_PASSWORD`.
+Optional TOTP: `AUTH_TOTP_SECRET` (base32 secret).

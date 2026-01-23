@@ -11,7 +11,7 @@ BASE_DIR = Path(__file__).resolve().parent
 ROOT_DIR = BASE_DIR.parent
 CSV_PATH = ROOT_DIR / 'categories_index.csv'
 CATEGORIES_DIR = ROOT_DIR / 'Categories'
-DELETED_DIR = CATEGORIES_DIR / '_Deleted'
+ARCHIVE_DIR = CATEGORIES_DIR / '_Archive'
 CATEGORY_PREFIXES = {
     'Automotive': 'GT-AUT',
     'Bookish & Stationery': 'GT-BKS',
@@ -371,7 +371,7 @@ class Handler(BaseHTTPRequestHandler):
             if not src_path.exists():
                 self._send_json(404, {'error': 'Source folder not found'})
                 return
-            dest_dir = DELETED_DIR / category
+            dest_dir = ARCHIVE_DIR / category
             dest_dir.mkdir(parents=True, exist_ok=True)
             dest_path = dest_dir / folder_name
             if dest_path.exists():

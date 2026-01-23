@@ -856,12 +856,12 @@
           actions.className = "row-actions";
           const deleteBtn = document.createElement("button");
           deleteBtn.type = "button";
-          deleteBtn.textContent = "Delete";
+          deleteBtn.textContent = "Archive";
           deleteBtn.addEventListener("click", async () => {
             const category = rows[rowIndex][categoryIndex] || "";
             const productFolder = rows[rowIndex][productFolderIndex] || "";
             if (!category || !productFolder) return;
-            if (!confirm("Move this folder to _Deleted?")) return;
+            if (!confirm("Move this folder to _Archive?")) return;
             try {
               const response = await fetch("/api/archive", {
                 method: "POST",

@@ -1,0 +1,10 @@
+services:
+  productmgmt:
+    build: .
+    ports:
+      - "8555:8555"
+    environment:
+      CSV_EDITOR_PORT: "8555"
+      PRODUCTS_DIR: /data/Products
+    volumes:
+      - ./Products:/data/Products

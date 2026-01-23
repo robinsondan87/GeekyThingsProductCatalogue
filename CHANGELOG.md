@@ -2,6 +2,9 @@
 
 ## Unreleased
 
+## V1.5.0
+- Major: Moved ProductMgmt to repo root and added Docker containerization.
+
 ## V1.4.7
 - Minor: Excluded UKCA README from printed pack output.
 

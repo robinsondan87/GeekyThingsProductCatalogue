@@ -481,6 +481,35 @@ class Handler(BaseHTTPRequestHandler):
             self._send_json(200, {'ok': True})
             return
 
+        if parsed.path == '/api/move_to_draft':
+            category = safe_path_component(data.get('category', ''))
+            folder_name = safe_path_component(data.get('folder_name', ''))
+            if not category or not folder_name:
+                self._send_json(400, {'error': 'Missing category/folder_name'})
+                return
+            src_path = CATEGORIES_DIR / category / folder_name
+            if not src_path.exists():
+                self._send_json(404, {'error': 'Source folder not found'})
+                return
+            dest_dir = DRAFT_DIR / category
+            dest_dir.mkdir(parents=True, exist_ok=True)
+            dest_path = dest_dir / folder_name
+            if dest_path.exists():
+                self._send_json(409, {'error': 'Destination already exists'})
+                return
+            src_path.rename(dest_path)
+            headers, rows = read_csv()
+            updated = False
+            for existing in rows:
+                if existing.get('category') == category and existing.get('product_folder') == folder_name:
+                    existing['Status'] = 'Draft'
+                    updated = True
+                    break
+            if updated:
+                write_csv(headers, rows)
+            self._send_json(200, {'ok': True})
+            return
+
         self.send_error(404)
 
 

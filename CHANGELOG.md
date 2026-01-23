@@ -2,6 +2,9 @@
 
 ## Unreleased
 
+## V1.1.9
+- Minor: Added "To Draft" action for live items.
+
 ## V1.1.8
 - Minor: Moved View action to the Actions column and removed Open/Rename.
 

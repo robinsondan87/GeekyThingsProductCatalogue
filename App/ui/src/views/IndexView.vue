@@ -21,6 +21,7 @@ onMounted(() => {
       const closeReadmeBtn = document.getElementById("closeReadmeBtn");
       const saveReadmeBtn = document.getElementById("saveReadmeBtn");
       const statusEl = document.getElementById("status");
+      const logoutBtn = document.getElementById("logoutBtn");
       const table = document.getElementById("dataTable");
       const colgroup = document.getElementById("colgroup");
       const thead = table.querySelector("thead");
@@ -808,6 +809,11 @@ onMounted(() => {
         }
       });
 
+      logoutBtn.addEventListener("click", async () => {
+        await fetch("/api/logout", { method: "POST" });
+        window.location.href = "/login";
+      });
+
       viewTabs.addEventListener("click", (event) => {
         const button = event.target.closest(".tab-btn");
         if (!button) return;
@@ -835,6 +841,7 @@ onMounted(() => {
         <div class="nav-links">
           <RouterLink to="/">Products</RouterLink>
           <RouterLink to="/add">Add Product</RouterLink>
+          <button class="ghost" id="logoutBtn" type="button">Logout</button>
         </div>
       </nav>
       <div class="tabs" id="viewTabs">

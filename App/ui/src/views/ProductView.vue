@@ -34,6 +34,7 @@ const params = new URLSearchParams(window.location.search);
       const threeMfList = document.getElementById("threeMfList");
       const uploadZone = document.getElementById("uploadZone");
       const uploadInput = document.getElementById("uploadInput");
+      const logoutBtn = document.getElementById("logoutBtn");
       const ukcaDialog = document.getElementById("ukcaDialog");
       const ukcaForm = document.getElementById("ukcaForm");
       const ukcaProductName = document.getElementById("ukcaProductName");
@@ -793,6 +794,11 @@ const params = new URLSearchParams(window.location.search);
         printUkcaPack().catch(console.error);
       });
 
+      logoutBtn.addEventListener("click", async () => {
+        await fetch("/api/logout", { method: "POST" });
+        window.location.href = "/login";
+      });
+
       const printUkcaPack = async () => {
         const response = await fetch(
           `/api/ukca_pack?category=${encodeURIComponent(categoryParam)}&folder=${encodeURIComponent(productFolderInput.value)}&status=${encodeURIComponent(statusParam)}`
@@ -937,6 +943,7 @@ const params = new URLSearchParams(window.location.search);
         <div class="nav-links">
           <RouterLink to="/">Products</RouterLink>
           <RouterLink to="/add">Add Product</RouterLink>
+          <button class="ghost" id="logoutBtn" type="button">Logout</button>
         </div>
       </nav>
       <h1 id="productTitle">Product Details</h1>

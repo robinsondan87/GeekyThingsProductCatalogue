@@ -5,6 +5,9 @@ import mimetypes
 import os
 import re
 import shutil
+import time
+import secrets
+import hmac
 from email import message_from_bytes
 from email.policy import default
 from http.server import BaseHTTPRequestHandler, HTTPServer
@@ -15,6 +18,11 @@ BASE_DIR = Path(__file__).resolve().parent
 ROOT_DIR = BASE_DIR.parent
 PRODUCTS_DIR = Path(os.environ.get('PRODUCTS_DIR', ROOT_DIR / 'Products')).resolve()
 UI_DIST_DIR = BASE_DIR / 'ui' / 'dist'
+AUTH_USERNAME = os.environ.get('AUTH_USERNAME')
+AUTH_PASSWORD = os.environ.get('AUTH_PASSWORD')
+AUTH_COOKIE_SECURE = os.environ.get('AUTH_COOKIE_SECURE', '').lower() in ('1', 'true', 'yes')
+SESSION_TTL_SECONDS = int(os.environ.get('SESSION_TTL_SECONDS', '43200'))
+SESSIONS = {}
 CSV_PATH = PRODUCTS_DIR / 'categories_index.csv'
 CATEGORIES_DIR = PRODUCTS_DIR / 'Categories'
 ARCHIVE_DIR = CATEGORIES_DIR / '_Archive'
@@ -205,6 +213,53 @@ def apply_replacements(template: str, replacements: dict) -> str:
     return content
 
 
+def parse_cookies(header_value: str) -> dict:
+    cookies = {}
+    if not header_value:
+        return cookies
+    for part in header_value.split(';'):
+        if '=' not in part:
+            continue
+        name, value = part.split('=', 1)
+        cookies[name.strip()] = value.strip()
+    return cookies
+
+
+def create_session(username: str) -> str:
+    session_id = secrets.token_hex(24)
+    expires_at = int(time.time()) + SESSION_TTL_SECONDS
+    SESSIONS[session_id] = {'user': username, 'expires_at': expires_at}
+    return session_id
+
+
+def cleanup_sessions():
+    now = int(time.time())
+    expired = [key for key, value in SESSIONS.items() if value['expires_at'] <= now]
+    for key in expired:
+        SESSIONS.pop(key, None)
+
+
+def get_session(headers) -> dict | None:
+    cleanup_sessions()
+    cookies = parse_cookies(headers.get('Cookie'))
+    session_id = cookies.get('session_id')
+    if not session_id:
+        return None
+    session = SESSIONS.get(session_id)
+    if not session:
+        return None
+    if session['expires_at'] <= int(time.time()):
+        SESSIONS.pop(session_id, None)
+        return None
+    return session
+
+
+def check_credentials(username: str, password: str) -> bool:
+    if not AUTH_USERNAME or not AUTH_PASSWORD:
+        return False
+    return hmac.compare_digest(username, AUTH_USERNAME) and hmac.compare_digest(password, AUTH_PASSWORD)
+
+
 def parse_multipart_form_data(content_type: str, body: bytes) -> tuple[dict, list]:
     if not content_type or 'multipart/form-data' not in content_type:
         return {}, []
@@ -250,6 +305,9 @@ class Handler(BaseHTTPRequestHandler):
         self.end_headers()
         self.wfile.write(data)
 
+    def _send_unauthorized(self):
+        self._send_json(401, {'error': 'Unauthorized'})
+
     def _send_file(self, path: Path):
         if not path.exists() or not path.is_file():
             self.send_error(404)
@@ -284,9 +342,25 @@ class Handler(BaseHTTPRequestHandler):
 
     def do_GET(self):
         parsed = urlparse(self.path)
+        session = get_session(self.headers)
+        if parsed.path.startswith('/api') and parsed.path not in ('/api/session', '/api/login'):
+            if not session:
+                self._send_unauthorized()
+                return
+        if parsed.path.startswith('/files/'):
+            if not session:
+                self._send_unauthorized()
+                return
         if parsed.path == '/api/rows':
             headers, rows = read_csv()
             self._send_json(200, {'headers': headers, 'rows': rows})
+            return
+
+        if parsed.path == '/api/session':
+            if session:
+                self._send_json(200, {'authenticated': True, 'user': session['user']})
+                return
+            self._send_json(200, {'authenticated': False})
             return
 
         if parsed.path == '/api/archived':
@@ -424,6 +498,11 @@ class Handler(BaseHTTPRequestHandler):
 
     def do_POST(self):
         parsed = urlparse(self.path)
+        session = get_session(self.headers)
+        if parsed.path != '/api/login' and parsed.path.startswith('/api'):
+            if not session:
+                self._send_unauthorized()
+                return
         if parsed.path == '/api/upload':
             content_length = int(self.headers.get('Content-Length', '0'))
             body = self.rfile.read(content_length) if content_length > 0 else b''
@@ -458,6 +537,43 @@ class Handler(BaseHTTPRequestHandler):
                     f.write(item.get('content') or b'')
                 saved.append(str(dest_path))
             self._send_json(200, {'ok': True, 'saved': saved})
+            return
+
+        if parsed.path == '/api/login':
+            length = int(self.headers.get('Content-Length', '0'))
+            body = self.rfile.read(length) if length > 0 else b''
+            try:
+                data = json.loads(body.decode('utf-8') or '{}')
+            except json.JSONDecodeError:
+                self._send_json(400, {'error': 'Invalid JSON'})
+                return
+            username = (data.get('username') or '').strip()
+            password = (data.get('password') or '').strip()
+            if not check_credentials(username, password):
+                self._send_unauthorized()
+                return
+            session_id = create_session(username)
+            self.send_response(200)
+            cookie = f"session_id={session_id}; Path=/; Max-Age={SESSION_TTL_SECONDS}; HttpOnly; SameSite=Lax"
+            if AUTH_COOKIE_SECURE:
+                cookie += "; Secure"
+            self.send_header('Set-Cookie', cookie)
+            self.send_header('Content-Type', 'application/json; charset=utf-8')
+            self.end_headers()
+            self.wfile.write(json.dumps({'ok': True}).encode('utf-8'))
+            return
+
+        if parsed.path == '/api/logout':
+            if session:
+                cookies = parse_cookies(self.headers.get('Cookie'))
+                session_id = cookies.get('session_id')
+                if session_id:
+                    SESSIONS.pop(session_id, None)
+            self.send_response(200)
+            self.send_header('Set-Cookie', 'session_id=; Path=/; Max-Age=0; HttpOnly; SameSite=Lax')
+            self.send_header('Content-Type', 'application/json; charset=utf-8')
+            self.end_headers()
+            self.wfile.write(json.dumps({'ok': True}).encode('utf-8'))
             return
         length = int(self.headers.get('Content-Length', '0'))
         body = self.rfile.read(length) if length > 0 else b''

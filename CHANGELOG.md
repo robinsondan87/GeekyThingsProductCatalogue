@@ -2,6 +2,9 @@
 
 ## Unreleased
 
+## V2.2.0
+- Major: Added login and session-based auth for UI and API.
+
 ## V2.1.5
 - Minor: Auto-refresh main product list periodically and on tab focus.
 

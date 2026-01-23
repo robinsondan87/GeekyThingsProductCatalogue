@@ -13,6 +13,7 @@ const categorySelect = document.getElementById("category");
       const cancelBtn = document.getElementById("cancelBtn");
       const createBtn = document.getElementById("createBtn");
       const statusEl = document.getElementById("status");
+      const logoutBtn = document.getElementById("logoutBtn");
 
       const loadCategories = async () => {
         const response = await fetch("/api/rows", { cache: "no-store" });
@@ -108,6 +109,11 @@ const categorySelect = document.getElementById("category");
       loadCategories()
         .then(() => openDialog())
         .catch(console.error);
+
+      logoutBtn.addEventListener("click", async () => {
+        await fetch("/api/logout", { method: "POST" });
+        window.location.href = "/login";
+      });
 })
 </script>
 
@@ -121,6 +127,7 @@ const categorySelect = document.getElementById("category");
         <div class="nav-links">
           <RouterLink to="/">Products</RouterLink>
           <RouterLink to="/add">Add Product</RouterLink>
+          <button class="ghost" id="logoutBtn" type="button">Logout</button>
         </div>
       </nav>
     </header>

@@ -78,3 +78,13 @@ docker compose up --build
 ```
 
 Then open `http://localhost:8555` in a browser.
+
+## Auth setup
+Set environment variables before running the server or Docker:
+
+- `AUTH_USERNAME`
+- `AUTH_PASSWORD`
+- `SESSION_TTL_SECONDS` (optional, defaults to 12 hours)
+- `AUTH_COOKIE_SECURE` (set to `1` when running behind HTTPS)
+
+For Docker, copy `.env.example` to `.env` and set the values.

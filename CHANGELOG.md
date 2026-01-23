@@ -2,6 +2,9 @@
 
 ## Unreleased
 
+## V2.1.0
+- Minor: Redesigned UI with dark maker dashboard styling.
+
 ## V2.0.1
 - Fix: Corrected ProductView template string for Vue build.
 

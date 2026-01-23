@@ -364,6 +364,25 @@
         margin-top: 10px;
       }
 
+      .ukca-en71-form {
+        display: grid;
+        gap: 10px;
+        margin-top: 10px;
+      }
+
+      .ukca-en71-grid {
+        display: grid;
+        gap: 10px;
+        grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+      }
+
+      .ukca-pack-actions {
+        display: flex;
+        justify-content: flex-end;
+        gap: 10px;
+        margin-bottom: 12px;
+      }
+
       .upload-zone {
         border: 2px dashed #cfe6dc;
         border-radius: 14px;
@@ -442,7 +461,7 @@
       </nav>
       <h1 id="productTitle">Product Details</h1>
       <div class="version">
-        Version <a href="https://github.com/robinsondan87/GeekyThingsProductCatalogue/blob/main/CHANGELOG.md" target="_blank" rel="noopener noreferrer">v1.4.4</a>
+        Version <a href="https://github.com/robinsondan87/GeekyThingsProductCatalogue/blob/main/CHANGELOG.md" target="_blank" rel="noopener noreferrer">v1.4.5</a>
       </div>
     </header>
 
@@ -528,6 +547,9 @@
         <details class="ukca-pack" id="ukcaPackDetails">
           <summary>UKCA Pack</summary>
           <div class="ukca-pack-body">
+            <div class="ukca-pack-actions">
+              <button class="btn ghost" id="printUkcaBtn" type="button">Print UKCA Pack</button>
+            </div>
             <div class="file-list" id="ukcaPackList"></div>
           </div>
         </details>
@@ -635,6 +657,7 @@
       const ukcaPackSection = document.getElementById("ukcaPackSection");
       const ukcaPackDetails = document.getElementById("ukcaPackDetails");
       const ukcaPackList = document.getElementById("ukcaPackList");
+      const printUkcaBtn = document.getElementById("printUkcaBtn");
 
       const listingOptions = ["Facebook", "TikTok", "Ebay", "Etsy"];
       const baseCategoriesPath = "/Users/dan/GeekyThings/Products/Categories";
@@ -655,6 +678,83 @@
         en71: "EN71-1 Compliance Pack",
       };
 
+      const defaultEn71Data = () => ({
+        productName: productFolderInput.value || "",
+        sku: skuInput.value || "",
+        material: "PLA / PETG",
+        intendedAge: "3+",
+        tester: "Dan Robinson",
+        testDate: "",
+        dropResult: "PASS",
+        tensionResult: "PASS",
+        torsionResult: "PASS",
+        smallParts: "No",
+        warningLabel: "Yes",
+        finalResult: "PASS",
+        visualNotes: "",
+        dropNotes: "",
+        tensionNotes: "",
+        torsionNotes: "",
+        smallPartsNotes: "",
+        conclusionNotes: "",
+      });
+
+      const generateEn71Markdown = (data) => {
+        return `# EN71-1 Compliance Pack - ${data.productName} (SKU: ${data.sku})\n\n` +
+          `Material: ${data.material}\n` +
+          `Intended Age: ${data.intendedAge}\n` +
+          `Date Tested: ${data.testDate || "______________________________"}\n` +
+          `Tester: ${data.tester}\n\n` +
+          `---\n\n` +
+          `## 1) EN71-1 Self-Test Checklist (3+ Toys)\n\n` +
+          `### A. Visual & Construction Checks\n` +
+          `Result: ${data.visualNotes ? "SEE NOTES" : "PASS"}\n\n` +
+          `Notes: ${data.visualNotes || "No sharp edges, burrs, or defects observed."}\n\n` +
+          `### B. Drop / Impact Test\n` +
+          `Method: Drop from 1.0 m onto hard surface - 3 times\n\n` +
+          `Result: ${data.dropResult}\n\n` +
+          `Notes: ${data.dropNotes || "No hazardous breakage observed."}\n\n` +
+          `### C. Tension / Pull Test\n` +
+          `Result: ${data.tensionResult}\n\n` +
+          `Notes: ${data.tensionNotes || "No hazardous detachment observed."}\n\n` +
+          `### D. Torsion / Twist Test\n` +
+          `Result: ${data.torsionResult}\n\n` +
+          `Notes: ${data.torsionNotes || "No hazardous fracture observed."}\n\n` +
+          `### E. Small Parts (Post-Breakage)\n` +
+          `Small parts created: ${data.smallParts}\n\n` +
+          `Warning label applied: ${data.warningLabel}\n\n` +
+          `Notes: ${data.smallPartsNotes || "Not suitable for under 36 months. Small parts."}\n\n` +
+          `### F. Overall Mechanical Safety Conclusion\n` +
+          `Final Result: ${data.finalResult}\n\n` +
+          `Notes: ${data.conclusionNotes || "Product either withstood testing or fractured in a non-hazardous manner."}\n\n` +
+          `Signature: ${data.tester}\n` +
+          `Date: ${data.testDate || "______________________________"}\n\n` +
+          `---\n\n` +
+          `## 2) Packaging Warning Labels & Age Grading (UKCA / EN71-1)\n\n` +
+          `**Mandatory Age Warning (Plain):**\n` +
+          `Not suitable for children under 36 months. Small parts.\n\n` +
+          `**Recommended Notes:**\n` +
+          `- Sensory fidget toy.\n` +
+          `- Not a teething toy.\n` +
+          `- Adult supervision recommended.\n` +
+          `- Inspect regularly and discard if damaged.\n\n` +
+          `**Manufacturer / Responsible Person:**\n` +
+          `GeekyThingsUK\n` +
+          `United Kingdom\n` +
+          `www.geekythings.co.uk\n\n` +
+          `---\n\n` +
+          `## 3) EN71-1 Compliance Section for UKCA Technical File\n\n` +
+          `Product Name: ${data.productName}\n` +
+          `SKU(s): ${data.sku}\n` +
+          `Material: ${data.material}\n` +
+          `Intended Age Group: ${data.intendedAge}\n\n` +
+          `The product is a 3D-printed articulated sensory fidget toy manufactured from PLA or PETG. ` +
+          `It contains no electronics, no magnets, and no metal components.\n\n` +
+          `Applicable Standard: EN 71-1:2014 + A1:2018\n\n` +
+          `Based on the testing above, the product is considered to comply with the mechanical and physical ` +
+          `safety requirements of EN 71-1 for toys intended for children aged 3 years and over.\n`;
+      };
+
       const updateUkcaDisplay = () => {
         const statusValue = currentUkcaStatus || "No";
         ukcaStatus.textContent = statusValue;
@@ -673,6 +773,18 @@
           ukcaAddBtn.textContent = "Add UKCA Pack";
           ukcaPackSection.hidden = true;
         }
+      };
+
+      const openUkcaSection = async (openEn71 = false) => {
+        ukcaPackDetails.open = true;
+        await loadUkcaPackList();
+        if (openEn71) {
+          const en71Detail = ukcaPackList.querySelector('details[data-file-key="en71"]');
+          if (en71Detail) {
+            en71Detail.open = true;
+          }
+        }
+        ukcaPackSection.scrollIntoView({ behavior: "smooth", block: "start" });
       };
 
       const loadData = async () => {
@@ -912,6 +1024,152 @@
             saveUkcaFile(file.key, textarea.value).catch(console.error);
           });
           actions.appendChild(saveBtn);
+
+          if (file.key === "en71") {
+            const form = document.createElement("div");
+            form.className = "ukca-en71-form";
+            const grid = document.createElement("div");
+            grid.className = "ukca-en71-grid";
+            const data = defaultEn71Data();
+            const productInput = document.createElement("input");
+            productInput.value = data.productName;
+            const skuField = document.createElement("input");
+            skuField.value = data.sku;
+            const materialField = document.createElement("input");
+            materialField.value = data.material;
+            const ageField = document.createElement("input");
+            ageField.value = data.intendedAge;
+            const testerField = document.createElement("input");
+            testerField.value = data.tester;
+            const dateField = document.createElement("input");
+            dateField.type = "date";
+            const dropResult = document.createElement("select");
+            ["PASS", "FAIL"].forEach((value) => {
+              const option = document.createElement("option");
+              option.value = value;
+              option.textContent = value;
+              dropResult.appendChild(option);
+            });
+            const tensionResult = document.createElement("select");
+            ["PASS", "FAIL"].forEach((value) => {
+              const option = document.createElement("option");
+              option.value = value;
+              option.textContent = value;
+              tensionResult.appendChild(option);
+            });
+            const torsionResult = document.createElement("select");
+            ["PASS", "FAIL"].forEach((value) => {
+              const option = document.createElement("option");
+              option.value = value;
+              option.textContent = value;
+              torsionResult.appendChild(option);
+            });
+            const smallParts = document.createElement("select");
+            ["No", "Yes"].forEach((value) => {
+              const option = document.createElement("option");
+              option.value = value;
+              option.textContent = value;
+              smallParts.appendChild(option);
+            });
+            const warningLabel = document.createElement("select");
+            ["Yes", "No"].forEach((value) => {
+              const option = document.createElement("option");
+              option.value = value;
+              option.textContent = value;
+              warningLabel.appendChild(option);
+            });
+            const finalResult = document.createElement("select");
+            ["PASS", "FAIL"].forEach((value) => {
+              const option = document.createElement("option");
+              option.value = value;
+              option.textContent = value;
+              finalResult.appendChild(option);
+            });
+
+            const field = (label, input) => {
+              const wrapper = document.createElement("div");
+              const title = document.createElement("label");
+              title.textContent = label;
+              wrapper.appendChild(title);
+              wrapper.appendChild(input);
+              return wrapper;
+            };
+
+            grid.appendChild(field("Product name", productInput));
+            grid.appendChild(field("SKU", skuField));
+            grid.appendChild(field("Material", materialField));
+            grid.appendChild(field("Intended age", ageField));
+            grid.appendChild(field("Tester", testerField));
+            grid.appendChild(field("Test date", dateField));
+            grid.appendChild(field("Drop test", dropResult));
+            grid.appendChild(field("Tension test", tensionResult));
+            grid.appendChild(field("Torsion test", torsionResult));
+            grid.appendChild(field("Small parts created", smallParts));
+            grid.appendChild(field("Warning label applied", warningLabel));
+            grid.appendChild(field("Final result", finalResult));
+            form.appendChild(grid);
+
+            const notesLabel = (labelText) => {
+              const wrapper = document.createElement("div");
+              const label = document.createElement("label");
+              label.textContent = labelText;
+              const area = document.createElement("textarea");
+              area.rows = 2;
+              wrapper.appendChild(label);
+              wrapper.appendChild(area);
+              return { wrapper, area };
+            };
+
+            const visualNotes = notesLabel("Visual checks notes");
+            const dropNotes = notesLabel("Drop test notes");
+            const tensionNotes = notesLabel("Tension test notes");
+            const torsionNotes = notesLabel("Torsion test notes");
+            const smallPartsNotes = notesLabel("Small parts notes");
+            const conclusionNotes = notesLabel("Conclusion notes");
+            form.appendChild(visualNotes.wrapper);
+            form.appendChild(dropNotes.wrapper);
+            form.appendChild(tensionNotes.wrapper);
+            form.appendChild(torsionNotes.wrapper);
+            form.appendChild(smallPartsNotes.wrapper);
+            form.appendChild(conclusionNotes.wrapper);
+
+            const generateBtn = document.createElement("button");
+            generateBtn.className = "btn ghost";
+            generateBtn.type = "button";
+            generateBtn.textContent = "Generate EN71-1 Content";
+            generateBtn.addEventListener("click", () => {
+              const payload = {
+                productName: productInput.value.trim(),
+                sku: skuField.value.trim(),
+                material: materialField.value.trim(),
+                intendedAge: ageField.value.trim(),
+                tester: testerField.value.trim(),
+                testDate: dateField.value,
+                dropResult: dropResult.value,
+                tensionResult: tensionResult.value,
+                torsionResult: torsionResult.value,
+                smallParts: smallParts.value,
+                warningLabel: warningLabel.value,
+                finalResult: finalResult.value,
+                visualNotes: visualNotes.area.value.trim(),
+                dropNotes: dropNotes.area.value.trim(),
+                tensionNotes: tensionNotes.area.value.trim(),
+                torsionNotes: torsionNotes.area.value.trim(),
+                smallPartsNotes: smallPartsNotes.area.value.trim(),
+                conclusionNotes: conclusionNotes.area.value.trim(),
+              };
+              textarea.value = generateEn71Markdown(payload);
+            });
+            form.appendChild(generateBtn);
+            details.appendChild(summary);
+            details.appendChild(form);
+            details.appendChild(textarea);
+            details.appendChild(actions);
+          } else {
+            details.appendChild(summary);
+            details.appendChild(textarea);
+            details.appendChild(actions);
+          }
           details.appendChild(summary);
           details.appendChild(textarea);
           details.appendChild(actions);
@@ -1092,7 +1350,7 @@
           rows[rowIndex].UKCA = "Yes";
         }
         updateUkcaDisplay();
-        await loadUkcaPackList();
+        await openUkcaSection(true);
         ukcaDialog.close();
       };
 
@@ -1123,8 +1381,7 @@
       saveReadmeBtn.addEventListener("click", () => saveReadme().catch(console.error));
       ukcaAddBtn.addEventListener("click", () => {
         if (currentUkcaStatus === "Yes") {
-          ukcaPackDetails.open = true;
-          ukcaPackSection.scrollIntoView({ behavior: "smooth", block: "start" });
+          openUkcaSection().catch(console.error);
           return;
         }
         openUkcaDialog();
@@ -1135,6 +1392,67 @@
           loadUkcaPackList().catch(console.error);
         }
       });
+      printUkcaBtn.addEventListener("click", () => {
+        printUkcaPack().catch(console.error);
+      });
+
+      const printUkcaPack = async () => {
+        const response = await fetch(
+          `/api/ukca_pack?category=${encodeURIComponent(categoryParam)}&folder=${encodeURIComponent(productFolderInput.value)}&status=${encodeURIComponent(statusParam)}`
+        );
+        if (!response.ok) return;
+        const payload = await response.json();
+        const files = (payload.files || []).filter((file) => file.exists);
+        if (!files.length) {
+          statusEl.textContent = "No UKCA files to print.";
+          return;
+        }
+        const sections = [];
+        for (const file of files) {
+          const fileResponse = await fetch("/api/ukca_pack", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+              category: categoryParam,
+              folder_name: productFolderInput.value,
+              status: statusParam,
+              action: "read",
+              file: file.key,
+            }),
+          });
+          const filePayload = await fileResponse.json();
+          if (!fileResponse.ok) continue;
+          sections.push({
+            title: ukcaFileLabels[file.key] || file.key,
+            content: filePayload.content || "",
+          });
+        }
+        const printWindow = window.open("", "_blank");
+        if (!printWindow) {
+          alert("Popup blocked. Allow popups to print.");
+          return;
+        }
+        const styles = `
+          body { font-family: Arial, sans-serif; padding: 24px; color: #0f172a; }
+          h1 { font-size: 20px; margin-bottom: 6px; }
+          h2 { margin-top: 24px; font-size: 16px; }
+          pre { white-space: pre-wrap; font-family: ui-monospace, SFMono-Regular, Menlo, monospace; font-size: 12px; background: #f8fafc; padding: 12px; border-radius: 8px; }
+        `;
+        const html = `
+          <html>
+            <head><title>UKCA Pack</title><style>${styles}</style></head>
+            <body>
+              <h1>UKCA Pack - ${productFolderInput.value}</h1>
+              ${sections.map((section) => `<h2>${section.title}</h2><pre>${section.content}</pre>`).join("")}
+            </body>
+          </html>
+        `;
+        printWindow.document.open();
+        printWindow.document.write(html);
+        printWindow.document.close();
+        printWindow.focus();
+        printWindow.print();
+      };
 
       const deleteFile = async (relPath) => {
         const response = await fetch("/api/delete_file", {

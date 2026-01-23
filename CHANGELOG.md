@@ -2,6 +2,9 @@
 
 ## Unreleased
 
+## V1.4.5
+- Minor: Added inline EN71-1 form helper and UKCA pack printing.
+
 ## V1.4.4
 - Minor: UKCA pack files can be expanded and edited inline on the product page.
 

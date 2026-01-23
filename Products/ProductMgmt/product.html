@@ -344,6 +344,26 @@
         font-size: 13px;
       }
 
+      .ukca-pack-file {
+        margin-top: 10px;
+        border: 1px solid #e2e6e8;
+        border-radius: 10px;
+        padding: 8px 12px;
+        background: #ffffff;
+      }
+
+      .ukca-pack-file summary {
+        font-weight: 600;
+        color: #0a663b;
+        cursor: pointer;
+      }
+
+      .ukca-pack-file textarea {
+        width: 100%;
+        min-height: 180px;
+        margin-top: 10px;
+      }
+
       .upload-zone {
         border: 2px dashed #cfe6dc;
         border-radius: 14px;
@@ -422,7 +442,7 @@
       </nav>
       <h1 id="productTitle">Product Details</h1>
       <div class="version">
-        Version <a href="https://github.com/robinsondan87/GeekyThingsProductCatalogue/blob/main/CHANGELOG.md" target="_blank" rel="noopener noreferrer">v1.4.3</a>
+        Version <a href="https://github.com/robinsondan87/GeekyThingsProductCatalogue/blob/main/CHANGELOG.md" target="_blank" rel="noopener noreferrer">v1.4.4</a>
       </div>
     </header>
 
@@ -572,27 +592,6 @@
       </form>
     </dialog>
 
-    <dialog id="ukcaEditDialog">
-      <form id="ukcaEditForm">
-        <div class="dialog-header">
-          <strong>View/Edit UKCA Pack</strong>
-        </div>
-        <div class="dialog-body">
-          <div>
-            <label for="ukcaEditFile">UKCA file</label>
-            <select id="ukcaEditFile"></select>
-          </div>
-          <div>
-            <label for="ukcaEditContent">Content</label>
-            <textarea id="ukcaEditContent" rows="10"></textarea>
-          </div>
-        </div>
-        <div class="dialog-actions">
-          <button class="btn ghost" type="button" onclick="document.getElementById('ukcaEditDialog').close()">Close</button>
-          <button class="btn" type="submit">Save UKCA File</button>
-        </div>
-      </form>
-    </dialog>
     <script>
       const params = new URLSearchParams(window.location.search);
       const categoryParam = params.get("category") || "";
@@ -636,10 +635,6 @@
       const ukcaPackSection = document.getElementById("ukcaPackSection");
       const ukcaPackDetails = document.getElementById("ukcaPackDetails");
       const ukcaPackList = document.getElementById("ukcaPackList");
-      const ukcaEditDialog = document.getElementById("ukcaEditDialog");
-      const ukcaEditForm = document.getElementById("ukcaEditForm");
-      const ukcaEditFile = document.getElementById("ukcaEditFile");
-      const ukcaEditContent = document.getElementById("ukcaEditContent");
 
       const listingOptions = ["Facebook", "TikTok", "Ebay", "Etsy"];
       const baseCategoriesPath = "/Users/dan/GeekyThings/Products/Categories";
@@ -899,37 +894,40 @@
           return;
         }
         ukcaPackFiles.forEach((file) => {
-          const row = document.createElement("div");
-          row.className = "file-item";
-          const info = document.createElement("div");
-          const name = document.createElement("div");
-          name.className = "file-name";
-          name.textContent = ukcaFileLabels[file.key] || file.key;
-          info.appendChild(name);
+          const details = document.createElement("details");
+          details.className = "ukca-pack-file";
+          details.dataset.fileKey = file.key;
+          const summary = document.createElement("summary");
+          summary.textContent = ukcaFileLabels[file.key] || file.key;
+          const textarea = document.createElement("textarea");
+          textarea.placeholder = "Loading...";
           const actions = document.createElement("div");
-          actions.className = "file-actions";
-          const editBtn = document.createElement("button");
-          editBtn.className = "btn ghost";
-          editBtn.type = "button";
-          editBtn.textContent = "Edit";
-          editBtn.addEventListener("click", () => {
-            openUkcaEditDialog(file.key);
+          actions.className = "actions";
+          actions.style.marginTop = "10px";
+          const saveBtn = document.createElement("button");
+          saveBtn.className = "btn secondary";
+          saveBtn.type = "button";
+          saveBtn.textContent = "Save UKCA File";
+          saveBtn.addEventListener("click", () => {
+            saveUkcaFile(file.key, textarea.value).catch(console.error);
           });
-          actions.appendChild(editBtn);
-          row.appendChild(info);
-          row.appendChild(actions);
-          ukcaPackList.appendChild(row);
-        });
-        ukcaEditFile.innerHTML = "";
-        ukcaPackFiles.forEach((file) => {
-          const option = document.createElement("option");
-          option.value = file.key;
-          option.textContent = ukcaFileLabels[file.key] || file.key;
-          ukcaEditFile.appendChild(option);
+          actions.appendChild(saveBtn);
+          details.appendChild(summary);
+          details.appendChild(textarea);
+          details.appendChild(actions);
+          details.addEventListener("toggle", () => {
+            if (!details.open || details.dataset.loaded === "true") return;
+            loadUkcaFile(file.key, textarea)
+              .then(() => {
+                details.dataset.loaded = "true";
+              })
+              .catch(console.error);
+          });
+          ukcaPackList.appendChild(details);
         });
       };
 
-      const loadUkcaFile = async (fileKey) => {
+      const loadUkcaFile = async (fileKey, textarea) => {
         const response = await fetch("/api/ukca_pack", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
@@ -946,19 +944,7 @@
           statusEl.textContent = payload.error || "Failed to load UKCA file.";
           return;
         }
-        ukcaEditContent.value = payload.content || "";
-      };
-
-      const openUkcaEditDialog = async (fileKey) => {
-        await loadUkcaPackList();
-        if (!ukcaPackFiles.length) {
-          statusEl.textContent = "No UKCA files found to edit.";
-          return;
-        }
-        const desired = fileKey || ukcaPackFiles[0].key;
-        ukcaEditFile.value = desired;
-        await loadUkcaFile(desired);
-        ukcaEditDialog.showModal();
+        textarea.value = payload.content || "";
       };
 
       const saveDetails = async () => {
@@ -1110,9 +1096,7 @@
         ukcaDialog.close();
       };
 
-      const saveUkcaFile = async (event) => {
-        event.preventDefault();
-        const fileKey = ukcaEditFile.value;
+      const saveUkcaFile = async (fileKey, content) => {
         const response = await fetch("/api/ukca_pack", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
@@ -1122,7 +1106,7 @@
             status: statusParam,
             action: "write",
             file: fileKey,
-            content: ukcaEditContent.value,
+            content,
           }),
         });
         const payload = await response.json();
@@ -1131,7 +1115,6 @@
           return;
         }
         statusEl.textContent = "UKCA file saved.";
-        await loadUkcaPackList();
       };
 
       saveDetailsBtn.addEventListener("click", () => saveDetails().catch(console.error));
@@ -1140,16 +1123,13 @@
       saveReadmeBtn.addEventListener("click", () => saveReadme().catch(console.error));
       ukcaAddBtn.addEventListener("click", () => {
         if (currentUkcaStatus === "Yes") {
-          openUkcaEditDialog();
-        } else {
-          openUkcaDialog();
+          ukcaPackDetails.open = true;
+          ukcaPackSection.scrollIntoView({ behavior: "smooth", block: "start" });
+          return;
         }
+        openUkcaDialog();
       });
       ukcaForm.addEventListener("submit", submitUkcaPack);
-      ukcaEditForm.addEventListener("submit", saveUkcaFile);
-      ukcaEditFile.addEventListener("change", (event) => {
-        loadUkcaFile(event.target.value).catch(console.error);
-      });
       ukcaPackDetails.addEventListener("toggle", () => {
         if (ukcaPackDetails.open) {
           loadUkcaPackList().catch(console.error);

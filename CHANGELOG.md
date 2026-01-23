@@ -2,6 +2,9 @@
 
 ## Unreleased
 
+## V1.4.4
+- Minor: UKCA pack files can be expanded and edited inline on the product page.
+
 ## V1.4.3
 - Minor: Synced product folder moves/renames and status updates.
 

@@ -305,7 +305,7 @@
       <img src="logo.png" alt="Geeky Things logo" class="logo" />
       <h1 id="productTitle">Product Details</h1>
       <div class="version">
-        Version <a href="https://github.com/robinsondan87/GeekyThingsProductCatalogue/blob/main/CHANGELOG.md" target="_blank" rel="noopener noreferrer">v1.2.8</a>
+        Version <a href="https://github.com/robinsondan87/GeekyThingsProductCatalogue/blob/main/CHANGELOG.md" target="_blank" rel="noopener noreferrer">v1.2.9</a>
       </div>
     </header>
 
@@ -567,11 +567,18 @@
           actions.className = "file-actions";
           const openLink = document.createElement("a");
           openLink.className = "btn ghost";
-          openLink.textContent = "Download";
+          openLink.textContent = "Open";
           const fileUrl = file.url ? `${window.location.origin}${file.url}` : "";
           openLink.href = fileUrl ? `bambustudioopen://${encodeURIComponent(fileUrl)}` : "#";
           openLink.target = "_blank";
           openLink.rel = "noopener noreferrer";
+
+          const downloadLink = document.createElement("a");
+          downloadLink.className = "btn ghost";
+          downloadLink.textContent = "Download";
+          downloadLink.href = file.url || "#";
+          downloadLink.target = "_blank";
+          downloadLink.rel = "noopener noreferrer";
 
           const copyBtn = document.createElement("button");
           copyBtn.className = "btn ghost";
@@ -584,6 +591,7 @@
           });
 
           actions.appendChild(openLink);
+          actions.appendChild(downloadLink);
           actions.appendChild(copyBtn);
 
           row.appendChild(info);

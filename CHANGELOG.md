@@ -2,6 +2,9 @@
 
 ## Unreleased
 
+## V1.2.9
+- Minor: Added separate Open (Bambu Studio) and Download actions for 3MFs.
+
 ## V1.2.8
 - Minor: Renamed 3MF action label to Download.
 

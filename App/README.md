@@ -1,4 +1,4 @@
-# ProductMgmt
+# App
 
 Local product management web app for GeekyThings. It provides a simple browser UI to manage products, edit README templates, and access media/print files.
 

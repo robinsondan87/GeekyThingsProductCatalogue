@@ -2,6 +2,9 @@
 
 ## Unreleased
 
+## V1.6.0
+- Major: Renamed ProductMgmt app folder to App.
+
 ## V1.5.1
 - Minor: Documented Docker and local run commands in workflow notes.
 

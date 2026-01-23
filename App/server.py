@@ -398,7 +398,7 @@ class Handler(BaseHTTPRequestHandler):
             self._send_file(BASE_DIR / 'index.html')
             return
 
-        # Serve static files from ProductMgmt folder
+        # Serve static files from App folder
         rel = parsed.path.lstrip('/')
         if rel:
             self._send_file(BASE_DIR / rel)

@@ -15,11 +15,11 @@ Quick checklist for changes:
 4. When ready, click **Approve** to move it live into the category folder.
 5. If needed, use **To Draft** on a live item to send it back to Draft.
 
-## ProductMgmt
+## App
 - Run locally:
 
 ```
-python3 ProductMgmt/server.py
+python3 App/server.py
 ```
 
 Then open `http://localhost:8555`.

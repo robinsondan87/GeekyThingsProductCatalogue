@@ -4,6 +4,7 @@ Local product management web app for GeekyThings. It provides a simple browser U
 
 ## What it does
 - Lists products from `categories_index.csv` and allows editing core fields.
+- Table edits auto-save to the master CSV.
 - Opens product folders, renames folders, and writes updates back to the CSV.
 - Reads/writes per-product `README.md` content.
 - Shows media from each product's `Media` folder.

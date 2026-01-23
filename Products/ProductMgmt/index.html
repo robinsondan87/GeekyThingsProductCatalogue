@@ -505,7 +505,7 @@
         <h1 class="title">GeekyThings Product Manager</h1>
         <p class="subtitle">Manage products, tags, and listing status from one place.</p>
         <p class="version">
-          Version <a href="https://github.com/robinsondan87/GeekyThingsProductCatalogue/blob/main/CHANGELOG.md" target="_blank" rel="noopener noreferrer">v1.1.5</a>
+          Version <a href="https://github.com/robinsondan87/GeekyThingsProductCatalogue/blob/main/CHANGELOG.md" target="_blank" rel="noopener noreferrer">v1.1.6</a>
         </p>
         <div class="tabs" id="viewTabs">
           <button class="tab-btn active" type="button" data-view="live">Live</button>
@@ -516,13 +516,7 @@
       </div>
       <div class="panel">
         <div class="controls">
-          <button id="saveBtn" class="secondary" disabled>Save to file</button>
-          <button id="downloadBtn" class="ghost" disabled>Download CSV</button>
-          <input id="searchInput" type="search" placeholder="Search folder/sku/tags" />
-          <select id="categoryFilter">
-            <option value="">All categories</option>
-          </select>
-          <a class="ghost-link" href="/add.html">Add New Product</a>
+          <input id="searchInput" type="search" placeholder="Search everything..." />
         </div>
         <div class="status" id="status">No file loaded.</div>
       </div>
@@ -535,7 +529,7 @@
           <thead></thead>
           <tbody></tbody>
         </table>
-        <div class="empty" id="emptyState">Open a CSV to start editing.</div>
+        <div class="empty" id="emptyState">Loading master CSV...</div>
       </div>
       <div class="folder-view" id="folderView" hidden>
         <h2 id="folderTitle">Archived Products</h2>
@@ -562,10 +556,7 @@
     </dialog>
 
     <script>
-      const saveBtn = document.getElementById("saveBtn");
-      const downloadBtn = document.getElementById("downloadBtn");
       const searchInput = document.getElementById("searchInput");
-      const categoryFilter = document.getElementById("categoryFilter");
       const viewTabs = document.getElementById("viewTabs");
       const tableView = document.getElementById("tableView");
       const folderView = document.getElementById("folderView");
@@ -586,6 +577,7 @@
       const emptyState = document.getElementById("emptyState");
 
       let fileHandle = null;
+      let autosaveTimer = null;
       let headers = [];
       let rows = [];
       const dropdownColumns = new Set(["UKCA"]);
@@ -691,6 +683,18 @@
         if (viewMode === "b2b") suffix = " (B2B)";
         if (viewMode === "live") suffix = " (Live)";
         statusEl.textContent = `Loaded ${total} rows. Showing ${visible}.${suffix}`;
+      };
+
+      const scheduleSave = () => {
+        if (!headers.length) return;
+        if (viewMode === "archived" || viewMode === "draft") return;
+        if (autosaveTimer) {
+          clearTimeout(autosaveTimer);
+        }
+        statusEl.textContent = "Changes pending...";
+        autosaveTimer = setTimeout(() => {
+          saveViaApi().catch(console.error);
+        }, 1200);
       };
 
       const renderColgroup = () => {
@@ -837,7 +841,6 @@
       };
 
       const applyFilter = (row) => {
-        const category = categoryFilter.value;
         const query = searchInput.value.trim().toLowerCase();
         const categoryIndex = headers.indexOf("category");
         const folderIndex = headers.indexOf("product_folder");
@@ -856,10 +859,6 @@
         }
 
         if (viewMode === "live" && categoryIndex > -1 && row[categoryIndex] === "B2B") {
-          return false;
-        }
-
-        if (category && categoryIndex > -1 && row[categoryIndex] !== category) {
           return false;
         }
 
@@ -941,6 +940,7 @@
               select.value = row[colIndex] || "No";
               select.addEventListener("change", (event) => {
                 rows[rowIndex][colIndex] = event.target.value;
+                scheduleSave();
               });
               td.appendChild(select);
             } else if (colIndex === productFolderIndex) {
@@ -950,6 +950,7 @@
               input.value = row[colIndex] ?? "";
               input.addEventListener("input", (event) => {
                 rows[rowIndex][colIndex] = event.target.value;
+                scheduleSave();
               });
               const openBtn = document.createElement("button");
               openBtn.type = "button";
@@ -1018,6 +1019,7 @@
               input.value = row[colIndex] ?? "";
               input.addEventListener("input", (event) => {
                 rows[rowIndex][colIndex] = event.target.value;
+                scheduleSave();
               });
               td.appendChild(input);
             }
@@ -1051,7 +1053,6 @@
               originalNames.splice(rowIndex, 1);
               renderBody();
               updateStatus();
-              refreshCategoryFilter();
             } catch (error) {
               console.error(error);
               alert("Archive failed.");
@@ -1065,30 +1066,6 @@
         emptyState.style.display = rows.length === 0 ? "block" : "none";
       };
 
-      const refreshCategoryFilter = () => {
-        const categoryIndex = headers.indexOf("category");
-        if (categoryIndex === -1) return;
-        const categories = new Set();
-        rows.forEach((row) => {
-          if (row[categoryIndex]) {
-            categories.add(row[categoryIndex]);
-          }
-        });
-        const current = categoryFilter.value;
-        categoryFilter.innerHTML = "";
-        const optionAll = document.createElement("option");
-        optionAll.value = "";
-        optionAll.textContent = "All categories";
-        categoryFilter.appendChild(optionAll);
-        [...categories].sort().forEach((category) => {
-          const option = document.createElement("option");
-          option.value = category;
-          option.textContent = category;
-          categoryFilter.appendChild(option);
-        });
-        categoryFilter.value = current;
-      };
-
       const loadCSVText = (text) => {
         const parsed = parseCSV(text);
         headers = parsed.shift() || [];
@@ -1096,35 +1073,9 @@
         originalNames = rows.map((row) => row[headers.indexOf("product_folder")] || "");
         renderHeader();
         renderBody();
-        refreshCategoryFilter();
         updateStatus();
         emptyState.style.display = headers.length ? "none" : "block";
-        saveBtn.disabled = !fileHandle;
-        downloadBtn.disabled = headers.length === 0;
-      };
-
-      const saveFile = async () => {
-        if (!fileHandle) {
-          await saveViaApi();
-          return;
-        }
-        const writable = await fileHandle.createWritable();
-        await writable.write(toCSV(headers, rows));
-        await writable.close();
-        statusEl.textContent = "Saved changes to file.";
-        setTimeout(updateStatus, 1500);
-      };
-
-      const downloadCSV = () => {
-        const blob = new Blob([toCSV(headers, rows)], { type: "text/csv" });
-        const url = URL.createObjectURL(blob);
-        const link = document.createElement("a");
-        link.href = url;
-        link.download = "categories_index.csv";
-        document.body.appendChild(link);
-        link.click();
-        link.remove();
-        URL.revokeObjectURL(url);
+        fileHandle = null;
       };
 
       const renderFolderList = (items) => {
@@ -1229,11 +1180,8 @@
           originalNames = rows.map((row) => row[headers.indexOf("product_folder")] || "");
           renderHeader();
           renderBody();
-          refreshCategoryFilter();
           updateStatus();
           emptyState.style.display = headers.length ? "none" : "block";
-          saveBtn.disabled = false;
-          downloadBtn.disabled = headers.length === 0;
           statusEl.textContent = "Auto-loaded categories_index.csv via server.";
           setViewMode(viewMode);
         } catch (error) {
@@ -1348,19 +1296,12 @@
         }
       };
 
-      saveBtn.addEventListener("click", () => saveFile().catch(console.error));
-      downloadBtn.addEventListener("click", downloadCSV);
       closeReadmeBtn.addEventListener("click", closeReadmeEditor);
       saveReadmeBtn.addEventListener("click", () => saveReadme().catch(console.error));
       searchInput.addEventListener("input", () => {
         renderBody();
         updateStatus();
       });
-      categoryFilter.addEventListener("change", () => {
-        renderBody();
-        updateStatus();
-      });
-
       autoLoadDefault();
 
       viewTabs.addEventListener("click", (event) => {

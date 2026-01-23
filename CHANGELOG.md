@@ -2,6 +2,9 @@
 
 ## Unreleased
 
+## V2.3.1
+- Fix: Passed TOTP secret into Docker container for 2FA enforcement.
+
 ## V2.3.0
 - Major: Added optional TOTP (authenticator app) support.
 

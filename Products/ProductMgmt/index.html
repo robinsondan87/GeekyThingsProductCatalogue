@@ -495,7 +495,7 @@
           <h1 class="title">GeekyThings Product Manager</h1>
           <p class="subtitle">Manage products, tags, and listing status from one place.</p>
           <p class="version">
-            Version <a href="https://github.com/robinsondan87/GeekyThingsProductCatalogue/blob/main/CHANGELOG.md" target="_blank" rel="noopener noreferrer">v1.1.7</a>
+          Version <a href="https://github.com/robinsondan87/GeekyThingsProductCatalogue/blob/main/CHANGELOG.md" target="_blank" rel="noopener noreferrer">v1.1.8</a>
           </p>
         </div>
         <div class="nav-links">
@@ -581,7 +581,6 @@
       let sortIndex = -1;
       let sortDirection = 1;
       let columnWidths = [];
-      const baseCategoriesPath = "/Users/dan/GeekyThings/Products/Categories";
       let originalNames = [];
       const hiddenColumns = new Set(["Facebook URL", "TikTok URL", "Ebay URL", "Etsy URL", "Status"]);
       let viewMode = "live";
@@ -947,67 +946,7 @@
                 rows[rowIndex][colIndex] = event.target.value;
                 scheduleSave();
               });
-              const openBtn = document.createElement("button");
-              openBtn.type = "button";
-              openBtn.textContent = "Open";
-              openBtn.addEventListener("click", () => {
-                const category = rows[rowIndex][categoryIndex] || "";
-                const productFolder = rows[rowIndex][productFolderIndex] || "";
-                if (!category || !productFolder) return;
-                const rawPath = `${baseCategoriesPath}/${category}/${productFolder}`;
-                const url = encodeURI(`file://${rawPath}`);
-                const popup = window.open(url, "_blank");
-                if (!popup) {
-                  navigator.clipboard?.writeText(rawPath).catch(() => {});
-                  alert("Popup blocked. Path copied to clipboard.");
-                }
-              });
-              const viewBtn = document.createElement("button");
-              viewBtn.type = "button";
-              viewBtn.textContent = "View";
-              viewBtn.addEventListener("click", () => {
-                const category = rows[rowIndex][categoryIndex] || "";
-                const productFolder = rows[rowIndex][productFolderIndex] || "";
-                if (!category || !productFolder) return;
-                const url = `/product.html?category=${encodeURIComponent(category)}&folder=${encodeURIComponent(productFolder)}`;
-                window.location.href = url;
-              });
-              const renameBtn = document.createElement("button");
-              renameBtn.type = "button";
-              renameBtn.textContent = "Rename";
-              renameBtn.addEventListener("click", async () => {
-                const category = rows[rowIndex][categoryIndex] || "";
-                const newName = rows[rowIndex][productFolderIndex] || "";
-                const oldName = originalNames[rowIndex] || "";
-                if (!category || !newName || !oldName) return;
-                if (newName === oldName) return;
-                try {
-                  const response = await fetch("/api/rename", {
-                    method: "POST",
-                    headers: { "Content-Type": "application/json" },
-                    body: JSON.stringify({
-                      category,
-                      old_name: oldName,
-                      new_name: newName,
-                    }),
-                  });
-                  const payload = await response.json();
-                  if (!response.ok) {
-                    alert(payload.error || "Rename failed.");
-                    return;
-                  }
-                  originalNames[rowIndex] = newName;
-                  statusEl.textContent = "Folder renamed.";
-                  setTimeout(updateStatus, 1500);
-                } catch (error) {
-                  console.error(error);
-                  alert("Rename failed.");
-                }
-              });
               wrapper.appendChild(input);
-              wrapper.appendChild(openBtn);
-              wrapper.appendChild(viewBtn);
-              wrapper.appendChild(renameBtn);
               td.appendChild(wrapper);
             } else {
               const input = document.createElement("input");
@@ -1022,6 +961,17 @@
           });
           const actions = document.createElement("td");
           actions.className = "row-actions";
+          const viewBtn = document.createElement("button");
+          viewBtn.type = "button";
+          viewBtn.textContent = "View";
+          viewBtn.addEventListener("click", () => {
+            const category = rows[rowIndex][categoryIndex] || "";
+            const productFolder = rows[rowIndex][productFolderIndex] || "";
+            if (!category || !productFolder) return;
+            const url = `/product.html?category=${encodeURIComponent(category)}&folder=${encodeURIComponent(productFolder)}`;
+            window.location.href = url;
+          });
+          actions.appendChild(viewBtn);
           const deleteBtn = document.createElement("button");
           deleteBtn.type = "button";
           deleteBtn.textContent = "Archive";

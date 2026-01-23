@@ -2,6 +2,9 @@
 
 ## Unreleased
 
+## V1.1.8
+- Minor: Moved View action to the Actions column and removed Open/Rename.
+
 ## V1.1.7
 - Minor: Moved title/subtitle/version into the header nav and removed the large logo.
 

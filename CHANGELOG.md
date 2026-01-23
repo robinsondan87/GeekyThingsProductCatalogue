@@ -2,6 +2,9 @@
 
 ## Unreleased
 
+## V1.4.7
+- Minor: Excluded UKCA README from printed pack output.
+
 ## V1.4.6
 - Minor: Added default EN71-1 notes in templates and form helper.
 

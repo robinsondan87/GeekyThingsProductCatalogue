@@ -14,3 +14,20 @@ Quick checklist for changes:
 3. Use the **Draft** tab and click **View** to edit details, README, media, and files.
 4. When ready, click **Approve** to move it live into the category folder.
 5. If needed, use **To Draft** on a live item to send it back to Draft.
+
+## ProductMgmt
+- Run locally:
+
+```
+python3 ProductMgmt/server.py
+```
+
+Then open `http://localhost:8555`.
+
+- Run with Docker:
+
+```
+docker compose up --build
+```
+
+Then open `http://localhost:8555`.

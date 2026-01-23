@@ -2,6 +2,9 @@
 
 ## Unreleased
 
+## V1.5.1
+- Minor: Documented Docker and local run commands in workflow notes.
+
 ## V1.5.0
 - Major: Moved ProductMgmt to repo root and added Docker containerization.
 

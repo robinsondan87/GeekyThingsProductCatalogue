@@ -2,6 +2,10 @@
 
 ## Unreleased
 
+## V1.4.0
+- Minor: Added UKCA pack workflow on product pages with templates.
+- Minor: Added UKCA best-practice guidance in shared UKCA folder.
+
 ## V1.3.2
 - Minor: Renamed media files to `SKU-###` schema (non-3MF).
 - Minor: Media remove action is now an overlay X.

@@ -176,6 +176,42 @@
         font-weight: 600;
       }
 
+      .ukca-status {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        flex-wrap: wrap;
+      }
+
+      .ukca-badge {
+        display: inline-flex;
+        align-items: center;
+        padding: 6px 12px;
+        border-radius: 999px;
+        font-weight: 700;
+        font-size: 12px;
+        letter-spacing: 0.02em;
+        border: 1px solid transparent;
+      }
+
+      .ukca-badge.is-yes {
+        background: #e0f2f1;
+        color: #0a663b;
+        border-color: #cfe6dc;
+      }
+
+      .ukca-badge.is-no {
+        background: #fff3e0;
+        color: #8a4b00;
+        border-color: #ffd7b0;
+      }
+
+      .ukca-badge.is-na {
+        background: #f0f4f8;
+        color: #54606c;
+        border-color: #d6dde5;
+      }
+
       .url-grid {
         display: grid;
         gap: 12px;
@@ -306,6 +342,42 @@
         color: #0a663b;
       }
 
+      dialog {
+        border: none;
+        border-radius: 16px;
+        padding: 0;
+        max-width: 520px;
+        width: min(92vw, 520px);
+        box-shadow: 0 24px 80px rgba(15, 23, 42, 0.25);
+      }
+
+      dialog::backdrop {
+        background: rgba(15, 23, 42, 0.55);
+      }
+
+      .dialog-header {
+        padding: 18px 22px;
+        border-bottom: 1px solid #e2e6e8;
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 12px;
+      }
+
+      .dialog-body {
+        padding: 18px 22px;
+        display: grid;
+        gap: 12px;
+      }
+
+      .dialog-actions {
+        padding: 16px 22px;
+        border-top: 1px solid #e2e6e8;
+        display: flex;
+        justify-content: flex-end;
+        gap: 10px;
+      }
+
       @media (min-width: 720px) {
         .file-item {
           grid-template-columns: minmax(0, 1fr) auto;
@@ -328,7 +400,7 @@
       </nav>
       <h1 id="productTitle">Product Details</h1>
       <div class="version">
-        Version <a href="https://github.com/robinsondan87/GeekyThingsProductCatalogue/blob/main/CHANGELOG.md" target="_blank" rel="noopener noreferrer">v1.3.2</a>
+        Version <a href="https://github.com/robinsondan87/GeekyThingsProductCatalogue/blob/main/CHANGELOG.md" target="_blank" rel="noopener noreferrer">v1.4.0</a>
       </div>
     </header>
 
@@ -344,12 +416,11 @@
             <input id="sku" type="text" />
           </div>
           <div>
-            <label for="ukca">UKCA</label>
-            <select id="ukca">
-              <option>No</option>
-              <option>Yes</option>
-              <option>N/A</option>
-            </select>
+            <label>UKCA status</label>
+            <div class="ukca-status">
+              <span class="ukca-badge is-no" id="ukcaStatus">No</span>
+              <button class="btn ghost" id="ukcaAddBtn" type="button">Add UKCA Pack</button>
+            </div>
           </div>
         </div>
         <div class="grid" style="margin-top: 12px;">
@@ -420,6 +491,55 @@
       </section>
     </main>
 
+    <dialog id="ukcaDialog">
+      <form id="ukcaForm">
+        <div class="dialog-header">
+          <strong>Create UKCA Pack</strong>
+        </div>
+        <div class="dialog-body">
+          <div>
+            <label for="ukcaProductName">Product name</label>
+            <input id="ukcaProductName" type="text" required />
+          </div>
+          <div>
+            <label for="ukcaSku">SKU</label>
+            <input id="ukcaSku" type="text" />
+          </div>
+          <div>
+            <label for="ukcaMaterials">Materials</label>
+            <input id="ukcaMaterials" type="text" placeholder="PLA / PETG" />
+          </div>
+          <div>
+            <label for="ukcaIntendedAge">Intended age</label>
+            <input id="ukcaIntendedAge" type="text" placeholder="3+" />
+          </div>
+          <div>
+            <label for="ukcaManufacturer">Manufacturer</label>
+            <input id="ukcaManufacturer" type="text" placeholder="GeekyThingsUK" />
+          </div>
+          <div>
+            <label for="ukcaAddress">Manufacturer address</label>
+            <input id="ukcaAddress" type="text" placeholder="United Kingdom" />
+          </div>
+          <div>
+            <label for="ukcaTester">Tester</label>
+            <input id="ukcaTester" type="text" placeholder="Dan Robinson" />
+          </div>
+          <div>
+            <label for="ukcaTestDate">Test date</label>
+            <input id="ukcaTestDate" type="date" />
+          </div>
+          <div>
+            <label for="ukcaNotes">Notes</label>
+            <textarea id="ukcaNotes" rows="3" placeholder="Optional notes..."></textarea>
+          </div>
+        </div>
+        <div class="dialog-actions">
+          <button class="btn ghost" type="button" onclick="document.getElementById('ukcaDialog').close()">Cancel</button>
+          <button class="btn" type="submit">Create UKCA Pack</button>
+        </div>
+      </form>
+    </dialog>
     <script>
       const params = new URLSearchParams(window.location.search);
       const categoryParam = params.get("category") || "";
@@ -429,7 +549,8 @@
       const productTitle = document.getElementById("productTitle");
       const categoryInput = document.getElementById("category");
       const skuInput = document.getElementById("sku");
-      const ukcaSelect = document.getElementById("ukca");
+      const ukcaStatus = document.getElementById("ukcaStatus");
+      const ukcaAddBtn = document.getElementById("ukcaAddBtn");
       const productFolderInput = document.getElementById("productFolder");
       const tagsInput = document.getElementById("tags");
       const listingGroup = document.getElementById("listingGroup");
@@ -448,6 +569,17 @@
       const threeMfList = document.getElementById("threeMfList");
       const uploadZone = document.getElementById("uploadZone");
       const uploadInput = document.getElementById("uploadInput");
+      const ukcaDialog = document.getElementById("ukcaDialog");
+      const ukcaForm = document.getElementById("ukcaForm");
+      const ukcaProductName = document.getElementById("ukcaProductName");
+      const ukcaSku = document.getElementById("ukcaSku");
+      const ukcaMaterials = document.getElementById("ukcaMaterials");
+      const ukcaIntendedAge = document.getElementById("ukcaIntendedAge");
+      const ukcaManufacturer = document.getElementById("ukcaManufacturer");
+      const ukcaAddress = document.getElementById("ukcaAddress");
+      const ukcaTester = document.getElementById("ukcaTester");
+      const ukcaTestDate = document.getElementById("ukcaTestDate");
+      const ukcaNotes = document.getElementById("ukcaNotes");
 
       const listingOptions = ["Facebook", "TikTok", "Ebay", "Etsy"];
       const baseCategoriesPath = "/Users/dan/GeekyThings/Products/Categories";
@@ -458,6 +590,21 @@
       let rowIndex = -1;
       let originalCategory = categoryParam;
       let originalFolder = folderParam;
+      let currentUkcaStatus = "No";
+
+      const updateUkcaDisplay = () => {
+        const statusValue = currentUkcaStatus || "No";
+        ukcaStatus.textContent = statusValue;
+        ukcaStatus.className = "ukca-badge";
+        if (statusValue === "Yes") {
+          ukcaStatus.classList.add("is-yes");
+        } else if (statusValue === "N/A") {
+          ukcaStatus.classList.add("is-na");
+        } else {
+          ukcaStatus.classList.add("is-no");
+        }
+        ukcaAddBtn.disabled = statusValue === "Yes";
+      };
 
       const loadData = async () => {
         const response = await fetch("/api/rows", { cache: "no-store" });
@@ -476,7 +623,8 @@
         productTitle.textContent = row.product_folder || "Product Details";
         categoryInput.value = row.category || "";
         skuInput.value = row.sku || "";
-        ukcaSelect.value = row.UKCA || "No";
+        currentUkcaStatus = row.UKCA || "No";
+        updateUkcaDisplay();
         productFolderInput.value = row.product_folder || "";
         tagsInput.value = row.tags || "";
         facebookUrlInput.value = row["Facebook URL"] || "";
@@ -671,7 +819,7 @@
           category: categoryInput.value,
           product_folder: productFolderInput.value.trim(),
           sku: skuInput.value.trim(),
-          UKCA: ukcaSelect.value,
+          UKCA: currentUkcaStatus,
           Listings: selectedListings.join(", "),
           tags: tagsInput.value.trim(),
           "Facebook URL": facebookUrlInput.value.trim(),
@@ -761,10 +909,57 @@
         statusEl.textContent = "README saved.";
       };
 
+      const openUkcaDialog = () => {
+        ukcaProductName.value = productFolderInput.value || "";
+        ukcaSku.value = skuInput.value || "";
+        if (!ukcaIntendedAge.value) ukcaIntendedAge.value = "3+";
+        if (!ukcaManufacturer.value) ukcaManufacturer.value = "GeekyThingsUK";
+        if (!ukcaAddress.value) ukcaAddress.value = "United Kingdom";
+        if (!ukcaTester.value) ukcaTester.value = "Dan Robinson";
+        ukcaDialog.showModal();
+      };
+
+      const submitUkcaPack = async (event) => {
+        event.preventDefault();
+        const payload = {
+          category: categoryParam,
+          folder_name: productFolderInput.value,
+          status: statusParam,
+          product_name: ukcaProductName.value.trim(),
+          sku: ukcaSku.value.trim(),
+          materials: ukcaMaterials.value.trim(),
+          intended_age: ukcaIntendedAge.value.trim(),
+          manufacturer: ukcaManufacturer.value.trim(),
+          address: ukcaAddress.value.trim(),
+          tester: ukcaTester.value.trim(),
+          test_date: ukcaTestDate.value.trim(),
+          notes: ukcaNotes.value.trim(),
+        };
+        const response = await fetch("/api/ukca_create", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(payload),
+        });
+        const result = await response.json();
+        if (!response.ok) {
+          statusEl.textContent = result.error || "UKCA pack creation failed.";
+          return;
+        }
+        statusEl.textContent = "UKCA pack created.";
+        currentUkcaStatus = "Yes";
+        if (rows[rowIndex]) {
+          rows[rowIndex].UKCA = "Yes";
+        }
+        updateUkcaDisplay();
+        ukcaDialog.close();
+      };
+
       saveDetailsBtn.addEventListener("click", () => saveDetails().catch(console.error));
       renameBtn.addEventListener("click", () => renameFolder().catch(console.error));
       openFolderBtn.addEventListener("click", openFolder);
       saveReadmeBtn.addEventListener("click", () => saveReadme().catch(console.error));
+      ukcaAddBtn.addEventListener("click", openUkcaDialog);
+      ukcaForm.addEventListener("submit", submitUkcaPack);
 
       const deleteFile = async (relPath) => {
         const response = await fetch("/api/delete_file", {

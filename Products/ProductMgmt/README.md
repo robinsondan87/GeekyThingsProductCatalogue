@@ -46,6 +46,7 @@ Then open `http://localhost:8555` in a browser.
 - `POST /api/move_to_draft`: Move a live product into drafts and mark Status = Draft.
 - `POST /api/upload`: Upload media and 3MF files (category, folder_name, status).
 - `POST /api/delete_file`: Move a file into a `_Deleted` subfolder (category, folder_name, status, rel_path).
+- `POST /api/ukca_create`: Create a per-product UKCA pack from templates and set UKCA = Yes.
 
 ## Notes
 - This is a local-only tool. It serves files directly from disk.
@@ -53,3 +54,4 @@ Then open `http://localhost:8555` in a browser.
 - Draft product pages should include `status=draft` in the query string.
 - Uploaded files are named `SKU-###` when SKU is provided.
 - The `.3mf` list is recursive under each product folder.
+- UKCA templates live in `Products/UKCA_Shared` and are copied into `<Product>/UKCA`.

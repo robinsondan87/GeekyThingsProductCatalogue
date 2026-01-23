@@ -16,6 +16,7 @@ CSV_PATH = ROOT_DIR / 'categories_index.csv'
 CATEGORIES_DIR = ROOT_DIR / 'Categories'
 ARCHIVE_DIR = CATEGORIES_DIR / '_Archive'
 DRAFT_DIR = CATEGORIES_DIR / '_Draft'
+UKCA_SHARED_DIR = ROOT_DIR / 'UKCA_Shared'
 CATEGORY_PREFIXES = {
     'Automotive': 'GT-AUT',
     'Bookish & Stationery': 'GT-BKS',
@@ -177,6 +178,19 @@ def next_sku_for_category(category: str) -> str:
         if num > max_num:
             max_num = num
     return f'{prefix}-{max_num + 1:05d}'
+
+
+def read_template(path: Path) -> str:
+    if path.exists():
+        return path.read_text(encoding='utf-8')
+    return ''
+
+
+def apply_replacements(template: str, replacements: dict) -> str:
+    content = template
+    for key, value in replacements.items():
+        content = content.replace(f'{{{{{key}}}}}', value)
+    return content
 
 
 class Handler(BaseHTTPRequestHandler):
@@ -409,6 +423,88 @@ class Handler(BaseHTTPRequestHandler):
                 self._send_json(409, {'error': 'Destination already exists'})
                 return
             target_path.rename(dest_path)
+            self._send_json(200, {'ok': True})
+            return
+
+        if parsed.path == '/api/ukca_create':
+            category = safe_path_component(data.get('category', ''))
+            folder_name = safe_path_component(data.get('folder_name', ''))
+            status = data.get('status', '')
+            product_name = (data.get('product_name', '') or '').strip()
+            sku = (data.get('sku', '') or '').strip()
+            materials = (data.get('materials', '') or '').strip()
+            intended_age = (data.get('intended_age', '') or '').strip()
+            manufacturer = (data.get('manufacturer', '') or '').strip()
+            address = (data.get('address', '') or '').strip()
+            tester = (data.get('tester', '') or '').strip()
+            test_date = (data.get('test_date', '') or '').strip()
+            notes = (data.get('notes', '') or '').strip()
+            if not category or not folder_name:
+                self._send_json(400, {'error': 'Missing category/folder_name'})
+                return
+
+            product_path = product_dir(category, folder_name, status)
+            ukca_dir = product_path / 'UKCA'
+            (ukca_dir / 'Declarations').mkdir(parents=True, exist_ok=True)
+            (ukca_dir / 'Risk_Assessment').mkdir(parents=True, exist_ok=True)
+            (ukca_dir / 'Evidence').mkdir(parents=True, exist_ok=True)
+            (ukca_dir / 'Labels').mkdir(parents=True, exist_ok=True)
+
+            replacements = {
+                'PRODUCT_NAME': product_name or folder_name,
+                'SKU': sku,
+                'MATERIALS': materials or 'PLA / PETG',
+                'INTENDED_AGE': intended_age or '3+',
+                'MANUFACTURER': manufacturer or 'GeekyThingsUK',
+                'ADDRESS': address or 'United Kingdom',
+                'TESTER': tester or 'Dan Robinson',
+                'TEST_DATE': test_date or '',
+                'NOTES': notes,
+            }
+
+            readme_template_path = UKCA_SHARED_DIR / 'UKCA_README_TEMPLATE.md'
+            declaration_template_path = UKCA_SHARED_DIR / 'UKCA_Declaration_TEMPLATE.md'
+            risk_template_path = UKCA_SHARED_DIR / 'UKCA_Risk_Assessment_TEMPLATE.md'
+            en71_template_path = UKCA_SHARED_DIR / 'EN71-1_Compliance_Pack_TEMPLATE.md'
+
+            ukca_readme = apply_replacements(read_template(readme_template_path), replacements)
+            if ukca_readme:
+                (ukca_dir / 'README.md').write_text(ukca_readme, encoding='utf-8')
+
+            declaration = apply_replacements(read_template(declaration_template_path), replacements)
+            if declaration:
+                (ukca_dir / 'Declarations' / 'UKCA_Declaration_of_Conformity.md').write_text(
+                    declaration, encoding='utf-8'
+                )
+
+            risk = apply_replacements(read_template(risk_template_path), replacements)
+            if risk:
+                (ukca_dir / 'Risk_Assessment' / 'Risk_Assessment.md').write_text(
+                    risk, encoding='utf-8'
+                )
+
+            en71 = read_template(en71_template_path)
+            if en71:
+                header = (
+                    f"# {replacements['PRODUCT_NAME']} (SKU: {replacements['SKU']})\n\n"
+                    f"Material: {replacements['MATERIALS']}\n\n"
+                    f"Intended age: {replacements['INTENDED_AGE']}\n\n"
+                    f"Date tested: {replacements['TEST_DATE']}\n\n"
+                    f"Tester: {replacements['TESTER']}\n\n"
+                    "---\n\n"
+                )
+                (ukca_dir / 'EN71-1_Compliance_Pack.md').write_text(header + en71, encoding='utf-8')
+
+            headers, rows = read_csv()
+            updated = False
+            for existing in rows:
+                if existing.get('category') == category and existing.get('product_folder') == folder_name:
+                    existing['UKCA'] = 'Yes'
+                    updated = True
+                    break
+            if updated:
+                write_csv(headers, rows)
+
             self._send_json(200, {'ok': True})
             return
 

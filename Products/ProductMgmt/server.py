@@ -5,7 +5,7 @@ import mimetypes
 import os
 from http.server import BaseHTTPRequestHandler, HTTPServer
 from pathlib import Path
-from urllib.parse import urlparse, parse_qs, unquote
+from urllib.parse import urlparse, parse_qs, unquote, quote
 
 BASE_DIR = Path(__file__).resolve().parent
 ROOT_DIR = BASE_DIR.parent
@@ -175,9 +175,37 @@ class Handler(BaseHTTPRequestHandler):
                 if not entry.is_file():
                     continue
                 rel = entry.relative_to(CATEGORIES_DIR)
+                url = f"/files/{quote(rel.as_posix())}"
+                files.append({
+                    'name': entry.name,
+                    'url': url,
+                })
+            self._send_json(200, {'files': files})
+            return
+
+        if parsed.path == '/api/3mf':
+            query = parse_qs(parsed.query)
+            category = safe_path_component(query.get('category', [''])[0])
+            folder_name = safe_path_component(query.get('folder', [''])[0])
+            if not category or not folder_name:
+                self._send_json(400, {'error': 'Missing category/folder'})
+                return
+            product_dir = CATEGORIES_DIR / category / folder_name
+            if not product_dir.exists():
+                self._send_json(200, {'files': []})
+                return
+            files = []
+            for entry in sorted(product_dir.rglob('*')):
+                if not entry.is_file():
+                    continue
+                if entry.suffix.lower() != '.3mf':
+                    continue
+                rel = entry.relative_to(CATEGORIES_DIR)
                 url = f"/files/{rel.as_posix()}"
                 files.append({
                     'name': entry.name,
+                    'rel_path': rel.as_posix(),
+                    'abs_path': str(entry.resolve()),
                     'url': url,
                 })
             self._send_json(200, {'files': files})

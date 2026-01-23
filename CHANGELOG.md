@@ -2,6 +2,9 @@
 
 ## Unreleased
 
+## V1.4.2
+- Minor: Added UKCA pack viewer/editor and dropdown section on product pages.
+
 ## V1.4.1
 - Fix: Updated upload handling to avoid deprecated `cgi` module on Python 3.13.
 

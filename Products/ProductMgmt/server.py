@@ -99,6 +99,15 @@ def product_dir(category: str, folder_name: str, status: str) -> Path:
     return product_base_dir(status) / category / folder_name
 
 
+def ukca_file_paths(product_path: Path) -> dict:
+    return {
+        'readme': product_path / 'UKCA' / 'README.md',
+        'declaration': product_path / 'UKCA' / 'Declarations' / 'UKCA_Declaration_of_Conformity.md',
+        'risk_assessment': product_path / 'UKCA' / 'Risk_Assessment' / 'Risk_Assessment.md',
+        'en71': product_path / 'UKCA' / 'EN71-1_Compliance_Pack.md',
+    }
+
+
 def list_folder_entries(base_dir: Path):
     entries = []
     if not base_dir.exists():
@@ -356,6 +365,24 @@ class Handler(BaseHTTPRequestHandler):
             self._send_json(200, {'files': files})
             return
 
+        if parsed.path == '/api/ukca_pack':
+            query = parse_qs(parsed.query)
+            category = safe_path_component(query.get('category', [''])[0])
+            folder_name = safe_path_component(query.get('folder', [''])[0])
+            status = query.get('status', [''])[0]
+            if not category or not folder_name:
+                self._send_json(400, {'error': 'Missing category/folder'})
+                return
+            product_path = product_dir(category, folder_name, status)
+            files = []
+            for key, path in ukca_file_paths(product_path).items():
+                files.append({
+                    'key': key,
+                    'exists': path.exists(),
+                })
+            self._send_json(200, {'files': files})
+            return
+
         if parsed.path.startswith('/files/'):
             rel = unquote(parsed.path.replace('/files/', '', 1))
             rel_path = Path(*[p for p in rel.split('/') if p and p not in ('.', '..')])
@@ -529,6 +556,38 @@ class Handler(BaseHTTPRequestHandler):
                 write_csv(headers, rows)
 
             self._send_json(200, {'ok': True})
+            return
+
+        if parsed.path == '/api/ukca_pack':
+            category = safe_path_component(data.get('category', ''))
+            folder_name = safe_path_component(data.get('folder_name', ''))
+            status = data.get('status', '')
+            action = (data.get('action', '') or '').strip().lower()
+            file_key = (data.get('file', '') or '').strip().lower()
+            if not category or not folder_name or not action or not file_key:
+                self._send_json(400, {'error': 'Missing category/folder/action/file'})
+                return
+            product_path = product_dir(category, folder_name, status)
+            target = ukca_file_paths(product_path).get(file_key)
+            if not target:
+                self._send_json(400, {'error': 'Unknown UKCA file'})
+                return
+            if action == 'read':
+                if not target.exists():
+                    self._send_json(404, {'error': 'UKCA file not found'})
+                    return
+                self._send_json(200, {'content': target.read_text(encoding='utf-8')})
+                return
+            if action == 'write':
+                if not target.exists():
+                    self._send_json(404, {'error': 'UKCA file not found'})
+                    return
+                content = data.get('content', '')
+                target.parent.mkdir(parents=True, exist_ok=True)
+                target.write_text(content, encoding='utf-8')
+                self._send_json(200, {'ok': True})
+                return
+            self._send_json(400, {'error': 'Invalid action'})
             return
 
         if parsed.path == '/api/save':

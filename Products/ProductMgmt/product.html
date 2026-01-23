@@ -322,6 +322,28 @@
         font-size: 12px;
       }
 
+      .ukca-pack {
+        border: 1px solid #e2e6e8;
+        border-radius: 12px;
+        padding: 10px 14px;
+        background: #ffffff;
+      }
+
+      .ukca-pack summary {
+        font-weight: 700;
+        color: #0a663b;
+        cursor: pointer;
+      }
+
+      .ukca-pack-body {
+        margin-top: 12px;
+      }
+
+      .ukca-pack-empty {
+        color: var(--muted);
+        font-size: 13px;
+      }
+
       .upload-zone {
         border: 2px dashed #cfe6dc;
         border-radius: 14px;
@@ -400,7 +422,7 @@
       </nav>
       <h1 id="productTitle">Product Details</h1>
       <div class="version">
-        Version <a href="https://github.com/robinsondan87/GeekyThingsProductCatalogue/blob/main/CHANGELOG.md" target="_blank" rel="noopener noreferrer">v1.4.1</a>
+        Version <a href="https://github.com/robinsondan87/GeekyThingsProductCatalogue/blob/main/CHANGELOG.md" target="_blank" rel="noopener noreferrer">v1.4.2</a>
       </div>
     </header>
 
@@ -482,6 +504,15 @@
         <div class="file-list" id="threeMfList"></div>
       </section>
 
+      <section class="card" id="ukcaPackSection" hidden>
+        <details class="ukca-pack" id="ukcaPackDetails">
+          <summary>UKCA Pack</summary>
+          <div class="ukca-pack-body">
+            <div class="file-list" id="ukcaPackList"></div>
+          </div>
+        </details>
+      </section>
+
       <section class="card">
         <h2 style="margin-top:0;color:#0a663b;">Upload Media / 3MF</h2>
         <div class="upload-zone" id="uploadZone">
@@ -540,6 +571,28 @@
         </div>
       </form>
     </dialog>
+
+    <dialog id="ukcaEditDialog">
+      <form id="ukcaEditForm">
+        <div class="dialog-header">
+          <strong>View/Edit UKCA Pack</strong>
+        </div>
+        <div class="dialog-body">
+          <div>
+            <label for="ukcaEditFile">UKCA file</label>
+            <select id="ukcaEditFile"></select>
+          </div>
+          <div>
+            <label for="ukcaEditContent">Content</label>
+            <textarea id="ukcaEditContent" rows="10"></textarea>
+          </div>
+        </div>
+        <div class="dialog-actions">
+          <button class="btn ghost" type="button" onclick="document.getElementById('ukcaEditDialog').close()">Close</button>
+          <button class="btn" type="submit">Save UKCA File</button>
+        </div>
+      </form>
+    </dialog>
     <script>
       const params = new URLSearchParams(window.location.search);
       const categoryParam = params.get("category") || "";
@@ -580,6 +633,13 @@
       const ukcaTester = document.getElementById("ukcaTester");
       const ukcaTestDate = document.getElementById("ukcaTestDate");
       const ukcaNotes = document.getElementById("ukcaNotes");
+      const ukcaPackSection = document.getElementById("ukcaPackSection");
+      const ukcaPackDetails = document.getElementById("ukcaPackDetails");
+      const ukcaPackList = document.getElementById("ukcaPackList");
+      const ukcaEditDialog = document.getElementById("ukcaEditDialog");
+      const ukcaEditForm = document.getElementById("ukcaEditForm");
+      const ukcaEditFile = document.getElementById("ukcaEditFile");
+      const ukcaEditContent = document.getElementById("ukcaEditContent");
 
       const listingOptions = ["Facebook", "TikTok", "Ebay", "Etsy"];
       const baseCategoriesPath = "/Users/dan/GeekyThings/Products/Categories";
@@ -591,6 +651,14 @@
       let originalCategory = categoryParam;
       let originalFolder = folderParam;
       let currentUkcaStatus = "No";
+      let ukcaPackFiles = [];
+
+      const ukcaFileLabels = {
+        readme: "UKCA README",
+        declaration: "Declaration of Conformity",
+        risk_assessment: "Risk Assessment",
+        en71: "EN71-1 Compliance Pack",
+      };
 
       const updateUkcaDisplay = () => {
         const statusValue = currentUkcaStatus || "No";
@@ -603,7 +671,13 @@
         } else {
           ukcaStatus.classList.add("is-no");
         }
-        ukcaAddBtn.disabled = statusValue === "Yes";
+        if (statusValue === "Yes") {
+          ukcaAddBtn.textContent = "View/Edit UKCA Pack";
+          ukcaPackSection.hidden = false;
+        } else {
+          ukcaAddBtn.textContent = "Add UKCA Pack";
+          ukcaPackSection.hidden = true;
+        }
       };
 
       const loadData = async () => {
@@ -676,6 +750,7 @@
         await loadReadme();
         await loadMedia();
         await load3mf();
+        await loadUkcaPackList();
       };
 
       const loadReadme = async () => {
@@ -804,6 +879,86 @@
           row.appendChild(actions);
           threeMfList.appendChild(row);
         });
+      };
+
+      const loadUkcaPackList = async () => {
+        if (currentUkcaStatus !== "Yes") {
+          ukcaPackList.innerHTML = '<div class="ukca-pack-empty">No UKCA pack yet.</div>';
+          return;
+        }
+        const response = await fetch(
+          `/api/ukca_pack?category=${encodeURIComponent(categoryParam)}&folder=${encodeURIComponent(productFolderInput.value)}&status=${encodeURIComponent(statusParam)}`
+        );
+        if (!response.ok) return;
+        const payload = await response.json();
+        const files = payload.files || [];
+        ukcaPackFiles = files.filter((file) => file.exists);
+        ukcaPackList.innerHTML = "";
+        if (!ukcaPackFiles.length) {
+          ukcaPackList.innerHTML = '<div class="ukca-pack-empty">UKCA files not found.</div>';
+          return;
+        }
+        ukcaPackFiles.forEach((file) => {
+          const row = document.createElement("div");
+          row.className = "file-item";
+          const info = document.createElement("div");
+          const name = document.createElement("div");
+          name.className = "file-name";
+          name.textContent = ukcaFileLabels[file.key] || file.key;
+          info.appendChild(name);
+          const actions = document.createElement("div");
+          actions.className = "file-actions";
+          const editBtn = document.createElement("button");
+          editBtn.className = "btn ghost";
+          editBtn.type = "button";
+          editBtn.textContent = "Edit";
+          editBtn.addEventListener("click", () => {
+            openUkcaEditDialog(file.key);
+          });
+          actions.appendChild(editBtn);
+          row.appendChild(info);
+          row.appendChild(actions);
+          ukcaPackList.appendChild(row);
+        });
+        ukcaEditFile.innerHTML = "";
+        ukcaPackFiles.forEach((file) => {
+          const option = document.createElement("option");
+          option.value = file.key;
+          option.textContent = ukcaFileLabels[file.key] || file.key;
+          ukcaEditFile.appendChild(option);
+        });
+      };
+
+      const loadUkcaFile = async (fileKey) => {
+        const response = await fetch("/api/ukca_pack", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            category: categoryParam,
+            folder_name: productFolderInput.value,
+            status: statusParam,
+            action: "read",
+            file: fileKey,
+          }),
+        });
+        const payload = await response.json();
+        if (!response.ok) {
+          statusEl.textContent = payload.error || "Failed to load UKCA file.";
+          return;
+        }
+        ukcaEditContent.value = payload.content || "";
+      };
+
+      const openUkcaEditDialog = async (fileKey) => {
+        await loadUkcaPackList();
+        if (!ukcaPackFiles.length) {
+          statusEl.textContent = "No UKCA files found to edit.";
+          return;
+        }
+        const desired = fileKey || ukcaPackFiles[0].key;
+        ukcaEditFile.value = desired;
+        await loadUkcaFile(desired);
+        ukcaEditDialog.showModal();
       };
 
       const saveDetails = async () => {
@@ -951,15 +1106,55 @@
           rows[rowIndex].UKCA = "Yes";
         }
         updateUkcaDisplay();
+        await loadUkcaPackList();
         ukcaDialog.close();
+      };
+
+      const saveUkcaFile = async (event) => {
+        event.preventDefault();
+        const fileKey = ukcaEditFile.value;
+        const response = await fetch("/api/ukca_pack", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            category: categoryParam,
+            folder_name: productFolderInput.value,
+            status: statusParam,
+            action: "write",
+            file: fileKey,
+            content: ukcaEditContent.value,
+          }),
+        });
+        const payload = await response.json();
+        if (!response.ok) {
+          statusEl.textContent = payload.error || "Failed to save UKCA file.";
+          return;
+        }
+        statusEl.textContent = "UKCA file saved.";
+        await loadUkcaPackList();
       };
 
       saveDetailsBtn.addEventListener("click", () => saveDetails().catch(console.error));
       renameBtn.addEventListener("click", () => renameFolder().catch(console.error));
       openFolderBtn.addEventListener("click", openFolder);
       saveReadmeBtn.addEventListener("click", () => saveReadme().catch(console.error));
-      ukcaAddBtn.addEventListener("click", openUkcaDialog);
+      ukcaAddBtn.addEventListener("click", () => {
+        if (currentUkcaStatus === "Yes") {
+          openUkcaEditDialog();
+        } else {
+          openUkcaDialog();
+        }
+      });
       ukcaForm.addEventListener("submit", submitUkcaPack);
+      ukcaEditForm.addEventListener("submit", saveUkcaFile);
+      ukcaEditFile.addEventListener("change", (event) => {
+        loadUkcaFile(event.target.value).catch(console.error);
+      });
+      ukcaPackDetails.addEventListener("toggle", () => {
+        if (ukcaPackDetails.open) {
+          loadUkcaPackList().catch(console.error);
+        }
+      });
 
       const deleteFile = async (relPath) => {
         const response = await fetch("/api/delete_file", {

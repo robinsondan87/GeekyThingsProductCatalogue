@@ -47,6 +47,8 @@ Then open `http://localhost:8555` in a browser.
 - `POST /api/upload`: Upload media and 3MF files (category, folder_name, status).
 - `POST /api/delete_file`: Move a file into a `_Deleted` subfolder (category, folder_name, status, rel_path).
 - `POST /api/ukca_create`: Create a per-product UKCA pack from templates and set UKCA = Yes.
+- `GET /api/ukca_pack`: List available UKCA files for a product.
+- `POST /api/ukca_pack`: Read/write UKCA pack files.
 
 ## Notes
 - This is a local-only tool. It serves files directly from disk.

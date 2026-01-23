@@ -67,6 +67,15 @@
         letter-spacing: 0.08em;
       }
 
+      .version a {
+        color: inherit;
+        text-decoration: none;
+      }
+
+      .version a:hover {
+        text-decoration: underline;
+      }
+
       .controls {
         display: grid;
         grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
@@ -384,7 +393,9 @@
       <div>
         <h1 class="title">GeekyThings Product Manager</h1>
         <p class="subtitle">Manage products, tags, and listing status from one place.</p>
-        <p class="version">Version v1.1.1</p>
+        <p class="version">
+          Version <a href="https://github.com/robinsondan87/GeekyThingsProductCatalogue/blob/main/CHANGELOG.md" target="_blank" rel="noopener noreferrer">v1.1.2</a>
+        </p>
       </div>
       <div class="panel">
         <div class="controls">

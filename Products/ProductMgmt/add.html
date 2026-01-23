@@ -50,6 +50,15 @@
         letter-spacing: 0.08em;
       }
 
+      .version a {
+        color: inherit;
+        text-decoration: none;
+      }
+
+      .version a:hover {
+        text-decoration: underline;
+      }
+
       p {
         margin: 0 0 20px;
         color: var(--muted);
@@ -139,7 +148,9 @@
   <body>
     <img src="logo.png" alt="Geeky Things logo" class="logo" />
     <h1>Add New Product</h1>
-    <div class="version">Version v1.1.1</div>
+    <div class="version">
+      Version <a href="https://github.com/robinsondan87/GeekyThingsProductCatalogue/blob/main/CHANGELOG.md" target="_blank" rel="noopener noreferrer">v1.1.2</a>
+    </div>
     <p>Create a folder, assign SKU, and add the product to the CSV.</p>
 
     <div class="card">

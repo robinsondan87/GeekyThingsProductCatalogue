@@ -2,6 +2,9 @@
 
 ## Unreleased
 
+## V1.1.2
+- Minor: Link version label to the repo changelog.
+
 ## V1.1.1
 - Minor: Displayed ProductMgmt version in the UI header.
 

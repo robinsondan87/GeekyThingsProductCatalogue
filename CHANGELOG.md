@@ -2,6 +2,9 @@
 
 ## Unreleased
 
+## V1.4.3
+- Minor: Synced product folder moves/renames and status updates.
+
 ## V1.4.2
 - Minor: Added UKCA pack viewer/editor and dropdown section on product pages.
 

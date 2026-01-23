@@ -495,7 +495,7 @@
           <h1 class="title">GeekyThings Product Manager</h1>
           <p class="subtitle">Manage products, tags, and listing status from one place.</p>
           <p class="version">
-          Version <a href="https://github.com/robinsondan87/GeekyThingsProductCatalogue/blob/main/CHANGELOG.md" target="_blank" rel="noopener noreferrer">v1.2.4</a>
+          Version <a href="https://github.com/robinsondan87/GeekyThingsProductCatalogue/blob/main/CHANGELOG.md" target="_blank" rel="noopener noreferrer">v1.2.5</a>
           </p>
         </div>
         <div class="nav-links">
@@ -945,6 +945,41 @@
               input.addEventListener("input", (event) => {
                 rows[rowIndex][colIndex] = event.target.value;
                 scheduleSave();
+              });
+              input.addEventListener("blur", async (event) => {
+                if (viewMode !== "live") return;
+                const category = rows[rowIndex][categoryIndex] || "";
+                const newName = event.target.value.trim();
+                const oldName = originalNames[rowIndex] || "";
+                if (!category || !newName || !oldName) return;
+                if (newName === oldName) return;
+                try {
+                  const response = await fetch("/api/rename", {
+                    method: "POST",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify({
+                      category,
+                      old_name: oldName,
+                      new_name: newName,
+                      status: "live",
+                    }),
+                  });
+                  const payload = await response.json();
+                  if (!response.ok) {
+                    rows[rowIndex][colIndex] = oldName;
+                    event.target.value = oldName;
+                    statusEl.textContent = payload.error || "Rename failed.";
+                    return;
+                  }
+                  originalNames[rowIndex] = newName;
+                  statusEl.textContent = "Folder renamed.";
+                  setTimeout(updateStatus, 1500);
+                } catch (error) {
+                  console.error(error);
+                  rows[rowIndex][colIndex] = oldName;
+                  event.target.value = oldName;
+                  statusEl.textContent = "Rename failed.";
+                }
               });
               wrapper.appendChild(input);
               td.appendChild(wrapper);

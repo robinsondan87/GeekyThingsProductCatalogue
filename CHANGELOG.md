@@ -2,6 +2,9 @@
 
 ## Unreleased
 
+## V1.2.5
+- Fix: Renaming the product folder in the main table now renames the folder on disk.
+
 ## V1.2.4
 - Minor: Simplified Add Product to a category/name dialog and auto-open draft details.
 

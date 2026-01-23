@@ -1,557 +1,12 @@
-<!doctype html>
-<html lang="en">
-  <head>
-    <meta charset="utf-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1" />
-    <title>GeekyThings Product Manager</title>
-    <link rel="icon" type="image/png" href="logo.png" />
-    <style>
-      :root {
-        --ink: #1b1b1f;
-        --muted: #4b4e57;
-        --surface: #ffffff;
-        --panel: #f2f0ea;
-        --accent: #d86a2a;
-        --accent-2: #2c6a4f;
-        --ring: #ffb366;
-        --shadow: rgba(15, 18, 24, 0.12);
-      }
-
-      * {
-        box-sizing: border-box;
-      }
-
-      body {
-        margin: 0;
-        font-family: "Segoe UI", Arial, sans-serif;
-        color: var(--ink);
-        background: #f2f2f2;
-        min-height: 100vh;
-      }
-
-      header {
-        padding: 24px clamp(20px, 4vw, 64px);
-        display: flex;
-        flex-direction: column;
-        gap: 16px;
-        align-items: center;
-        text-align: center;
-      }
-
-      .nav {
-        width: 100%;
-        max-width: 1100px;
-        margin: 0 auto 8px;
-        display: flex;
-        align-items: center;
-        justify-content: space-between;
-        gap: 16px;
-      }
-
-      .nav-center {
-        flex: 1;
-        text-align: center;
-      }
-
-      .nav-brand {
-        display: flex;
-        align-items: center;
-        gap: 12px;
-      }
-
-      .nav-brand img {
-        width: 48px;
-        height: 48px;
-        border-radius: 50%;
-        box-shadow: 0 2px 10px rgba(0,0,0,0.10);
-        object-fit: cover;
-      }
-
-      .nav-links {
-        display: flex;
-        gap: 12px;
-        flex-wrap: wrap;
-      }
-
-      .nav-links a {
-        text-decoration: none;
-        font-weight: 600;
-        color: #0a663b;
-        padding: 6px 12px;
-        border-radius: 999px;
-        border: 1px solid #cfe6dc;
-        background: #ffffff;
-      }
-
-      .nav-links a:hover {
-        background: #e0f2f1;
-        color: #00796b;
-      }
-
-      .title {
-        font-size: clamp(24px, 3vw, 34px);
-        font-weight: 700;
-        margin: 0;
-        color: #0a663b;
-      }
-
-      .subtitle {
-        margin: 0;
-        color: var(--muted);
-      }
-
-      .version {
-        margin: 6px 0 0;
-        color: var(--muted);
-        font-size: 12px;
-        text-transform: uppercase;
-        letter-spacing: 0.08em;
-      }
-
-      .version a {
-        color: inherit;
-        text-decoration: none;
-      }
-
-      .version a:hover {
-        text-decoration: underline;
-      }
-
-      .tabs {
-        display: flex;
-        flex-wrap: wrap;
-        gap: 8px;
-        margin-top: 12px;
-      }
-
-      .tab-btn {
-        border: 1px solid #cfe6dc;
-        background: #ffffff;
-        color: #0a663b;
-        padding: 6px 12px;
-        border-radius: 999px;
-        font-weight: 600;
-        cursor: pointer;
-      }
-
-      .tab-btn.active {
-        background: #0a663b;
-        color: #ffffff;
-        border-color: #0a663b;
-      }
-
-      .folder-view {
-        background: var(--surface);
-        border-radius: 18px;
-        box-shadow: 0 2px 16px rgba(0,0,0,0.10), 0 1.5px 4px rgba(0,0,0,0.08);
-        padding: 20px;
-      }
-
-      .folder-view h2 {
-        margin: 0 0 12px;
-        color: #0a663b;
-      }
-
-      .folder-list {
-        display: grid;
-        gap: 10px;
-      }
-
-      .folder-item {
-        border: 1px solid #e2e6e8;
-        border-radius: 12px;
-        padding: 10px 12px;
-        background: #ffffff;
-      }
-
-      .folder-item .folder-title {
-        font-weight: 600;
-      }
-
-      .folder-item .folder-meta {
-        font-size: 12px;
-        color: var(--muted);
-      }
-
-      .controls {
-        display: grid;
-        grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
-        gap: 12px;
-      }
-
-      .panel {
-        background: var(--surface);
-        border-radius: 18px;
-        box-shadow: 0 2px 16px rgba(0,0,0,0.10), 0 1.5px 4px rgba(0,0,0,0.08);
-        padding: 20px;
-        width: min(1100px, 100%);
-      }
-
-      .controls button,
-      .controls input,
-      .controls select {
-        width: 100%;
-        padding: 10px 12px;
-        border-radius: 10px;
-        border: 1px solid #d2d2d8;
-        font-family: inherit;
-        font-size: 14px;
-      }
-
-      .controls button {
-        background: #0a663b;
-        color: white;
-        border: none;
-        font-weight: 600;
-        cursor: pointer;
-        transition: transform 0.15s ease, box-shadow 0.15s ease;
-      }
-
-      .controls button.secondary {
-        background: #00796b;
-      }
-
-      .controls button.ghost {
-        background: #ffffff;
-        color: #0a663b;
-        border: 1px solid #cfe6dc;
-      }
-
-      button.ghost {
-        background: #ffffff;
-        color: #0a663b;
-        border: 1px solid #cfe6dc;
-        padding: 6px 10px;
-        border-radius: 8px;
-        cursor: pointer;
-      }
-
-      .ghost-link {
-        display: inline-flex;
-        align-items: center;
-        justify-content: center;
-        text-decoration: none;
-        background: #ffffff;
-        color: #0a663b;
-        border: 1px solid #cfe6dc;
-        padding: 10px 12px;
-        border-radius: 10px;
-        font-weight: 600;
-        font-size: 14px;
-      }
-
-      .controls button:focus-visible,
-      .controls input:focus-visible,
-      .controls select:focus-visible {
-        outline: 3px solid var(--ring);
-        outline-offset: 2px;
-      }
-
-      .status {
-        font-size: 14px;
-        color: var(--muted);
-        margin-top: 8px;
-      }
-
-      main {
-        padding: 0 clamp(20px, 4vw, 64px) 48px;
-      }
-
-      .table-wrap {
-        overflow: auto;
-        border-radius: 18px;
-        background: var(--surface);
-        box-shadow: 0 2px 16px rgba(0,0,0,0.10), 0 1.5px 4px rgba(0,0,0,0.08);
-      }
-
-      table {
-        width: 100%;
-        border-collapse: collapse;
-        min-width: 720px;
-        table-layout: fixed;
-      }
-
-      thead th {
-        text-align: left;
-        font-size: 12px;
-        text-transform: uppercase;
-        letter-spacing: 0.06em;
-        padding: 14px;
-        background: #f0f7f5;
-        position: sticky;
-        top: 0;
-        z-index: 1;
-        position: relative;
-      }
-
-      thead th button {
-        all: unset;
-        cursor: pointer;
-        font-weight: 600;
-        display: inline-flex;
-        align-items: center;
-        gap: 6px;
-      }
-
-      .resizer {
-        position: absolute;
-        right: 2px;
-        top: 0;
-        height: 100%;
-        width: 6px;
-        cursor: col-resize;
-      }
-
-      thead tr.filters th {
-        padding: 10px 12px;
-        background: #ffffff;
-      }
-
-      thead tr.filters input,
-      thead tr.filters select {
-        width: 100%;
-        padding: 6px 8px;
-        border-radius: 8px;
-        border: 1px solid #e4d3c1;
-        font-family: inherit;
-        font-size: 13px;
-      }
-
-      tbody tr {
-        border-top: 1px solid #eee3d8;
-      }
-
-      tbody td {
-        padding: 10px 12px;
-        vertical-align: top;
-      }
-
-      tbody input,
-      tbody select {
-        width: 100%;
-        padding: 8px 10px;
-        border: 1px solid #e2e6e8;
-        background: #ffffff;
-        border-radius: 8px;
-        font-family: inherit;
-      }
-
-      tbody input:focus {
-        border-color: #f0c49f;
-        background: white;
-      }
-
-      .row-actions button {
-        background: #ffffff;
-        border: 1px solid #cfe6dc;
-        color: #0a663b;
-        padding: 8px 10px;
-        border-radius: 8px;
-        cursor: pointer;
-      }
-
-      .path-cell {
-        display: grid;
-        grid-template-columns: 1fr auto auto;
-        gap: 6px;
-        align-items: center;
-      }
-
-      .path-cell button {
-        background: #ffffff;
-        border: 1px solid #cfe6dc;
-        color: #0a663b;
-        padding: 6px 10px;
-        border-radius: 8px;
-        cursor: pointer;
-        font-size: 12px;
-      }
-
-      .listing-group {
-        display: grid;
-        grid-template-columns: repeat(auto-fit, minmax(90px, 1fr));
-        gap: 6px;
-      }
-
-      .listing-option {
-        display: inline-flex;
-        align-items: center;
-        gap: 6px;
-        font-size: 12px;
-        background: #f7faf9;
-        border: 1px solid #cfe6dc;
-        padding: 4px 6px;
-        border-radius: 8px;
-      }
-
-      .listing-option input {
-        margin: 0;
-      }
-
-      .listing-links {
-        display: flex;
-        flex-wrap: wrap;
-        gap: 6px;
-        font-size: 12px;
-        color: var(--muted);
-      }
-
-      .listing-links a {
-        text-decoration: none;
-        color: #0a663b;
-        border: 1px solid #cfe6dc;
-        padding: 4px 8px;
-        border-radius: 999px;
-        background: #ffffff;
-        font-weight: 600;
-      }
-
-      dialog#readmeDialog {
-        border: none;
-        border-radius: 16px;
-        padding: 0;
-        width: min(720px, 92vw);
-        box-shadow: 0 12px 36px rgba(0,0,0,0.18);
-      }
-
-      dialog#readmeDialog::backdrop {
-        background: rgba(10, 30, 20, 0.35);
-      }
-
-      .dialog-header {
-        padding: 16px 20px;
-        background: #f0f7f5;
-        display: flex;
-        align-items: center;
-        justify-content: space-between;
-        gap: 12px;
-      }
-
-      .dialog-header h2 {
-        margin: 0;
-        font-size: 18px;
-        color: #0a663b;
-      }
-
-      .dialog-subtitle {
-        margin: 4px 0 0;
-        font-size: 12px;
-        color: var(--muted);
-      }
-
-      .dialog-body {
-        padding: 16px 20px;
-      }
-
-      .dialog-body textarea {
-        width: 100%;
-        min-height: 260px;
-        border-radius: 10px;
-        border: 1px solid #d2d2d8;
-        font-family: inherit;
-        font-size: 14px;
-        padding: 12px;
-      }
-
-      .dialog-actions {
-        padding: 0 20px 20px;
-        display: flex;
-        justify-content: flex-end;
-        gap: 10px;
-      }
-
-      .empty {
-        padding: 28px;
-        text-align: center;
-        color: var(--muted);
-      }
-
-      .footnote {
-        margin-top: 12px;
-        color: var(--muted);
-        font-size: 13px;
-        text-align: center;
-      }
-
-      @media (max-width: 720px) {
-        header {
-          padding-top: 24px;
-        }
-
-        table {
-          min-width: 520px;
-        }
-      }
-    </style>
-  </head>
-  <body>
-    <header>
-      <nav class="nav">
-        <div class="nav-brand">
-          <img src="logo.png" alt="Geeky Things logo" />
-          <strong>GeekyThings</strong>
-        </div>
-        <div class="nav-center">
-          <h1 class="title">GeekyThings Product Manager</h1>
-          <p class="subtitle">Manage products, tags, and listing status from one place.</p>
-          <p class="version">
-          Version <a href="https://github.com/robinsondan87/GeekyThingsProductCatalogue/blob/main/CHANGELOG.md" target="_blank" rel="noopener noreferrer">v1.6.0</a>
-          </p>
-        </div>
-        <div class="nav-links">
-          <a href="/">Products</a>
-          <a href="/add.html">Add Product</a>
-        </div>
-      </nav>
-      <div class="tabs" id="viewTabs">
-        <button class="tab-btn active" type="button" data-view="live">Live</button>
-        <button class="tab-btn" type="button" data-view="draft">Draft</button>
-        <button class="tab-btn" type="button" data-view="b2b">B2B</button>
-        <button class="tab-btn" type="button" data-view="archived">Archived</button>
-      </div>
-      <div class="panel">
-        <div class="controls">
-          <input id="searchInput" type="search" placeholder="Search everything..." />
-        </div>
-        <div class="status" id="status">No file loaded.</div>
-      </div>
-    </header>
-
-    <main>
-      <div class="table-wrap" id="tableView">
-        <table id="dataTable">
-          <colgroup id="colgroup"></colgroup>
-          <thead></thead>
-          <tbody></tbody>
-        </table>
-        <div class="empty" id="emptyState">Loading master CSV...</div>
-      </div>
-      <div class="folder-view" id="folderView" hidden>
-        <h2 id="folderTitle">Archived Products</h2>
-        <div class="folder-list" id="folderList"></div>
-        <div class="empty" id="folderEmpty">No items found.</div>
-      </div>
-      <div class="footnote">Tip: launch with the provided server to enable rename actions and auto-load.</div>
-    </main>
-
-    <dialog id="readmeDialog">
-      <div class="dialog-header">
-        <div>
-          <h2 id="readmeTitle">README.md</h2>
-          <p id="readmePath" class="dialog-subtitle"></p>
-        </div>
-        <button id="closeReadmeBtn" class="ghost" type="button">Close</button>
-      </div>
-      <div class="dialog-body">
-        <textarea id="readmeContent" placeholder="README.md contents..."></textarea>
-      </div>
-      <div class="dialog-actions">
-        <button id="saveReadmeBtn" class="secondary" type="button">Save README</button>
-      </div>
-    </dialog>
-
-    <script>
-      const searchInput = document.getElementById("searchInput");
+<script setup>
+import { onMounted } from 'vue'
+import { APP_VERSION, CHANGELOG_URL } from '../constants'
+
+const version = APP_VERSION
+const changeLogUrl = CHANGELOG_URL
+
+onMounted(() => {
+const searchInput = document.getElementById("searchInput");
       const viewTabs = document.getElementById("viewTabs");
       const tableView = document.getElementById("tableView");
       const folderView = document.getElementById("folderView");
@@ -1003,7 +458,7 @@
             const category = rows[rowIndex][categoryIndex] || "";
             const productFolder = rows[rowIndex][productFolderIndex] || "";
             if (!category || !productFolder) return;
-            const url = `/product.html?category=${encodeURIComponent(category)}&folder=${encodeURIComponent(productFolder)}`;
+            const url = `/product?category=${encodeURIComponent(category)}&folder=${encodeURIComponent(productFolder)}`;
             window.location.href = url;
           });
           actions.appendChild(viewBtn);
@@ -1120,7 +575,7 @@
               const category = item.category || "";
               const productFolder = item.product_folder || "";
               if (!category || !productFolder) return;
-              const url = `/product.html?category=${encodeURIComponent(category)}&folder=${encodeURIComponent(productFolder)}&status=draft`;
+              const url = `/product?category=${encodeURIComponent(category)}&folder=${encodeURIComponent(productFolder)}&status=draft`;
               window.location.href = url;
             });
             const approveBtn = document.createElement("button");
@@ -1333,6 +788,72 @@
         if (!mode) return;
         setViewMode(mode);
       });
-    </script>
-  </body>
-</html>
+})
+</script>
+
+<template>
+<header>
+      <nav class="nav">
+        <div class="nav-brand">
+          <img src="/logo.png" alt="Geeky Things logo" />
+          <strong>GeekyThings</strong>
+        </div>
+        <div class="nav-center">
+          <h1 class="title">GeekyThings Product Manager</h1>
+          <p class="subtitle">Manage products, tags, and listing status from one place.</p>
+          <p class="version">
+          Version <a :href="changeLogUrl" target="_blank" rel="noopener noreferrer">{{ version }}</a>
+          </p>
+        </div>
+        <div class="nav-links">
+          <RouterLink to="/">Products</RouterLink>
+          <RouterLink to="/add">Add Product</RouterLink>
+        </div>
+      </nav>
+      <div class="tabs" id="viewTabs">
+        <button class="tab-btn active" type="button" data-view="live">Live</button>
+        <button class="tab-btn" type="button" data-view="draft">Draft</button>
+        <button class="tab-btn" type="button" data-view="b2b">B2B</button>
+        <button class="tab-btn" type="button" data-view="archived">Archived</button>
+      </div>
+      <div class="panel">
+        <div class="controls">
+          <input id="searchInput" type="search" placeholder="Search everything..." />
+        </div>
+        <div class="status" id="status">No file loaded.</div>
+      </div>
+    </header>
+
+    <main>
+      <div class="table-wrap" id="tableView">
+        <table id="dataTable">
+          <colgroup id="colgroup"></colgroup>
+          <thead></thead>
+          <tbody></tbody>
+        </table>
+        <div class="empty" id="emptyState">Loading master CSV...</div>
+      </div>
+      <div class="folder-view" id="folderView" hidden>
+        <h2 id="folderTitle">Archived Products</h2>
+        <div class="folder-list" id="folderList"></div>
+        <div class="empty" id="folderEmpty">No items found.</div>
+      </div>
+      <div class="footnote">Tip: launch with the provided server to enable rename actions and auto-load.</div>
+    </main>
+
+    <dialog id="readmeDialog">
+      <div class="dialog-header">
+        <div>
+          <h2 id="readmeTitle">README.md</h2>
+          <p id="readmePath" class="dialog-subtitle"></p>
+        </div>
+        <button id="closeReadmeBtn" class="ghost" type="button">Close</button>
+      </div>
+      <div class="dialog-body">
+        <textarea id="readmeContent" placeholder="README.md contents..."></textarea>
+      </div>
+      <div class="dialog-actions">
+        <button id="saveReadmeBtn" class="secondary" type="button">Save README</button>
+      </div>
+    </dialog>
+</template>

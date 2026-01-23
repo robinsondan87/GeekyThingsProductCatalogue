@@ -1,621 +1,12 @@
-<!doctype html>
-<html lang="en">
-  <head>
-    <meta charset="utf-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1" />
-    <title>Product Details - GeekyThings</title>
-    <link rel="icon" type="image/png" href="logo.png" />
-    <style>
-      :root {
-        --ink: #1b1b1f;
-        --muted: #4b4e57;
-        --surface: #ffffff;
-      }
-
-      * {
-        box-sizing: border-box;
-      }
-
-      body {
-        margin: 0;
-        font-family: "Segoe UI", Arial, sans-serif;
-        color: var(--ink);
-        background: #f2f2f2;
-        min-height: 100vh;
-      }
-
-      header {
-        padding: 24px clamp(20px, 4vw, 64px) 0;
-        display: flex;
-        flex-direction: column;
-        align-items: center;
-        text-align: center;
-        gap: 12px;
-      }
-
-      .nav {
-        width: 100%;
-        max-width: 1100px;
-        margin: 0 auto 12px;
-        display: flex;
-        align-items: center;
-        justify-content: space-between;
-        gap: 16px;
-      }
-
-      .nav-brand {
-        display: flex;
-        align-items: center;
-        gap: 12px;
-      }
-
-      .nav-links {
-        display: flex;
-        gap: 12px;
-        flex-wrap: wrap;
-      }
-
-      .nav-links a {
-        text-decoration: none;
-        font-weight: 600;
-        color: #0a663b;
-        padding: 6px 12px;
-        border-radius: 999px;
-        border: 1px solid #cfe6dc;
-        background: #ffffff;
-      }
-
-      .nav-links a:hover {
-        background: #e0f2f1;
-        color: #00796b;
-      }
-
-      h1 {
-        margin: 0;
-        color: #0a663b;
-        font-size: clamp(22px, 3vw, 32px);
-      }
-
-      .version {
-        margin: 6px 0 0;
-        color: var(--muted);
-        font-size: 12px;
-        text-transform: uppercase;
-        letter-spacing: 0.08em;
-      }
-
-      .version a {
-        color: inherit;
-        text-decoration: none;
-      }
-
-      .version a:hover {
-        text-decoration: underline;
-      }
-
-      main {
-        padding: 24px clamp(20px, 4vw, 64px) 48px;
-        display: grid;
-        gap: 20px;
-      }
-
-      .card {
-        background: var(--surface);
-        border-radius: 18px;
-        box-shadow: 0 2px 16px rgba(0,0,0,0.10), 0 1.5px 4px rgba(0,0,0,0.08);
-        padding: 20px;
-      }
-
-      .grid {
-        display: grid;
-        gap: 14px;
-        grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
-      }
-
-      label {
-        font-size: 12px;
-        color: var(--muted);
-        text-transform: uppercase;
-        letter-spacing: 0.06em;
-        margin-bottom: 6px;
-        display: block;
-      }
-
-      input,
-      select,
-      textarea {
-        width: 100%;
-        padding: 10px 12px;
-        border-radius: 10px;
-        border: 1px solid #d2d2d8;
-        font-family: inherit;
-        font-size: 14px;
-      }
-
-      textarea {
-        min-height: 240px;
-      }
-
-      .listing-group {
-        display: grid;
-        grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
-        gap: 8px;
-      }
-
-      .listing-option {
-        display: inline-flex;
-        align-items: center;
-        gap: 6px;
-        font-size: 12px;
-        background: #f7faf9;
-        border: 1px solid #cfe6dc;
-        padding: 6px 8px;
-        border-radius: 8px;
-        opacity: 0.7;
-      }
-
-      .listing-option input {
-        margin: 0;
-      }
-
-      .listing-links {
-        margin-top: 10px;
-        display: flex;
-        flex-wrap: wrap;
-        gap: 8px;
-      }
-
-      .listing-links a {
-        text-decoration: none;
-        color: #0a663b;
-        border: 1px solid #cfe6dc;
-        padding: 6px 10px;
-        border-radius: 999px;
-        font-size: 12px;
-        background: #ffffff;
-        font-weight: 600;
-      }
-
-      .ukca-status {
-        display: flex;
-        align-items: center;
-        gap: 10px;
-        flex-wrap: wrap;
-      }
-
-      .ukca-badge {
-        display: inline-flex;
-        align-items: center;
-        padding: 6px 12px;
-        border-radius: 999px;
-        font-weight: 700;
-        font-size: 12px;
-        letter-spacing: 0.02em;
-        border: 1px solid transparent;
-      }
-
-      .ukca-badge.is-yes {
-        background: #e0f2f1;
-        color: #0a663b;
-        border-color: #cfe6dc;
-      }
-
-      .ukca-badge.is-no {
-        background: #fff3e0;
-        color: #8a4b00;
-        border-color: #ffd7b0;
-      }
-
-      .ukca-badge.is-na {
-        background: #f0f4f8;
-        color: #54606c;
-        border-color: #d6dde5;
-      }
-
-      .url-grid {
-        display: grid;
-        gap: 12px;
-        grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
-        margin-top: 12px;
-      }
-
-      .actions {
-        display: flex;
-        flex-wrap: wrap;
-        gap: 10px;
-        justify-content: flex-end;
-      }
-
-      .btn {
-        background: #0a663b;
-        color: #fff;
-        border: none;
-        border-radius: 10px;
-        padding: 10px 16px;
-        font-weight: 600;
-        cursor: pointer;
-      }
-
-      .btn.secondary {
-        background: #00796b;
-      }
-
-      .btn.ghost {
-        background: #ffffff;
-        color: #0a663b;
-        border: 1px solid #cfe6dc;
-      }
-
-      .status {
-        font-size: 13px;
-        color: var(--muted);
-      }
-
-      .media-grid {
-        display: grid;
-        grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
-        gap: 10px;
-      }
-
-      .media-item {
-        display: grid;
-        gap: 8px;
-        position: relative;
-      }
-
-      .media-grid img,
-      .media-grid video {
-        width: 100%;
-        border-radius: 12px;
-        border: 1px solid #e2e6e8;
-        background: #fff;
-      }
-
-      .media-actions {
-        position: absolute;
-        top: 6px;
-        left: 6px;
-        display: flex;
-        justify-content: flex-start;
-      }
-
-      .media-actions .btn {
-        padding: 2px 6px;
-        font-size: 12px;
-        border-radius: 999px;
-        background: rgba(255, 255, 255, 0.9);
-      }
-
-      .file-list {
-        display: grid;
-        gap: 10px;
-      }
-
-      .file-item {
-        display: grid;
-        gap: 10px;
-        grid-template-columns: minmax(0, 1fr);
-        padding: 10px 12px;
-        border-radius: 12px;
-        border: 1px solid #e2e6e8;
-        background: #fff;
-      }
-
-      .file-name {
-        font-weight: 600;
-      }
-
-      .file-path {
-        font-size: 12px;
-        color: var(--muted);
-        word-break: break-all;
-      }
-
-      .file-actions {
-        display: flex;
-        gap: 8px;
-        flex-wrap: wrap;
-      }
-
-      .file-actions .btn {
-        padding: 6px 10px;
-        font-size: 12px;
-      }
-
-      .ukca-pack {
-        border: 1px solid #e2e6e8;
-        border-radius: 12px;
-        padding: 10px 14px;
-        background: #ffffff;
-      }
-
-      .ukca-pack summary {
-        font-weight: 700;
-        color: #0a663b;
-        cursor: pointer;
-      }
-
-      .ukca-pack-body {
-        margin-top: 12px;
-      }
-
-      .ukca-pack-empty {
-        color: var(--muted);
-        font-size: 13px;
-      }
-
-      .ukca-pack-file {
-        margin-top: 10px;
-        border: 1px solid #e2e6e8;
-        border-radius: 10px;
-        padding: 8px 12px;
-        background: #ffffff;
-      }
-
-      .ukca-pack-file summary {
-        font-weight: 600;
-        color: #0a663b;
-        cursor: pointer;
-      }
-
-      .ukca-pack-file textarea {
-        width: 100%;
-        min-height: 180px;
-        margin-top: 10px;
-      }
-
-      .ukca-en71-form {
-        display: grid;
-        gap: 10px;
-        margin-top: 10px;
-      }
-
-      .ukca-en71-grid {
-        display: grid;
-        gap: 10px;
-        grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
-      }
-
-      .ukca-pack-actions {
-        display: flex;
-        justify-content: flex-end;
-        gap: 10px;
-        margin-bottom: 12px;
-      }
-
-      .upload-zone {
-        border: 2px dashed #cfe6dc;
-        border-radius: 14px;
-        padding: 20px;
-        text-align: center;
-        color: var(--muted);
-        background: #f7faf9;
-        cursor: pointer;
-      }
-
-      .upload-zone.dragover {
-        border-color: #0a663b;
-        color: #0a663b;
-        background: #e0f2f1;
-      }
-
-      .upload-zone strong {
-        color: #0a663b;
-      }
-
-      dialog {
-        border: none;
-        border-radius: 16px;
-        padding: 0;
-        max-width: 520px;
-        width: min(92vw, 520px);
-        box-shadow: 0 24px 80px rgba(15, 23, 42, 0.25);
-      }
-
-      dialog::backdrop {
-        background: rgba(15, 23, 42, 0.55);
-      }
-
-      .dialog-header {
-        padding: 18px 22px;
-        border-bottom: 1px solid #e2e6e8;
-        display: flex;
-        align-items: center;
-        justify-content: space-between;
-        gap: 12px;
-      }
-
-      .dialog-body {
-        padding: 18px 22px;
-        display: grid;
-        gap: 12px;
-      }
-
-      .dialog-actions {
-        padding: 16px 22px;
-        border-top: 1px solid #e2e6e8;
-        display: flex;
-        justify-content: flex-end;
-        gap: 10px;
-      }
-
-      @media (min-width: 720px) {
-        .file-item {
-          grid-template-columns: minmax(0, 1fr) auto;
-          align-items: center;
-        }
-      }
-
-    </style>
-  </head>
-  <body>
-    <header>
-      <nav class="nav">
-        <div class="nav-brand">
-          <strong>GeekyThings</strong>
-        </div>
-        <div class="nav-links">
-          <a href="/">Products</a>
-          <a href="/add.html">Add Product</a>
-        </div>
-      </nav>
-      <h1 id="productTitle">Product Details</h1>
-      <div class="version">
-        Version <a href="https://github.com/robinsondan87/GeekyThingsProductCatalogue/blob/main/CHANGELOG.md" target="_blank" rel="noopener noreferrer">v1.6.0</a>
-      </div>
-    </header>
-
-    <main>
-      <section class="card">
-        <div class="grid">
-          <div>
-            <label for="category">Category</label>
-            <input id="category" type="text" disabled />
-          </div>
-          <div>
-            <label for="sku">SKU</label>
-            <input id="sku" type="text" />
-          </div>
-          <div>
-            <label>UKCA status</label>
-            <div class="ukca-status">
-              <span class="ukca-badge is-no" id="ukcaStatus">No</span>
-              <button class="btn ghost" id="ukcaAddBtn" type="button">Add UKCA Pack</button>
-            </div>
-          </div>
-        </div>
-        <div class="grid" style="margin-top: 12px;">
-          <div>
-            <label for="productFolder">Product folder</label>
-            <input id="productFolder" type="text" />
-          </div>
-          <div>
-            <label for="tags">Tags</label>
-            <input id="tags" type="text" placeholder="comma,separated,tags" />
-          </div>
-        </div>
-        <div style="margin-top: 12px;">
-          <label>Listings (auto from URLs)</label>
-          <div class="listing-group" id="listingGroup"></div>
-          <div class="listing-links" id="listingLinks"></div>
-        </div>
-        <div class="url-grid">
-          <div>
-            <label for="facebookUrl">Facebook URL</label>
-            <input id="facebookUrl" type="url" placeholder="https://..." />
-          </div>
-          <div>
-            <label for="tiktokUrl">TikTok URL</label>
-            <input id="tiktokUrl" type="url" placeholder="https://..." />
-          </div>
-          <div>
-            <label for="ebayUrl">Ebay URL</label>
-            <input id="ebayUrl" type="url" placeholder="https://..." />
-          </div>
-          <div>
-            <label for="etsyUrl">Etsy URL</label>
-            <input id="etsyUrl" type="url" placeholder="https://..." />
-          </div>
-        </div>
-        <div class="actions" style="margin-top: 16px;">
-          <button class="btn ghost" id="openFolderBtn" type="button">Open Folder</button>
-          <button class="btn ghost" id="renameBtn" type="button">Rename Folder</button>
-          <button class="btn secondary" id="saveDetailsBtn" type="button">Save Details</button>
-        </div>
-        <div class="status" id="status"></div>
-      </section>
-
-      <section class="card">
-        <label for="readme">README.md</label>
-        <textarea id="readme"></textarea>
-        <div class="actions" style="margin-top: 12px;">
-          <button class="btn" id="saveReadmeBtn" type="button">Save README</button>
-        </div>
-      </section>
-
-      <section class="card">
-        <h2 style="margin-top:0;color:#0a663b;">Media</h2>
-        <div class="media-grid" id="mediaGrid"></div>
-      </section>
-
-      <section class="card">
-        <h2 style="margin-top:0;color:#0a663b;">3MF Files</h2>
-        <div class="file-list" id="threeMfList"></div>
-      </section>
-
-      <section class="card" id="ukcaPackSection" hidden>
-        <details class="ukca-pack" id="ukcaPackDetails">
-          <summary>UKCA Pack</summary>
-          <div class="ukca-pack-body">
-            <div class="ukca-pack-actions">
-              <button class="btn ghost" id="printUkcaBtn" type="button">Print UKCA Pack</button>
-            </div>
-            <div class="file-list" id="ukcaPackList"></div>
-          </div>
-        </details>
-      </section>
-
-      <section class="card">
-        <h2 style="margin-top:0;color:#0a663b;">Upload Media / 3MF</h2>
-        <div class="upload-zone" id="uploadZone">
-          <strong>Drop files here</strong> or click to choose
-        </div>
-        <input id="uploadInput" type="file" multiple hidden />
-      </section>
-    </main>
-
-    <dialog id="ukcaDialog">
-      <form id="ukcaForm">
-        <div class="dialog-header">
-          <strong>Create UKCA Pack</strong>
-        </div>
-        <div class="dialog-body">
-          <div>
-            <label for="ukcaProductName">Product name</label>
-            <input id="ukcaProductName" type="text" required />
-          </div>
-          <div>
-            <label for="ukcaSku">SKU</label>
-            <input id="ukcaSku" type="text" />
-          </div>
-          <div>
-            <label for="ukcaMaterials">Materials</label>
-            <input id="ukcaMaterials" type="text" placeholder="PLA / PETG" />
-          </div>
-          <div>
-            <label for="ukcaIntendedAge">Intended age</label>
-            <input id="ukcaIntendedAge" type="text" placeholder="3+" />
-          </div>
-          <div>
-            <label for="ukcaManufacturer">Manufacturer</label>
-            <input id="ukcaManufacturer" type="text" placeholder="GeekyThingsUK" />
-          </div>
-          <div>
-            <label for="ukcaAddress">Manufacturer address</label>
-            <input id="ukcaAddress" type="text" placeholder="United Kingdom" />
-          </div>
-          <div>
-            <label for="ukcaTester">Tester</label>
-            <input id="ukcaTester" type="text" placeholder="Dan Robinson" />
-          </div>
-          <div>
-            <label for="ukcaTestDate">Test date</label>
-            <input id="ukcaTestDate" type="date" />
-          </div>
-          <div>
-            <label for="ukcaNotes">Notes</label>
-            <textarea id="ukcaNotes" rows="3" placeholder="Optional notes..."></textarea>
-          </div>
-        </div>
-        <div class="dialog-actions">
-          <button class="btn ghost" type="button" onclick="document.getElementById('ukcaDialog').close()">Cancel</button>
-          <button class="btn" type="submit">Create UKCA Pack</button>
-        </div>
-      </form>
-    </dialog>
-
-    <script>
-      const params = new URLSearchParams(window.location.search);
+<script setup>
+import { onMounted } from 'vue'
+import { APP_VERSION, CHANGELOG_URL } from '../constants'
+
+const version = APP_VERSION
+const changeLogUrl = CHANGELOG_URL
+
+onMounted(() => {
+const params = new URLSearchParams(window.location.search);
       const categoryParam = params.get("category") || "";
       const folderParam = params.get("folder") || "";
       const statusParam = (params.get("status") || "").toLowerCase();
@@ -1254,7 +645,7 @@
         history.replaceState(
           {},
           "",
-          `/product.html?category=${encodeURIComponent(row.category)}&folder=${encodeURIComponent(row.product_folder)}${statusQuery}`
+          `/product?category=${encodeURIComponent(row.category)}&folder=${encodeURIComponent(row.product_folder)}${statusQuery}`
         );
       };
 
@@ -1452,88 +843,172 @@
             <body>
               <h1>UKCA Pack - ${productFolderInput.value}</h1>
               ${sections.map((section) => `<h2>${section.title}</h2><pre>${section.content}</pre>`).join("")}
-            </body>
-          </html>
-        `;
-        printWindow.document.open();
-        printWindow.document.write(html);
-        printWindow.document.close();
-        printWindow.focus();
-        printWindow.print();
-      };
+})
+</script>
 
-      const deleteFile = async (relPath) => {
-        const response = await fetch("/api/delete_file", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
-            category: categoryParam,
-            folder_name: productFolderInput.value,
-            status: statusParam,
-            rel_path: relPath,
-          }),
-        });
-        const payload = await response.json();
-        if (!response.ok) {
-          statusEl.textContent = payload.error || "Delete failed.";
-          return;
-        }
-        statusEl.textContent = "File moved to _Deleted.";
-        await loadMedia();
-        await load3mf();
-      };
+<template>
+<header>
+      <nav class="nav">
+        <div class="nav-brand">
+          <strong>GeekyThings</strong>
+        </div>
+        <div class="nav-links">
+          <RouterLink to="/">Products</RouterLink>
+          <RouterLink to="/add">Add Product</RouterLink>
+        </div>
+      </nav>
+      <h1 id="productTitle">Product Details</h1>
+      <div class="version">
+        Version <a :href="changeLogUrl" target="_blank" rel="noopener noreferrer">{{ version }}</a>
+      </div>
+    </header>
 
-      const uploadFiles = async (files) => {
-        if (!files || !files.length) return;
-        const formData = new FormData();
-        formData.append("category", categoryParam);
-        formData.append("folder_name", productFolderInput.value);
-        formData.append("status", statusParam);
-        formData.append("sku", skuInput.value.trim());
-        Array.from(files).forEach((file) => formData.append("files", file));
-        statusEl.textContent = "Uploading files...";
-        try {
-          const response = await fetch("/api/upload", {
-            method: "POST",
-            body: formData,
-          });
-          const payload = await response.json();
-          if (!response.ok) {
-            statusEl.textContent = payload.error || "Upload failed.";
-            return;
-          }
-          statusEl.textContent = `Uploaded ${payload.saved?.length || 0} file(s).`;
-          await loadMedia();
-          await load3mf();
-        } catch (error) {
-          console.error(error);
-          statusEl.textContent = "Upload failed.";
-        }
-      };
+    <main>
+      <section class="card">
+        <div class="grid">
+          <div>
+            <label for="category">Category</label>
+            <input id="category" type="text" disabled />
+          </div>
+          <div>
+            <label for="sku">SKU</label>
+            <input id="sku" type="text" />
+          </div>
+          <div>
+            <label>UKCA status</label>
+            <div class="ukca-status">
+              <span class="ukca-badge is-no" id="ukcaStatus">No</span>
+              <button class="btn ghost" id="ukcaAddBtn" type="button">Add UKCA Pack</button>
+            </div>
+          </div>
+        </div>
+        <div class="grid" style="margin-top: 12px;">
+          <div>
+            <label for="productFolder">Product folder</label>
+            <input id="productFolder" type="text" />
+          </div>
+          <div>
+            <label for="tags">Tags</label>
+            <input id="tags" type="text" placeholder="comma,separated,tags" />
+          </div>
+        </div>
+        <div style="margin-top: 12px;">
+          <label>Listings (auto from URLs)</label>
+          <div class="listing-group" id="listingGroup"></div>
+          <div class="listing-links" id="listingLinks"></div>
+        </div>
+        <div class="url-grid">
+          <div>
+            <label for="facebookUrl">Facebook URL</label>
+            <input id="facebookUrl" type="url" placeholder="https://..." />
+          </div>
+          <div>
+            <label for="tiktokUrl">TikTok URL</label>
+            <input id="tiktokUrl" type="url" placeholder="https://..." />
+          </div>
+          <div>
+            <label for="ebayUrl">Ebay URL</label>
+            <input id="ebayUrl" type="url" placeholder="https://..." />
+          </div>
+          <div>
+            <label for="etsyUrl">Etsy URL</label>
+            <input id="etsyUrl" type="url" placeholder="https://..." />
+          </div>
+        </div>
+        <div class="actions" style="margin-top: 16px;">
+          <button class="btn ghost" id="openFolderBtn" type="button">Open Folder</button>
+          <button class="btn ghost" id="renameBtn" type="button">Rename Folder</button>
+          <button class="btn secondary" id="saveDetailsBtn" type="button">Save Details</button>
+        </div>
+        <div class="status" id="status"></div>
+      </section>
 
-      uploadZone.addEventListener("click", () => uploadInput.click());
-      uploadInput.addEventListener("change", (event) => {
-        uploadFiles(event.target.files).catch(console.error);
-        uploadInput.value = "";
-      });
-      uploadZone.addEventListener("dragover", (event) => {
-        event.preventDefault();
-        uploadZone.classList.add("dragover");
-      });
-      uploadZone.addEventListener("dragleave", () => {
-        uploadZone.classList.remove("dragover");
-      });
-      uploadZone.addEventListener("drop", (event) => {
-        event.preventDefault();
-        uploadZone.classList.remove("dragover");
-        uploadFiles(event.dataTransfer.files).catch(console.error);
-      });
+      <section class="card">
+        <label for="readme">README.md</label>
+        <textarea id="readme"></textarea>
+        <div class="actions" style="margin-top: 12px;">
+          <button class="btn" id="saveReadmeBtn" type="button">Save README</button>
+        </div>
+      </section>
 
-      if (!categoryParam || !folderParam) {
-        statusEl.textContent = "Missing product details in URL.";
-      } else {
-        loadData().catch(console.error);
-      }
-    </script>
-  </body>
-</html>
+      <section class="card">
+        <h2 style="margin-top:0;color:#0a663b;">Media</h2>
+        <div class="media-grid" id="mediaGrid"></div>
+      </section>
+
+      <section class="card">
+        <h2 style="margin-top:0;color:#0a663b;">3MF Files</h2>
+        <div class="file-list" id="threeMfList"></div>
+      </section>
+
+      <section class="card" id="ukcaPackSection" hidden>
+        <details class="ukca-pack" id="ukcaPackDetails">
+          <summary>UKCA Pack</summary>
+          <div class="ukca-pack-body">
+            <div class="ukca-pack-actions">
+              <button class="btn ghost" id="printUkcaBtn" type="button">Print UKCA Pack</button>
+            </div>
+            <div class="file-list" id="ukcaPackList"></div>
+          </div>
+        </details>
+      </section>
+
+      <section class="card">
+        <h2 style="margin-top:0;color:#0a663b;">Upload Media / 3MF</h2>
+        <div class="upload-zone" id="uploadZone">
+          <strong>Drop files here</strong> or click to choose
+        </div>
+        <input id="uploadInput" type="file" multiple hidden />
+      </section>
+    </main>
+
+    <dialog id="ukcaDialog">
+      <form id="ukcaForm">
+        <div class="dialog-header">
+          <strong>Create UKCA Pack</strong>
+        </div>
+        <div class="dialog-body">
+          <div>
+            <label for="ukcaProductName">Product name</label>
+            <input id="ukcaProductName" type="text" required />
+          </div>
+          <div>
+            <label for="ukcaSku">SKU</label>
+            <input id="ukcaSku" type="text" />
+          </div>
+          <div>
+            <label for="ukcaMaterials">Materials</label>
+            <input id="ukcaMaterials" type="text" placeholder="PLA / PETG" />
+          </div>
+          <div>
+            <label for="ukcaIntendedAge">Intended age</label>
+            <input id="ukcaIntendedAge" type="text" placeholder="3+" />
+          </div>
+          <div>
+            <label for="ukcaManufacturer">Manufacturer</label>
+            <input id="ukcaManufacturer" type="text" placeholder="GeekyThingsUK" />
+          </div>
+          <div>
+            <label for="ukcaAddress">Manufacturer address</label>
+            <input id="ukcaAddress" type="text" placeholder="United Kingdom" />
+          </div>
+          <div>
+            <label for="ukcaTester">Tester</label>
+            <input id="ukcaTester" type="text" placeholder="Dan Robinson" />
+          </div>
+          <div>
+            <label for="ukcaTestDate">Test date</label>
+            <input id="ukcaTestDate" type="date" />
+          </div>
+          <div>
+            <label for="ukcaNotes">Notes</label>
+            <textarea id="ukcaNotes" rows="3" placeholder="Optional notes..."></textarea>
+          </div>
+        </div>
+        <div class="dialog-actions">
+          <button class="btn ghost" type="button" onclick="document.getElementById('ukcaDialog').close()">Cancel</button>
+          <button class="btn" type="submit">Create UKCA Pack</button>
+        </div>
+      </form>
+    </dialog>
+</template>

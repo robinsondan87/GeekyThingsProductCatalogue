@@ -24,6 +24,16 @@ python3 App/server.py
 
 Then open `http://localhost:8555`.
 
+- Run frontend dev server:
+
+```
+cd App/ui
+npm install
+npm run dev
+```
+
+Then open `http://localhost:5173`.
+
 - Run with Docker:
 
 ```

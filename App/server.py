@@ -14,6 +14,7 @@ from urllib.parse import urlparse, parse_qs, unquote, quote
 BASE_DIR = Path(__file__).resolve().parent
 ROOT_DIR = BASE_DIR.parent
 PRODUCTS_DIR = Path(os.environ.get('PRODUCTS_DIR', ROOT_DIR / 'Products')).resolve()
+UI_DIST_DIR = BASE_DIR / 'ui' / 'dist'
 CSV_PATH = PRODUCTS_DIR / 'categories_index.csv'
 CATEGORIES_DIR = PRODUCTS_DIR / 'Categories'
 ARCHIVE_DIR = CATEGORIES_DIR / '_Archive'
@@ -241,6 +242,14 @@ class Handler(BaseHTTPRequestHandler):
         self.end_headers()
         self.wfile.write(data)
 
+    def _send_text(self, status, text):
+        data = text.encode('utf-8')
+        self.send_response(status)
+        self.send_header('Content-Type', 'text/plain; charset=utf-8')
+        self.send_header('Content-Length', str(len(data)))
+        self.end_headers()
+        self.wfile.write(data)
+
     def _send_file(self, path: Path):
         if not path.exists() or not path.is_file():
             self.send_error(404)
@@ -394,14 +403,21 @@ class Handler(BaseHTTPRequestHandler):
             self._send_file_dynamic(file_path)
             return
 
-        if parsed.path == '/':
-            self._send_file(BASE_DIR / 'index.html')
+        if UI_DIST_DIR.exists():
+            if parsed.path == '/':
+                self._send_file(UI_DIST_DIR / 'index.html')
+                return
+            rel = parsed.path.lstrip('/')
+            if rel:
+                candidate = UI_DIST_DIR / rel
+                if candidate.exists():
+                    self._send_file(candidate)
+                    return
+            self._send_file(UI_DIST_DIR / 'index.html')
             return
 
-        # Serve static files from App folder
-        rel = parsed.path.lstrip('/')
-        if rel:
-            self._send_file(BASE_DIR / rel)
+        if parsed.path == '/':
+            self._send_text(503, 'UI build not found. Run `npm run build` in App/ui or use Vite dev server.')
             return
 
         self.send_error(404)

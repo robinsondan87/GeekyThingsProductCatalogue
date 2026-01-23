@@ -1,5 +1,9 @@
 .DS_Store
 
+# Frontend build artifacts
+App/ui/node_modules
+App/ui/dist
+
 # Workflow scratch files (can be large)
 Products/_Workflow/**
 

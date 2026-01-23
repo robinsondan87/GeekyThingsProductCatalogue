@@ -2,8 +2,8 @@
 
 ## Unreleased
 
-## V1.6.0
-- Major: Renamed ProductMgmt app folder to App.
+## V2.0.0
+- Major: Migrated frontend to a Vue SPA (Vite + Vue Router) and added dev proxy.
 
 ## V1.5.1
 - Minor: Documented Docker and local run commands in workflow notes.

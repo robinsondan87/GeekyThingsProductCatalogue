@@ -10,7 +10,7 @@ Local product management web app for GeekyThings. It provides a simple browser U
 - Shows media from each product's `Media` folder.
 - Lists `.3mf` files under the product folder with open/copy helpers.
 
-## Run locally
+## Run locally (backend)
 From this folder:
 
 ```
@@ -26,9 +26,10 @@ Then open `http://localhost:8555` in a browser.
 - Files are served via `/files/...` for media and `.3mf` listing.
 
 ## Key files
-- `index.html`: Product list, search, and table view.
-- `product.html`: Product detail view with media and `.3mf` files.
-- `add.html`: Create new product flow.
+- `ui/`: Vite + Vue frontend (SPA).
+- `ui/src/views/IndexView.vue`: Product list, search, and table view.
+- `ui/src/views/ProductView.vue`: Product detail view with media and `.3mf` files.
+- `ui/src/views/AddView.vue`: Create new product flow.
 - `server.py`: Local HTTP server and API endpoints.
 
 ## API endpoints
@@ -57,7 +58,17 @@ Then open `http://localhost:8555` in a browser.
 - Uploaded files are named `SKU-###` when SKU is provided.
 - The `.3mf` list is recursive under each product folder.
 - UKCA templates live in `Products/UKCA_Shared` and are copied into `<Product>/UKCA`.
- - Set `PRODUCTS_DIR` if the Products folder is mounted elsewhere.
+- Set `PRODUCTS_DIR` if the Products folder is mounted elsewhere.
+
+## Run the frontend (Vite)
+From `App/ui`:
+
+```
+npm install
+npm run dev
+```
+
+Then open `http://localhost:5173` in a browser. The dev server proxies `/api` and `/files` to the backend on port 8555.
 
 ## Run with Docker
 From the repo root:

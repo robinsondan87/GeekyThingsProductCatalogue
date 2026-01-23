@@ -183,6 +183,49 @@
         background: #fff;
       }
 
+      .file-list {
+        display: grid;
+        gap: 10px;
+      }
+
+      .file-item {
+        display: grid;
+        gap: 10px;
+        grid-template-columns: minmax(0, 1fr);
+        padding: 10px 12px;
+        border-radius: 12px;
+        border: 1px solid #e2e6e8;
+        background: #fff;
+      }
+
+      .file-name {
+        font-weight: 600;
+      }
+
+      .file-path {
+        font-size: 12px;
+        color: var(--muted);
+        word-break: break-all;
+      }
+
+      .file-actions {
+        display: flex;
+        gap: 8px;
+        flex-wrap: wrap;
+      }
+
+      .file-actions .btn {
+        padding: 6px 10px;
+        font-size: 12px;
+      }
+
+      @media (min-width: 720px) {
+        .file-item {
+          grid-template-columns: minmax(0, 1fr) auto;
+          align-items: center;
+        }
+      }
+
       .top-links {
         display: flex;
         gap: 12px;
@@ -279,6 +322,11 @@
         <h2 style="margin-top:0;color:#0a663b;">Media</h2>
         <div class="media-grid" id="mediaGrid"></div>
       </section>
+
+      <section class="card">
+        <h2 style="margin-top:0;color:#0a663b;">3MF Files</h2>
+        <div class="file-list" id="threeMfList"></div>
+      </section>
     </main>
 
     <script>
@@ -305,6 +353,7 @@
       const readmeArea = document.getElementById("readme");
       const saveReadmeBtn = document.getElementById("saveReadmeBtn");
       const mediaGrid = document.getElementById("mediaGrid");
+      const threeMfList = document.getElementById("threeMfList");
 
       const listingOptions = ["Facebook", "TikTok", "Ebay", "Etsy"];
       const baseCategoriesPath = "/Users/dan/GeekyThings/Products/Categories";
@@ -383,6 +432,7 @@
 
         await loadReadme();
         await loadMedia();
+        await load3mf();
       };
 
       const loadReadme = async () => {
@@ -421,6 +471,60 @@
             img.alt = file.name;
             mediaGrid.appendChild(img);
           }
+        });
+      };
+
+      const load3mf = async () => {
+        const response = await fetch(
+          `/api/3mf?category=${encodeURIComponent(categoryParam)}&folder=${encodeURIComponent(productFolderInput.value)}`
+        );
+        if (!response.ok) return;
+        const payload = await response.json();
+        const files = payload.files || [];
+        threeMfList.innerHTML = "";
+        if (!files.length) {
+          threeMfList.textContent = "No .3mf files found.";
+          return;
+        }
+        files.forEach((file) => {
+          const row = document.createElement("div");
+          row.className = "file-item";
+
+          const info = document.createElement("div");
+          const name = document.createElement("div");
+          name.className = "file-name";
+          name.textContent = file.name;
+          const path = document.createElement("div");
+          path.className = "file-path";
+          path.textContent = file.rel_path || "";
+          info.appendChild(name);
+          info.appendChild(path);
+
+          const actions = document.createElement("div");
+          actions.className = "file-actions";
+          const openLink = document.createElement("a");
+          openLink.className = "btn ghost";
+          openLink.textContent = "Open";
+          openLink.href = file.url || "#";
+          openLink.target = "_blank";
+          openLink.rel = "noopener noreferrer";
+
+          const copyBtn = document.createElement("button");
+          copyBtn.className = "btn ghost";
+          copyBtn.type = "button";
+          copyBtn.textContent = "Copy Path";
+          copyBtn.addEventListener("click", () => {
+            const text = file.abs_path || file.url || "";
+            if (!text) return;
+            navigator.clipboard?.writeText(text).catch(() => {});
+          });
+
+          actions.appendChild(openLink);
+          actions.appendChild(copyBtn);
+
+          row.appendChild(info);
+          row.appendChild(actions);
+          threeMfList.appendChild(row);
         });
       };
 
@@ -487,6 +591,7 @@
         originalFolder = newName;
         await saveDetails();
         await loadMedia();
+        await load3mf();
       };
 
       const openFolder = () => {

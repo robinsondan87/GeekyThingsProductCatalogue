@@ -9,6 +9,7 @@
 - Minor: Serve `.3mf` links via local `/files` to avoid `file://` pop-up blocks.
 - Fix: URL-encode `.3mf` links so spaces/symbols open correctly.
 - Minor: Archive action now moves items to `_Archive` instead of `_Deleted`.
+- Fix: Corrected ProductMgmt README port and API path details.
 
 ## V1.0.0
 - Major: Product folder restructure (Media/STL/MISC + README templates).

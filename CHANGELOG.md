@@ -2,6 +2,9 @@
 
 ## Unreleased
 
+## V1.2.8
+- Minor: Renamed 3MF action label to Download.
+
 ## V1.2.7
 - Minor: Open 3MFs via Bambu Studio URL scheme.
 

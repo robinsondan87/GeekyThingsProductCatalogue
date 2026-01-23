@@ -2,6 +2,9 @@
 
 ## Unreleased
 
+## V2.1.5
+- Minor: Auto-refresh main product list periodically and on tab focus.
+
 ## V2.1.4
 - Minor: Simplified UKCA filter to Yes/No only.
 

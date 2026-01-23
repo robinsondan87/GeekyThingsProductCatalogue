@@ -797,6 +797,17 @@ onMounted(() => {
       });
       autoLoadDefault();
 
+      const autoRefresh = () => {
+        autoLoadDefault().catch(console.error);
+      };
+
+      setInterval(autoRefresh, 30000);
+      document.addEventListener("visibilitychange", () => {
+        if (document.visibilityState === "visible") {
+          autoRefresh();
+        }
+      });
+
       viewTabs.addEventListener("click", (event) => {
         const button = event.target.closest(".tab-btn");
         if (!button) return;

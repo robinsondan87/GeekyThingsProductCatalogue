@@ -839,7 +839,6 @@ onMounted(() => {
             <option value="">UKCA: Any</option>
             <option value="Yes">UKCA: Yes</option>
             <option value="No">UKCA: No</option>
-            <option value="N/A">UKCA: N/A</option>
           </select>
         </div>
         <div class="status" id="status">No file loaded.</div>

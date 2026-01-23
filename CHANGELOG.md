@@ -2,6 +2,9 @@
 
 ## Unreleased
 
+## V2.1.4
+- Minor: Simplified UKCA filter to Yes/No only.
+
 ## V2.1.3
 - Minor: Added UKCA filter on the main product list.
 

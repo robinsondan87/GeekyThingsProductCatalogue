@@ -1,0 +1,54 @@
+[23-12-15 20:52:20.266168][E][82BC][AV] [avConnReadThread] avConnReadThread error[-52005]
+ @3975
+[23-12-15 20:52:39.718438][E][82BC][AV] [avConnReadThread] avConnReadThread error[-52005]
+ @3975
+[23-12-15 20:52:54.752766][E][82BC][AV] [avConnReadThread] avConnReadThread error[-52005]
+ @3975
+[23-12-15 20:53:12.481831][E][82BC][AV] [avConnReadThread] avConnReadThread error[-52005]
+ @3975
+[23-12-15 20:53:46.981969][E][82BC][AV] [avConnReadThread] avConnReadThread error[-52005]
+ @3975
+[23-12-15 20:54:20.793998][E][82BC][AV] [avConnReadThread] avConnReadThread error[-52005]
+ @3975
+[23-12-15 20:54:23.853406][E][82BC][AV] [avConnReadThread] avConnReadThread error[-52005]
+ @3975
+[23-12-15 20:54:51.281232][E][82BC][AV] [avConnReadThread] avConnReadThread error[-52005]
+ @3975
+[23-12-15 20:54:54.779393][E][82BC][AV] [avConnReadThread] avConnReadThread error[-52005]
+ @3975
+[23-12-15 20:55:24.251109][E][82BC][AV] [avConnReadThread] avConnReadThread error[-52005]
+ @3975
+[23-12-15 20:55:35.124012][E][82BC][AV] [avConnReadThread] avConnReadThread error[-52005]
+ @3975
+[23-12-15 20:55:36.268633][E][82BC][AV] [avConnReadThread] avConnReadThread error[-52005]
+ @3975
+[23-12-15 20:56:00.669377][E][82BC][AV] [avConnReadThread] avConnReadThread error[0]
+ @3975
+[23-12-15 20:56:00.994362][E][82BC][AV] [avConnReadThread] avConnReadThread error[0]
+ @3975
+[23-12-15 20:56:24.995680][E][82BC][AV] [avConnReadThread] avConnReadThread error[-52005]
+ @3975
+[23-12-15 20:56:26.431829][E][82BC][AV] [avConnReadThread] avConnReadThread error[-52005]
+ @3975
+[23-12-15 20:57:00.753714][E][82BC][AV] [avConnReadThread] avConnReadThread error[-52005]
+ @3975
+[23-12-15 20:57:08.911391][E][82BC][AV] [avConnReadThread] avConnReadThread error[-52005]
+ @3975
+[23-12-15 20:57:23.991749][E][82BC][AV] [avConnReadThread] avConnReadThread error[-52005]
+ @3975
+[23-12-15 20:57:27.767950][E][82BC][AV] [avConnReadThread] avConnReadThread error[-52005]
+ @3975
+[23-12-15 20:58:07.608663][E][82BC][AV] [avConnReadThread] avConnReadThread error[-52005]
+ @3975
+[23-12-15 20:58:13.021900][E][82BC][AV] [avConnReadThread] avConnReadThread error[-52005]
+ @3975
+[23-12-15 20:58:24.610034][E][82BC][AV] [avConnReadThread] avConnReadThread error[-52005]
+ @3975
+[23-12-15 20:58:45.983145][E][82BC][AV] [avConnReadThread] avConnReadThread error[-52005]
+ @3975
+[23-12-15 20:58:46.014208][E][82BC][AV] [avConnReadThread] avConnReadThread error[-52005]
+ @3975
+[23-12-15 20:59:03.681577][E][6FC4][AV] [threadBBR] [threadBBR] AvConnForceStoped break!
+ @2682
+[23-12-15 20:59:03.775943][E][82BC][AV] [avConnReadThread] [avConnReadThread] AvConnForceStoped break!
+ @3855

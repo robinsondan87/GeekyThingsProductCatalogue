@@ -1,0 +1,19 @@
+ZOU3D - https://www.patreon.com/zou3d
+
+Baby Sheep
+
+Print Settings:
+
+Wall line count: 3
+Infill: 20% - Gyroid
+
+Filaments:
+
+https://www.esun3d.com/pla-pro-product/
+
+Beige
+
+https://www.esun3d.com/epla-matte-product/
+
+Black
+White

@@ -1,0 +1,11 @@
+ZOU3D - https://www.patreon.com/zou3d
+
+Baby Duck
+
+Print Settings:
+
+Wall line count: 4
+Infill: 20%
+
+USE BRIM!!!!
+USE BRIM!!!!

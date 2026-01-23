@@ -1,0 +1,6 @@
+https://printer.tools/qrcode2stl/
+
+untick add border
+tick keychain
+
+size is 58%

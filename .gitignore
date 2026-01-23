@@ -1,7 +1,6 @@
 .DS_Store
 
-# Large asset folders
-Products/Categories/**
+# Workflow scratch files (can be large)
 Products/_Workflow/**
 
 # Large binary assets

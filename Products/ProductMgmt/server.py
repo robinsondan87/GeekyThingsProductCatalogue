@@ -39,9 +39,12 @@ def read_csv():
         headers.append('tags')
     if 'Listings' not in headers:
         headers.append('Listings')
+    if 'Status' not in headers:
+        headers.append('Status')
     for row in rows:
         row.setdefault('tags', '')
         row.setdefault('Listings', '')
+        row['Status'] = normalize_status(row.get('Status'))
     return headers, rows
 
 
@@ -50,12 +53,15 @@ def write_csv(headers, rows):
         headers.append('tags')
     if 'Listings' not in headers:
         headers.append('Listings')
+    if 'Status' not in headers:
+        headers.append('Status')
     with CSV_PATH.open('w', newline='') as f:
         writer = csv.DictWriter(f, fieldnames=headers)
         writer.writeheader()
         for row in rows:
             row.setdefault('tags', '')
             row.setdefault('Listings', '')
+            row['Status'] = normalize_status(row.get('Status'))
             writer.writerow(row)
 
 
@@ -67,6 +73,15 @@ def safe_path_component(name: str) -> str:
 def sanitize_folder_name(name: str) -> str:
     cleaned = name.replace('/', '-').replace('\\', '-').strip()
     return ' '.join(cleaned.split())
+
+
+def normalize_status(value: str) -> str:
+    lowered = (value or '').strip().lower()
+    if lowered == 'draft':
+        return 'Draft'
+    if lowered == 'archived':
+        return 'Archived'
+    return 'Live'
 
 
 def list_folder_entries(base_dir: Path):
@@ -180,12 +195,28 @@ class Handler(BaseHTTPRequestHandler):
             return
 
         if parsed.path == '/api/archived':
-            items = list_folder_entries(ARCHIVE_DIR)
+            headers, rows = read_csv()
+            items = [
+                {
+                    'category': row.get('category', ''),
+                    'product_folder': row.get('product_folder', ''),
+                }
+                for row in rows
+                if normalize_status(row.get('Status')) == 'Archived'
+            ]
             self._send_json(200, {'items': items})
             return
 
         if parsed.path == '/api/drafts':
-            items = list_folder_entries(DRAFT_DIR)
+            headers, rows = read_csv()
+            items = [
+                {
+                    'category': row.get('category', ''),
+                    'product_folder': row.get('product_folder', ''),
+                }
+                for row in rows
+                if normalize_status(row.get('Status')) == 'Draft'
+            ]
             self._send_json(200, {'items': items})
             return
 
@@ -354,7 +385,7 @@ class Handler(BaseHTTPRequestHandler):
                 self._send_json(500, {'error': 'Failed to create SKU'})
                 return
             product_folder = f'{sku} - {description}'
-            product_dir = CATEGORIES_DIR / category / product_folder
+            product_dir = DRAFT_DIR / category / product_folder
             if product_dir.exists():
                 self._send_json(409, {'error': 'Folder already exists'})
                 return
@@ -381,6 +412,7 @@ class Handler(BaseHTTPRequestHandler):
                 'UKCA': 'No' if requires_ukca else 'N/A',
                 'Listings': '',
                 'tags': tags,
+                'Status': 'Draft',
                 'Facebook URL': '',
                 'TikTok URL': '',
                 'Ebay URL': '',
@@ -408,6 +440,44 @@ class Handler(BaseHTTPRequestHandler):
                 self._send_json(409, {'error': 'Destination already exists'})
                 return
             src_path.rename(dest_path)
+            headers, rows = read_csv()
+            updated = False
+            for existing in rows:
+                if existing.get('category') == category and existing.get('product_folder') == folder_name:
+                    existing['Status'] = 'Archived'
+                    updated = True
+                    break
+            if updated:
+                write_csv(headers, rows)
+            self._send_json(200, {'ok': True})
+            return
+
+        if parsed.path == '/api/approve':
+            category = safe_path_component(data.get('category', ''))
+            folder_name = safe_path_component(data.get('folder_name', ''))
+            if not category or not folder_name:
+                self._send_json(400, {'error': 'Missing category/folder_name'})
+                return
+            src_path = DRAFT_DIR / category / folder_name
+            if not src_path.exists():
+                self._send_json(404, {'error': 'Source folder not found'})
+                return
+            dest_dir = CATEGORIES_DIR / category
+            dest_dir.mkdir(parents=True, exist_ok=True)
+            dest_path = dest_dir / folder_name
+            if dest_path.exists():
+                self._send_json(409, {'error': 'Destination already exists'})
+                return
+            src_path.rename(dest_path)
+            headers, rows = read_csv()
+            updated = False
+            for existing in rows:
+                if existing.get('category') == category and existing.get('product_folder') == folder_name:
+                    existing['Status'] = 'Live'
+                    updated = True
+                    break
+            if updated:
+                write_csv(headers, rows)
             self._send_json(200, {'ok': True})
             return
 

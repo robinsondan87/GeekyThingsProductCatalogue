@@ -1,0 +1,17 @@
+ZOU3D - https://www.patreon.com/zou3d
+
+Baby Lobster
+
+Print Settings:
+
+Wall line count: 3
+Infill: 20%
+
+Filaments:
+https://www.esun3d.com/pla-pro-product/
+
+- Red
+
+https://www.esun3d.com/epla-matte-product/
+
+- Black

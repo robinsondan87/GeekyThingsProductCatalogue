@@ -450,7 +450,7 @@
         <h1 class="title">GeekyThings Product Manager</h1>
         <p class="subtitle">Manage products, tags, and listing status from one place.</p>
         <p class="version">
-          Version <a href="https://github.com/robinsondan87/GeekyThingsProductCatalogue/blob/main/CHANGELOG.md" target="_blank" rel="noopener noreferrer">v1.1.3</a>
+          Version <a href="https://github.com/robinsondan87/GeekyThingsProductCatalogue/blob/main/CHANGELOG.md" target="_blank" rel="noopener noreferrer">v1.1.4</a>
         </p>
         <div class="tabs" id="viewTabs">
           <button class="tab-btn active" type="button" data-view="live">Live</button>
@@ -545,8 +545,15 @@
       let columnWidths = [];
       const baseCategoriesPath = "/Users/dan/GeekyThings/Products/Categories";
       let originalNames = [];
-      const hiddenColumns = new Set(["Facebook URL", "TikTok URL", "Ebay URL", "Etsy URL"]);
+      const hiddenColumns = new Set(["Facebook URL", "TikTok URL", "Ebay URL", "Etsy URL", "Status"]);
       let viewMode = "live";
+
+      const normalizeStatus = (value) => {
+        const lowered = String(value || "").trim().toLowerCase();
+        if (lowered === "draft") return "Draft";
+        if (lowered === "archived") return "Archived";
+        return "Live";
+      };
 
       const getListingsForRow = (row) => {
         const facebookUrl = row[headers.indexOf("Facebook URL")] || "";
@@ -786,6 +793,12 @@
         const skuIndex = headers.indexOf("sku");
         const tagsIndex = headers.indexOf("tags");
         const listingsIndex = headers.indexOf("Listings");
+        const statusIndex = headers.indexOf("Status");
+        const statusValue = statusIndex > -1 ? (row[statusIndex] || "") : "";
+
+        if (normalizeStatus(statusValue) === "Archived" || normalizeStatus(statusValue) === "Draft") {
+          return false;
+        }
 
         if (viewMode === "b2b" && categoryIndex > -1 && row[categoryIndex] !== "B2B") {
           return false;
@@ -1113,6 +1126,38 @@
 
           row.appendChild(title);
           row.appendChild(meta);
+          if (viewMode === "draft") {
+            const actions = document.createElement("div");
+            actions.className = "row-actions";
+            const approveBtn = document.createElement("button");
+            approveBtn.type = "button";
+            approveBtn.textContent = "Approve";
+            approveBtn.addEventListener("click", async () => {
+              if (!confirm("Approve this draft and move it live?")) return;
+              try {
+                const response = await fetch("/api/approve", {
+                  method: "POST",
+                  headers: { "Content-Type": "application/json" },
+                  body: JSON.stringify({
+                    category: item.category,
+                    folder_name: item.product_folder,
+                  }),
+                });
+                const payload = await response.json();
+                if (!response.ok) {
+                  alert(payload.error || "Approve failed.");
+                  return;
+                }
+                await loadFolderList("draft");
+                await autoLoadDefault();
+              } catch (error) {
+                console.error(error);
+                alert("Approve failed.");
+              }
+            });
+            actions.appendChild(approveBtn);
+            row.appendChild(actions);
+          }
           folderList.appendChild(row);
         });
       };

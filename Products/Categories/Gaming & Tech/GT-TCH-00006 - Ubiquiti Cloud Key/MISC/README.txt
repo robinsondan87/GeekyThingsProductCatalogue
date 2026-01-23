@@ -1,0 +1,48 @@
+                   .:                     :,                                          
+,:::::::: ::`      :::                   :::                                          
+,:::::::: ::`      :::                   :::                                          
+.,,:::,,, ::`.:,   ... .. .:,     .:. ..`... ..`   ..   .:,    .. ::  .::,     .:,`   
+   ,::    :::::::  ::, :::::::  `:::::::.,:: :::  ::: .::::::  ::::: ::::::  .::::::  
+   ,::    :::::::: ::, :::::::: ::::::::.,:: :::  ::: :::,:::, ::::: ::::::, :::::::: 
+   ,::    :::  ::: ::, :::  :::`::.  :::.,::  ::,`::`:::   ::: :::  `::,`   :::   ::: 
+   ,::    ::.  ::: ::, ::`  :::.::    ::.,::  :::::: ::::::::: ::`   :::::: ::::::::: 
+   ,::    ::.  ::: ::, ::`  :::.::    ::.,::  .::::: ::::::::: ::`    ::::::::::::::: 
+   ,::    ::.  ::: ::, ::`  ::: ::: `:::.,::   ::::  :::`  ,,, ::`  .::  :::.::.  ,,, 
+   ,::    ::.  ::: ::, ::`  ::: ::::::::.,::   ::::   :::::::` ::`   ::::::: :::::::. 
+   ,::    ::.  ::: ::, ::`  :::  :::::::`,::    ::.    :::::`  ::`   ::::::   :::::.  
+                                ::,  ,::                               ``             
+                                ::::::::                                              
+                                 ::::::                                               
+                                  `,,`
+
+
+http://www.thingiverse.com/thing:3402283
+ubiquiti unifi Cloud Key Gen2 Plus by Kabumski is licensed under the Creative Commons - Attribution license.
+http://creativecommons.org/licenses/by/3.0/
+
+# Summary
+
+UPDATE:
+
+
+after inquiries have i made one that is 5 mm high, for more airflow
+
+Wall Mount for ubiquiti unifi Cloud Key Gen2 Plus
+
+
+Print one of each.
+5mm hole for screw
+
+
+
+# Print Settings
+
+Printer Brand: Creality
+Printer: Ender 3
+Rafts: Doesn't Matter
+Supports: Yes
+Resolution: 0.2
+Infill: 10
+Filament_brand: 3d Max PLA
+Filament_color: snow white
+Filament_material: PLA

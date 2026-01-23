@@ -1,0 +1,8 @@
+ZOU3D - https://www.patreon.com/zou3d
+
+Tiny Horse
+
+Print Settings:
+
+Wall line count: 3
+Infill: 20%

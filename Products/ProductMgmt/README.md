@@ -32,8 +32,8 @@ Then open `http://localhost:8555` in a browser.
 
 ## API endpoints
 - `GET /api/rows`: Returns CSV headers and rows.
-- `GET /api/archived`: Lists archived folders under `_Archive`.
-- `GET /api/drafts`: Lists draft folders under `_Draft`.
+- `GET /api/archived`: Lists archived rows (Status = Archived).
+- `GET /api/drafts`: Lists draft rows (Status = Draft).
 - `GET /api/media?category=...&folder=...`: Lists files in the product `Media` folder.
 - `GET /api/3mf?category=...&folder=...`: Lists `.3mf` files under the product folder.
 - `POST /api/save`: Save full table to CSV.
@@ -41,7 +41,9 @@ Then open `http://localhost:8555` in a browser.
 - `POST /api/add_product`: Create a new product folder and CSV row.
 - `POST /api/rename`: Rename a product folder.
 - `POST /api/readme`: Read/write per-product `README.md`.
+- `POST /api/approve`: Move a draft product into live categories and mark Status = Live.
 
 ## Notes
 - This is a local-only tool. It serves files directly from disk.
+- New products are created as Drafts under `Products/Categories/_Draft/<Category>/...`.
 - The `.3mf` list is recursive under each product folder.

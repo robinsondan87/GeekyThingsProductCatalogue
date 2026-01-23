@@ -2,6 +2,11 @@
 
 ## Unreleased
 
+## V1.1.4
+- Fix: New products start as Draft in `_Draft` and show in Draft tab.
+- Fix: Archive updates Status to Archived so items appear in Archived tab only.
+- Minor: Added Draft approve action to move items live.
+
 ## V1.1.3
 - Minor: Added Live/Draft/B2B/Archived tabs plus archived/draft list views.
 - Minor: Added B2B category option for product creation and SKU prefix.

@@ -224,6 +224,7 @@
       .media-item {
         display: grid;
         gap: 8px;
+        position: relative;
       }
 
       .media-grid img,
@@ -235,13 +236,18 @@
       }
 
       .media-actions {
+        position: absolute;
+        top: 6px;
+        left: 6px;
         display: flex;
-        justify-content: flex-end;
+        justify-content: flex-start;
       }
 
       .media-actions .btn {
-        padding: 6px 10px;
+        padding: 2px 6px;
         font-size: 12px;
+        border-radius: 999px;
+        background: rgba(255, 255, 255, 0.9);
       }
 
       .file-list {
@@ -322,7 +328,7 @@
       </nav>
       <h1 id="productTitle">Product Details</h1>
       <div class="version">
-        Version <a href="https://github.com/robinsondan87/GeekyThingsProductCatalogue/blob/main/CHANGELOG.md" target="_blank" rel="noopener noreferrer">v1.3.1</a>
+        Version <a href="https://github.com/robinsondan87/GeekyThingsProductCatalogue/blob/main/CHANGELOG.md" target="_blank" rel="noopener noreferrer">v1.3.2</a>
       </div>
     </header>
 
@@ -568,7 +574,8 @@
           const removeBtn = document.createElement("button");
           removeBtn.className = "btn ghost";
           removeBtn.type = "button";
-          removeBtn.textContent = "Remove";
+          removeBtn.textContent = "X";
+          removeBtn.title = "Remove";
           removeBtn.addEventListener("click", () => {
             if (!confirm("Move this file to _Deleted?")) return;
             deleteFile(file.rel_path).catch(console.error);

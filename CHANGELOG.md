@@ -2,6 +2,10 @@
 
 ## Unreleased
 
+## V1.3.2
+- Minor: Renamed media files to `SKU-###` schema (non-3MF).
+- Minor: Media remove action is now an overlay X.
+
 ## V1.3.1
 - Minor: Added delete-to-_Deleted for media/3MF files and SKU-based upload naming.
 - Minor: Removed logo image from the product detail page.

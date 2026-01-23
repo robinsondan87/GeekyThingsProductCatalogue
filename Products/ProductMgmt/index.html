@@ -48,6 +48,11 @@
         gap: 16px;
       }
 
+      .nav-center {
+        flex: 1;
+        text-align: center;
+      }
+
       .nav-brand {
         display: flex;
         align-items: center;
@@ -81,15 +86,6 @@
       .nav-links a:hover {
         background: #e0f2f1;
         color: #00796b;
-      }
-
-      .linktree-logo {
-        width: 120px;
-        height: 120px;
-        border-radius: 50%;
-        margin-top: 12px;
-        box-shadow: 0 2px 12px rgba(0,0,0,0.10);
-        object-fit: cover;
       }
 
       .title {
@@ -495,24 +491,23 @@
           <img src="logo.png" alt="Geeky Things logo" />
           <strong>GeekyThings</strong>
         </div>
+        <div class="nav-center">
+          <h1 class="title">GeekyThings Product Manager</h1>
+          <p class="subtitle">Manage products, tags, and listing status from one place.</p>
+          <p class="version">
+            Version <a href="https://github.com/robinsondan87/GeekyThingsProductCatalogue/blob/main/CHANGELOG.md" target="_blank" rel="noopener noreferrer">v1.1.7</a>
+          </p>
+        </div>
         <div class="nav-links">
           <a href="/">Products</a>
           <a href="/add.html">Add Product</a>
         </div>
       </nav>
-      <img src="logo.png" alt="Geeky Things logo" class="linktree-logo" />
-      <div>
-        <h1 class="title">GeekyThings Product Manager</h1>
-        <p class="subtitle">Manage products, tags, and listing status from one place.</p>
-        <p class="version">
-          Version <a href="https://github.com/robinsondan87/GeekyThingsProductCatalogue/blob/main/CHANGELOG.md" target="_blank" rel="noopener noreferrer">v1.1.6</a>
-        </p>
-        <div class="tabs" id="viewTabs">
-          <button class="tab-btn active" type="button" data-view="live">Live</button>
-          <button class="tab-btn" type="button" data-view="draft">Draft</button>
-          <button class="tab-btn" type="button" data-view="b2b">B2B</button>
-          <button class="tab-btn" type="button" data-view="archived">Archived</button>
-        </div>
+      <div class="tabs" id="viewTabs">
+        <button class="tab-btn active" type="button" data-view="live">Live</button>
+        <button class="tab-btn" type="button" data-view="draft">Draft</button>
+        <button class="tab-btn" type="button" data-view="b2b">B2B</button>
+        <button class="tab-btn" type="button" data-view="archived">Archived</button>
       </div>
       <div class="panel">
         <div class="controls">

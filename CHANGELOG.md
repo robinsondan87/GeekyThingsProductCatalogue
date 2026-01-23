@@ -2,6 +2,9 @@
 
 ## Unreleased
 
+## V1.1.7
+- Minor: Moved title/subtitle/version into the header nav and removed the large logo.
+
 ## V1.1.6
 - Minor: Simplified toolbar to search-only and auto-saves table edits.
 

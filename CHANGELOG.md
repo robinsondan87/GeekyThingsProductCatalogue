@@ -2,6 +2,9 @@
 
 ## Unreleased
 
+## V2.7.8
+- Minor: Expanded TODO backlog with supply tracking, expenses, and Square import ideas.
+
 ## V2.7.7
 - Minor: Updated TODO backlog with order/event tracking improvements and CSV import ideas.
 

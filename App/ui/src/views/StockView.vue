@@ -101,7 +101,15 @@ onMounted(() => {
       const productCell = document.createElement('td')
       const productText = document.createElement('div')
       productText.className = 'stock-product'
-      productText.innerHTML = `<strong>${sku || 'No SKU'}</strong><span>${productLabel}</span><small>${row.category}</small>`
+      const skuEl = document.createElement('strong')
+      skuEl.textContent = sku || 'No SKU'
+      const labelEl = document.createElement('span')
+      labelEl.textContent = productLabel
+      const categoryEl = document.createElement('small')
+      categoryEl.textContent = row.category
+      productText.appendChild(skuEl)
+      productText.appendChild(labelEl)
+      productText.appendChild(categoryEl)
       productCell.appendChild(productText)
 
       const colorCell = document.createElement('td')

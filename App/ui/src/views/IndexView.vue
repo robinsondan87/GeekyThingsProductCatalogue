@@ -30,6 +30,8 @@ onMounted(() => {
 
       let fileHandle = null;
       let autosaveTimer = null;
+      let saveInFlight = false;
+      let isDirty = false;
       let headers = [];
       let rows = [];
       const dropdownColumns = new Set([]);
@@ -208,6 +210,7 @@ onMounted(() => {
         if (autosaveTimer) {
           clearTimeout(autosaveTimer);
         }
+        isDirty = true;
         statusEl.textContent = "Changes pending...";
         autosaveTimer = setTimeout(() => {
           saveViaApi().catch(console.error);
@@ -673,6 +676,7 @@ onMounted(() => {
         headers = parsed.shift() || [];
         rows = parsed;
         originalNames = rows.map((row) => row[headers.indexOf("product_folder")] || "");
+        isDirty = false;
         renderHeader();
         renderBody();
         updateStatus();
@@ -791,6 +795,7 @@ onMounted(() => {
           headers = data.headers;
           rows = data.rows.map((row) => headers.map((h) => row[h] ?? ""));
           originalNames = rows.map((row) => row[headers.indexOf("product_folder")] || "");
+          isDirty = false;
           renderHeader();
           renderBody();
           updateStatus();
@@ -881,6 +886,11 @@ onMounted(() => {
 
 
       const saveViaApi = async () => {
+        if (autosaveTimer) {
+          clearTimeout(autosaveTimer);
+          autosaveTimer = null;
+        }
+        saveInFlight = true;
         try {
           const response = await fetch("/api/save", {
             method: "POST",
@@ -901,6 +911,7 @@ onMounted(() => {
             alert(payload.error || "Save failed.");
             return;
           }
+          isDirty = false;
           statusEl.textContent = "Saved changes.";
           if (payload.refresh) {
             await autoLoadDefault();
@@ -910,6 +921,8 @@ onMounted(() => {
         } catch (error) {
           console.error(error);
           alert("Save failed.");
+        } finally {
+          saveInFlight = false;
         }
       };
 
@@ -925,6 +938,9 @@ onMounted(() => {
       autoLoadDefault();
 
       const autoRefresh = () => {
+        if (isDirty || autosaveTimer || saveInFlight) {
+          return;
+        }
         autoLoadDefault().catch(console.error);
       };
 

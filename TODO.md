@@ -5,9 +5,9 @@
 - [x] Fix ProductView to update active category after save so media/README/UKCA use the new category.
 - [x] Replace hardcoded local folder paths with server-provided base path (or disable open-folder in Docker).
 - [x] Add upload size limits/streaming and collision checks to prevent overwrites.
-- [ ] Remove innerHTML in stock table rows to avoid HTML injection from SKU/product text.
-- [ ] Make folder/file rename operations atomic or add rollback when DB update fails.
-- [ ] Prevent auto-refresh from overwriting unsaved table edits (pause refresh or warn).
+- [x] Remove innerHTML in stock table rows to avoid HTML injection from SKU/product text.
+- [x] Make folder/file rename operations atomic or add rollback when DB update fails.
+- [x] Prevent auto-refresh from overwriting unsaved table edits (pause refresh or warn).
 
 ## Phase 1 - Core Ops
 - [ ] Add Events feature: event records (name/date/location/fee/notes) and event selector for sales/stock adjustments.

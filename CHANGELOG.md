@@ -2,6 +2,11 @@
 
 ## Unreleased
 
+## V2.7.12
+- Fix: Avoided HTML injection in stock table rows.
+- Fix: Added rollback for rename operations when DB updates fail.
+- Fix: Paused auto-refresh when unsaved changes are pending.
+
 ## V2.7.11
 - Minor: Reordered TODO into phases and marked completed Phase 0 items.
 

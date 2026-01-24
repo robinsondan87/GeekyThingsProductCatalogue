@@ -153,6 +153,26 @@ def apply_sku_renames(product_path: Path, old_sku: str, new_sku: str) -> tuple[b
     return True, None, len(renames)
 
 
+def apply_sku_renames_with_tracking(
+    product_path: Path, old_sku: str, new_sku: str
+) -> tuple[bool, str | None, list[tuple[Path, Path]]]:
+    renames, error = collect_sku_renames(product_path, old_sku, new_sku)
+    if error:
+        return False, error, []
+    for src, dest in renames:
+        src.rename(dest)
+    return True, None, renames
+
+
+def rollback_sku_renames(renames: list[tuple[Path, Path]]):
+    for src, dest in reversed(renames):
+        try:
+            if dest.exists() and not src.exists():
+                dest.rename(src)
+        except OSError:
+            continue
+
+
 def product_base_dir(status: str) -> Path:
     normalized = normalize_status(status)
     if normalized == 'Draft':
@@ -945,6 +965,7 @@ class Handler(BaseHTTPRequestHandler):
                 old_path = product_dir(old_category, old_folder, old_status)
                 new_path = product_dir(new_category, new_folder, old_status)
                 renamed_folder = False
+                sku_renames = []
                 if new_category != old_category or new_folder != old_folder:
                     if not old_path.exists():
                         self._send_json(404, {'error': 'Source folder not found'})
@@ -957,15 +978,17 @@ class Handler(BaseHTTPRequestHandler):
                     refresh_needed = True
                 target_path = new_path if renamed_folder else old_path
                 if new_sku and old_sku and new_sku != old_sku:
-                    ok, error, renamed_count = apply_sku_renames(target_path, old_sku, new_sku)
+                    ok, error, sku_renames = apply_sku_renames_with_tracking(target_path, old_sku, new_sku)
                     if not ok:
                         if renamed_folder:
                             new_path.rename(old_path)
                         self._send_json(409, {'error': error or 'Failed to rename files'})
                         return
-                    if renamed_count:
+                    if sku_renames:
                         refresh_needed = True
                 if not db.update_product(old_category, old_folder, row):
+                    if sku_renames:
+                        rollback_sku_renames(sku_renames)
                     if renamed_folder:
                         new_path.rename(old_path)
                     self._send_json(404, {'error': 'Row not found'})
@@ -1008,6 +1031,7 @@ class Handler(BaseHTTPRequestHandler):
                 return
             old_path.rename(new_path)
             if not db.rename_product(category, old_name, new_name):
+                new_path.rename(old_path)
                 self._send_json(404, {'error': 'Row not found'})
                 return
             new_sku = None
@@ -1050,6 +1074,7 @@ class Handler(BaseHTTPRequestHandler):
             old_path = product_dir(old_category, old_product_folder, old_status)
             new_path = product_dir(new_category, new_folder, old_status)
             renamed_folder = False
+            sku_renames = []
             if (new_category != old_category or new_folder != old_product_folder):
                 if not old_path.exists():
                     self._send_json(404, {'error': 'Source folder not found'})
@@ -1061,13 +1086,15 @@ class Handler(BaseHTTPRequestHandler):
                 renamed_folder = True
             target_path = new_path if renamed_folder else old_path
             if new_sku and old_sku and new_sku != old_sku:
-                ok, error, _ = apply_sku_renames(target_path, old_sku, new_sku)
+                ok, error, sku_renames = apply_sku_renames_with_tracking(target_path, old_sku, new_sku)
                 if not ok:
                     if renamed_folder:
                         new_path.rename(old_path)
                     self._send_json(409, {'error': error or 'Failed to rename files'})
                     return
             if not db.update_product(old_category, old_product_folder, row):
+                if sku_renames:
+                    rollback_sku_renames(sku_renames)
                 if renamed_folder:
                     new_path.rename(old_path)
                 self._send_json(404, {'error': 'Row not found'})

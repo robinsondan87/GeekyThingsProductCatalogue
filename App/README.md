@@ -65,6 +65,9 @@ Then open `http://localhost:8555` in a browser.
 - `POST /api/events`: Create/update/delete events.
 - `GET /api/sales`: List sales for an event.
 - `POST /api/sale`: Record an in-person sale and adjust stock.
+- `GET /api/event_totals`: Summarize totals for an event.
+- `GET /api/event_targets`: List stock targets/deficits for an event.
+- `POST /api/event_targets`: Create/update/delete stock targets.
 
 ## Notes
 - This is a local-only tool. It serves files directly from disk.

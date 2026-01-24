@@ -742,3 +742,99 @@ def fetch_sales(event_id: int) -> list:
                 (event_id,),
             )
             return cur.fetchall()
+
+
+def fetch_event_targets(event_id: int) -> list:
+    with get_connection() as conn:
+        with conn.cursor(row_factory=dict_row) as cur:
+            cur.execute(
+                """
+                SELECT id, event_id, product_id, category, product_folder, sku, color, size, target_qty,
+                       created_at::text AS created_at, updated_at::text AS updated_at
+                FROM event_targets
+                WHERE event_id = %s
+                ORDER BY category, product_folder, color, size
+                """,
+                (event_id,),
+            )
+            return cur.fetchall()
+
+
+def upsert_event_target(data: dict) -> dict | None:
+    with get_connection() as conn:
+        with conn.cursor(row_factory=dict_row) as cur:
+            cur.execute(
+                """
+                INSERT INTO event_targets (
+                    event_id,
+                    product_id,
+                    category,
+                    product_folder,
+                    sku,
+                    color,
+                    size,
+                    target_qty,
+                    updated_at
+                )
+                VALUES (
+                    %(event_id)s,
+                    %(product_id)s,
+                    %(category)s,
+                    %(product_folder)s,
+                    %(sku)s,
+                    %(color)s,
+                    %(size)s,
+                    %(target_qty)s,
+                    now()
+                )
+                ON CONFLICT (event_id, category, product_folder, color, size)
+                DO UPDATE SET
+                    product_id = EXCLUDED.product_id,
+                    sku = EXCLUDED.sku,
+                    target_qty = EXCLUDED.target_qty,
+                    updated_at = now()
+                RETURNING id, event_id, product_id, category, product_folder, sku, color, size, target_qty,
+                          created_at::text AS created_at, updated_at::text AS updated_at
+                """,
+                data,
+            )
+            return cur.fetchone()
+
+
+def delete_event_target(target_id: int) -> bool:
+    with get_connection() as conn:
+        with conn.cursor() as cur:
+            cur.execute("DELETE FROM event_targets WHERE id = %s RETURNING id", (target_id,))
+            return cur.fetchone() is not None
+
+
+def fetch_event_totals(event_id: int) -> dict:
+    with get_connection() as conn:
+        with conn.cursor(row_factory=dict_row) as cur:
+            cur.execute(
+                """
+                SELECT COALESCE(SUM(quantity), 0)::int AS total_items,
+                       COALESCE(SUM(quantity * unit_price), 0)::numeric(10, 2)::text AS total_revenue
+                FROM sales
+                WHERE event_id = %s
+                """,
+                (event_id,),
+            )
+            totals = cur.fetchone() or {'total_items': 0, 'total_revenue': '0.00'}
+            cur.execute(
+                """
+                SELECT payment_method,
+                       COALESCE(SUM(quantity * unit_price), 0)::numeric(10, 2)::text AS total
+                FROM sales
+                WHERE event_id = %s
+                GROUP BY payment_method
+                ORDER BY payment_method
+                """,
+                (event_id,),
+            )
+            payments = {row['payment_method'] or 'Unknown': row['total'] for row in cur.fetchall()}
+    return {
+        'total_items': totals.get('total_items', 0),
+        'total_revenue': totals.get('total_revenue', '0.00'),
+        'payments': payments,
+    }

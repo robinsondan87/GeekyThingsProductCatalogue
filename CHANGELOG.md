@@ -2,6 +2,9 @@
 
 ## Unreleased
 
+## V2.8.1
+- Minor: Added event totals reporting and stock target print queue.
+
 ## V2.8.0
 - Major: Added events and in-person sales tracking with Quick Sale flow.
 

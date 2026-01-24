@@ -87,3 +87,20 @@ CREATE TABLE IF NOT EXISTS sales (
 
 CREATE INDEX IF NOT EXISTS sales_event_idx
     ON sales (event_id);
+
+CREATE TABLE IF NOT EXISTS event_targets (
+    id BIGSERIAL PRIMARY KEY,
+    event_id BIGINT NOT NULL REFERENCES events(id) ON DELETE CASCADE,
+    product_id BIGINT REFERENCES products(id) ON DELETE SET NULL,
+    category TEXT NOT NULL DEFAULT '',
+    product_folder TEXT NOT NULL DEFAULT '',
+    sku TEXT NOT NULL DEFAULT '',
+    color TEXT NOT NULL DEFAULT '',
+    size TEXT NOT NULL DEFAULT '',
+    target_qty INTEGER NOT NULL DEFAULT 0,
+    created_at TIMESTAMPTZ NOT NULL DEFAULT now(),
+    updated_at TIMESTAMPTZ NOT NULL DEFAULT now()
+);
+
+CREATE UNIQUE INDEX IF NOT EXISTS event_targets_unique_idx
+    ON event_targets (event_id, category, product_folder, color, size);

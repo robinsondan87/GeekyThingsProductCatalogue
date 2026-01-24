@@ -542,6 +542,55 @@ class Handler(BaseHTTPRequestHandler):
             self._send_json(200, {'rows': rows})
             return
 
+        if parsed.path == '/api/event_totals':
+            query = parse_qs(parsed.query)
+            event_id_raw = query.get('event_id', [''])[0]
+            try:
+                event_id = int(event_id_raw)
+            except (TypeError, ValueError):
+                self._send_json(400, {'error': 'Invalid event_id'})
+                return
+            if not db.fetch_event(event_id):
+                self._send_json(404, {'error': 'Event not found'})
+                return
+            totals = db.fetch_event_totals(event_id)
+            self._send_json(200, {'totals': totals})
+            return
+
+        if parsed.path == '/api/event_targets':
+            query = parse_qs(parsed.query)
+            event_id_raw = query.get('event_id', [''])[0]
+            try:
+                event_id = int(event_id_raw)
+            except (TypeError, ValueError):
+                self._send_json(400, {'error': 'Invalid event_id'})
+                return
+            targets = db.fetch_event_targets(event_id)
+            stock_rows = db.fetch_stock()
+            stock_map = {
+                (row.get('category'), row.get('product_folder'), row.get('color'), row.get('size')): row.get('quantity')
+                for row in stock_rows
+            }
+            enriched = []
+            for row in targets:
+                key = (row.get('category'), row.get('product_folder'), row.get('color'), row.get('size'))
+                current_qty = stock_map.get(key) or 0
+                try:
+                    current_qty = int(current_qty)
+                except (TypeError, ValueError):
+                    current_qty = 0
+                try:
+                    target_qty = int(row.get('target_qty') or 0)
+                except (TypeError, ValueError):
+                    target_qty = 0
+                deficit = max(target_qty - current_qty, 0)
+                entry = dict(row)
+                entry['current_qty'] = current_qty
+                entry['deficit'] = deficit
+                enriched.append(entry)
+            self._send_json(200, {'rows': enriched})
+            return
+
         if parsed.path == '/api/media':
             query = parse_qs(parsed.query)
             category = safe_path_component(query.get('category', [''])[0])
@@ -1071,6 +1120,67 @@ class Handler(BaseHTTPRequestHandler):
                     'new_quantity': new_qty,
                 },
             )
+            return
+
+        if parsed.path == '/api/event_targets':
+            action = (data.get('action') or 'upsert').strip().lower()
+            if action == 'delete':
+                target_id = data.get('id')
+                try:
+                    target_id = int(target_id)
+                except (TypeError, ValueError):
+                    self._send_json(400, {'error': 'Invalid target id'})
+                    return
+                if not db.delete_event_target(target_id):
+                    self._send_json(404, {'error': 'Target not found'})
+                    return
+                self._send_json(200, {'ok': True})
+                return
+
+            event_id_raw = data.get('event_id')
+            try:
+                event_id = int(event_id_raw)
+            except (TypeError, ValueError):
+                self._send_json(400, {'error': 'Invalid event id'})
+                return
+            if not db.fetch_event(event_id):
+                self._send_json(404, {'error': 'Event not found'})
+                return
+            category = safe_path_component(data.get('category', ''))
+            product_folder = safe_path_component(data.get('product_folder', ''))
+            color = (data.get('color') or '').strip()
+            size = (data.get('size') or '').strip()
+            target_qty_raw = data.get('target_qty', 0)
+            try:
+                target_qty = int(target_qty_raw)
+            except (TypeError, ValueError):
+                self._send_json(400, {'error': 'Invalid target quantity'})
+                return
+            if target_qty <= 0:
+                self._send_json(400, {'error': 'Target quantity must be greater than 0'})
+                return
+            if not category or not product_folder:
+                self._send_json(400, {'error': 'Missing category/product_folder'})
+                return
+            product = db.fetch_product(category, product_folder)
+            if not product:
+                self._send_json(404, {'error': 'Product not found'})
+                return
+            sku = (product.get('sku') or '').strip()
+            target = db.upsert_event_target({
+                'event_id': event_id,
+                'product_id': product.get('id'),
+                'category': category,
+                'product_folder': product_folder,
+                'sku': sku,
+                'color': color,
+                'size': size,
+                'target_qty': target_qty,
+            })
+            if not target:
+                self._send_json(500, {'error': 'Failed to save target'})
+                return
+            self._send_json(200, {'ok': True, 'target': target})
             return
 
         if parsed.path == '/api/save':

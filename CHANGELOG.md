@@ -2,6 +2,9 @@
 
 ## Unreleased
 
+## V2.7.11
+- Minor: Reordered TODO into phases and marked completed Phase 0 items.
+
 ## V2.7.10
 - Fix: Hardened file path handling for uploads, delete, and file token operations.
 - Fix: Prevented uploads from overwriting files and enforced size limits.

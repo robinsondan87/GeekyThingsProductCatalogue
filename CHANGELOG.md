@@ -2,6 +2,9 @@
 
 ## Unreleased
 
+## V2.5.2
+- Minor: Added product search on stock page and dropdowns for color/size.
+
 ## V2.5.1
 - Minor: Added initial stock.csv with headers.
 

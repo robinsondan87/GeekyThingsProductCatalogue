@@ -6,23 +6,23 @@ const version = APP_VERSION
 const changeLogUrl = CHANGELOG_URL
 
 onMounted(() => {
+  const productSearch = document.getElementById('productSearch')
   const productSelect = document.getElementById('productSelect')
-  const colorInput = document.getElementById('colorInput')
-  const sizeInput = document.getElementById('sizeInput')
+  const colorInput = document.getElementById('colorSelect')
+  const sizeInput = document.getElementById('sizeSelect')
   const qtyInput = document.getElementById('qtyInput')
   const addBtn = document.getElementById('addBtn')
   const removeBtn = document.getElementById('removeBtn')
   const statusEl = document.getElementById('status')
   const stockBody = document.getElementById('stockTableBody')
   const stockEmpty = document.getElementById('stockEmpty')
-  const colorList = document.getElementById('colorList')
-  const sizeList = document.getElementById('sizeList')
   const productMeta = document.getElementById('productMeta')
   const logoutBtn = document.getElementById('logoutBtn')
 
   let products = []
   let stockRows = []
   const productsByKey = new Map()
+  let productOptions = []
 
   const buildKey = (category, folder) => `${category}|||${folder}`
 
@@ -43,17 +43,9 @@ onMounted(() => {
 
   const refreshSuggestions = () => {
     const selected = getSelectedProduct()
-    const colors = new Set()
-    const sizes = new Set()
+    const colors = selected ? parseList(selected.Colors) : []
+    const sizes = selected ? parseList(selected.Sizes) : []
     if (selected) {
-      parseList(selected.Colors).forEach((item) => colors.add(item))
-      parseList(selected.Sizes).forEach((item) => sizes.add(item))
-      stockRows
-        .filter((row) => row.category === selected.category && row.product_folder === selected.product_folder)
-        .forEach((row) => {
-          if (row.color) colors.add(row.color)
-          if (row.size) sizes.add(row.size)
-        })
       productMeta.textContent = selected.sku
         ? `${selected.sku} · ${selected.category}`
         : selected.category
@@ -61,24 +53,29 @@ onMounted(() => {
       productMeta.textContent = 'Select a product to get started.'
     }
 
-    colorList.innerHTML = ''
-    sizeList.innerHTML = ''
+    const renderSelect = (selectEl, items, placeholder) => {
+      const current = selectEl.value
+      selectEl.innerHTML = ''
+      const defaultOption = document.createElement('option')
+      defaultOption.value = ''
+      defaultOption.textContent = placeholder
+      selectEl.appendChild(defaultOption)
+      items
+        .slice()
+        .sort((a, b) => a.localeCompare(b))
+        .forEach((item) => {
+          const option = document.createElement('option')
+          option.value = item
+          option.textContent = item
+          selectEl.appendChild(option)
+        })
+      if (current) {
+        selectEl.value = current
+      }
+    }
 
-    Array.from(colors)
-      .sort()
-      .forEach((color) => {
-        const option = document.createElement('option')
-        option.value = color
-        colorList.appendChild(option)
-      })
-
-    Array.from(sizes)
-      .sort()
-      .forEach((size) => {
-        const option = document.createElement('option')
-        option.value = size
-        sizeList.appendChild(option)
-      })
+    renderSelect(colorInput, colors, colors.length ? 'Select color' : 'No colors set')
+    renderSelect(sizeInput, sizes, sizes.length ? 'Select size' : 'No sizes set')
   }
 
   const renderStockTable = () => {
@@ -181,6 +178,7 @@ onMounted(() => {
     const payload = await response.json()
     products = payload.rows || []
     productsByKey.clear()
+    productOptions = []
 
     const sorted = [...products].sort((a, b) => {
       const keyA = `${a.category} ${a.product_folder}`.toLowerCase()
@@ -188,18 +186,36 @@ onMounted(() => {
       return keyA.localeCompare(keyB)
     })
 
-    productSelect.innerHTML = '<option value="">Select a product</option>'
     sorted.forEach((row) => {
       const category = row.category || ''
       const folder = row.product_folder || ''
       if (!category || !folder) return
       const key = buildKey(category, folder)
       productsByKey.set(key, row)
-      const option = document.createElement('option')
-      option.value = key
-      option.textContent = `${row.sku || 'No SKU'} · ${folder}`
-      productSelect.appendChild(option)
+      const label = `${row.sku || 'No SKU'} · ${folder}`
+      productOptions.push({ key, label })
     })
+    renderProductOptions('')
+  }
+
+  const renderProductOptions = (filter) => {
+    const normalized = (filter || '').trim().toLowerCase()
+    const current = productSelect.value
+    productSelect.innerHTML = '<option value=\"\">Select a product</option>'
+    productOptions
+      .filter((option) => option.label.toLowerCase().includes(normalized))
+      .forEach((option) => {
+        const el = document.createElement('option')
+        el.value = option.key
+        el.textContent = option.label
+        productSelect.appendChild(el)
+      })
+    if (current && [...productSelect.options].some((option) => option.value === current)) {
+      productSelect.value = current
+    } else {
+      productSelect.value = ''
+    }
+    refreshSuggestions()
   }
 
   const adjustStock = async (payload) => {
@@ -241,6 +257,10 @@ onMounted(() => {
 
   productSelect.addEventListener('change', () => {
     refreshSuggestions()
+  })
+
+  productSearch.addEventListener('input', () => {
+    renderProductOptions(productSearch.value)
   })
 
   addBtn.addEventListener('click', () => handleAdjust('add'))
@@ -289,18 +309,20 @@ onMounted(() => {
       <p id="productMeta" class="status">Select a product to get started.</p>
       <div class="grid">
         <div>
+          <label for="productSearch">Search</label>
+          <input id="productSearch" type="search" placeholder="Search products..." />
+        </div>
+        <div>
           <label for="productSelect">Product</label>
           <select id="productSelect"></select>
         </div>
         <div>
-          <label for="colorInput">Color</label>
-          <input id="colorInput" list="colorList" type="text" placeholder="e.g. Matte Black" />
-          <datalist id="colorList"></datalist>
+          <label for="colorSelect">Color</label>
+          <select id="colorSelect"></select>
         </div>
         <div>
-          <label for="sizeInput">Size</label>
-          <input id="sizeInput" list="sizeList" type="text" placeholder="e.g. Large" />
-          <datalist id="sizeList"></datalist>
+          <label for="sizeSelect">Size</label>
+          <select id="sizeSelect"></select>
         </div>
         <div>
           <label for="qtyInput">Quantity</label>

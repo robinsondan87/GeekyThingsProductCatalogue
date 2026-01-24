@@ -2,6 +2,9 @@
 
 ## Unreleased
 
+## V2.5.1
+- Minor: Added initial stock.csv with headers.
+
 ## V2.5.0
 - Minor: Added stock tracking page with color/size adjustments and CSV storage.
 

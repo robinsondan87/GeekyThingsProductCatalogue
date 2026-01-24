@@ -2,6 +2,9 @@
 
 ## Unreleased
 
+## V2.5.0
+- Minor: Added stock tracking page with color/size adjustments and CSV storage.
+
 ## V2.4.1
 - Fix: Added filename to tokenized 3MF URLs for Bambu Studio.
 

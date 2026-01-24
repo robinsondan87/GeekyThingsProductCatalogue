@@ -1078,6 +1078,7 @@ const params = new URLSearchParams(window.location.search);
         </div>
         <div class="nav-links">
           <RouterLink to="/">Products</RouterLink>
+          <RouterLink to="/stock">Stock</RouterLink>
           <RouterLink to="/add">Add Product</RouterLink>
           <button class="ghost" id="logoutBtn" type="button">Logout</button>
         </div>

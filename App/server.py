@@ -19,6 +19,7 @@ BASE_DIR = Path(__file__).resolve().parent
 ROOT_DIR = BASE_DIR.parent
 PRODUCTS_DIR = Path(os.environ.get('PRODUCTS_DIR', ROOT_DIR / 'Products')).resolve()
 UI_DIST_DIR = BASE_DIR / 'ui' / 'dist'
+STOCK_PATH = PRODUCTS_DIR / 'stock.csv'
 AUTH_USERNAME = os.environ.get('AUTH_USERNAME')
 AUTH_PASSWORD = os.environ.get('AUTH_PASSWORD')
 AUTH_TOTP_SECRET = os.environ.get('AUTH_TOTP_SECRET')
@@ -94,6 +95,52 @@ def write_csv(headers, rows):
             row.setdefault('Sizes', '')
             row['Status'] = normalize_status(row.get('Status'))
             writer.writerow(row)
+
+
+def read_stock():
+    if not STOCK_PATH.exists():
+        headers = ['category', 'product_folder', 'sku', 'color', 'size', 'quantity']
+        return headers, []
+    with STOCK_PATH.open(newline='') as f:
+        reader = csv.DictReader(f)
+        rows = list(reader)
+        headers = reader.fieldnames or []
+    required = ['category', 'product_folder', 'sku', 'color', 'size', 'quantity']
+    for field in required:
+        if field not in headers:
+            headers.append(field)
+    for row in rows:
+        for field in required:
+            row.setdefault(field, '')
+    return headers, rows
+
+
+def write_stock(headers, rows):
+    required = ['category', 'product_folder', 'sku', 'color', 'size', 'quantity']
+    for field in required:
+        if field not in headers:
+            headers.append(field)
+    with STOCK_PATH.open('w', newline='') as f:
+        writer = csv.DictWriter(f, fieldnames=headers)
+        writer.writeheader()
+        for row in rows:
+            for field in required:
+                row.setdefault(field, '')
+            writer.writerow(row)
+
+
+def update_stock_refs(old_category: str, old_folder: str, new_category: str, new_folder: str, new_sku: str | None):
+    headers, rows = read_stock()
+    updated = False
+    for row in rows:
+        if row.get('category') == old_category and row.get('product_folder') == old_folder:
+            row['category'] = new_category
+            row['product_folder'] = new_folder
+            if new_sku:
+                row['sku'] = new_sku
+            updated = True
+    if updated:
+        write_stock(headers, rows)
 
 
 def safe_path_component(name: str) -> str:
@@ -443,6 +490,11 @@ class Handler(BaseHTTPRequestHandler):
                 if normalize_status(row.get('Status')) == 'Draft'
             ]
             self._send_json(200, {'items': items})
+            return
+
+        if parsed.path == '/api/stock':
+            headers, rows = read_stock()
+            self._send_json(200, {'headers': headers, 'rows': rows})
             return
 
         if parsed.path == '/api/media':
@@ -841,6 +893,18 @@ class Handler(BaseHTTPRequestHandler):
                 self._send_json(409, {'error': 'Destination already exists'})
                 return
             old_path.rename(new_path)
+            headers, rows = read_csv()
+            updated = False
+            new_sku = None
+            for existing in rows:
+                if existing.get('category') == category and existing.get('product_folder') == old_name:
+                    existing['product_folder'] = new_name
+                    new_sku = existing.get('sku') or None
+                    updated = True
+                    break
+            if updated:
+                write_csv(headers, rows)
+            update_stock_refs(category, old_name, category, new_name, new_sku)
             self._send_json(200, {'ok': True})
             return
 
@@ -851,6 +915,9 @@ class Handler(BaseHTTPRequestHandler):
             if not old_category or not old_product_folder:
                 self._send_json(400, {'error': 'Missing old_category/old_product_folder'})
                 return
+            new_category = safe_path_component(row.get('category', '')) or old_category
+            new_folder = safe_path_component(row.get('product_folder', '')) or old_product_folder
+            new_sku = (row.get('sku') or '').strip() or None
             headers, rows = read_csv()
             updated = False
             for existing in rows:
@@ -862,7 +929,76 @@ class Handler(BaseHTTPRequestHandler):
                 self._send_json(404, {'error': 'Row not found'})
                 return
             write_csv(headers, rows)
+            if new_category != old_category or new_folder != old_product_folder or new_sku:
+                update_stock_refs(old_category, old_product_folder, new_category, new_folder, new_sku)
             self._send_json(200, {'ok': True})
+            return
+
+        if parsed.path == '/api/stock_adjust':
+            category = safe_path_component(data.get('category', ''))
+            product_folder = safe_path_component(data.get('product_folder', ''))
+            sku = (data.get('sku', '') or '').strip()
+            color = (data.get('color', '') or '').strip()
+            size = (data.get('size', '') or '').strip()
+            delta_raw = data.get('delta', 0)
+            try:
+                delta = int(delta_raw)
+            except (TypeError, ValueError):
+                self._send_json(400, {'error': 'Invalid delta'})
+                return
+            if not category or not product_folder:
+                self._send_json(400, {'error': 'Missing category/product_folder'})
+                return
+            if delta == 0:
+                self._send_json(400, {'error': 'Delta must be non-zero'})
+                return
+            if not sku:
+                _, rows_csv = read_csv()
+                for existing in rows_csv:
+                    if existing.get('category') == category and existing.get('product_folder') == product_folder:
+                        sku = (existing.get('sku') or '').strip()
+                        break
+            headers, rows = read_stock()
+            matched = None
+            for stock_row in rows:
+                if (
+                    stock_row.get('category') == category
+                    and stock_row.get('product_folder') == product_folder
+                    and (stock_row.get('color') or '').strip() == color
+                    and (stock_row.get('size') or '').strip() == size
+                ):
+                    matched = stock_row
+                    break
+            if matched:
+                try:
+                    current_qty = int(matched.get('quantity') or 0)
+                except ValueError:
+                    current_qty = 0
+                new_qty = current_qty + delta
+                if new_qty <= 0:
+                    rows.remove(matched)
+                    write_stock(headers, rows)
+                    self._send_json(200, {'ok': True, 'quantity': 0, 'removed': True})
+                    return
+                matched['quantity'] = str(new_qty)
+                if sku:
+                    matched['sku'] = sku
+                write_stock(headers, rows)
+                self._send_json(200, {'ok': True, 'quantity': new_qty})
+                return
+            if delta < 0:
+                self._send_json(400, {'error': 'No existing stock entry to decrement'})
+                return
+            rows.append({
+                'category': category,
+                'product_folder': product_folder,
+                'sku': sku,
+                'color': color,
+                'size': size,
+                'quantity': str(delta),
+            })
+            write_stock(headers, rows)
+            self._send_json(200, {'ok': True, 'quantity': delta})
             return
 
         if parsed.path == '/api/readme':

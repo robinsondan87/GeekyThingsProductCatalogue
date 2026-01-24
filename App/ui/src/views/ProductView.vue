@@ -65,8 +65,9 @@ const params = new URLSearchParams(window.location.search);
       const printUkcaBtn = document.getElementById("printUkcaBtn");
 
       const listingOptions = ["Facebook", "TikTok", "Ebay", "Etsy"];
-      const baseCategoriesPath = "/Users/dan/GeekyThings/Products/Categories";
-      const draftBasePath = "/Users/dan/GeekyThings/Products/Categories/_Draft";
+      let openFolderEnabled = false;
+      let folderPaths = { categories: "", drafts: "", archived: "" };
+      let configLoaded = false;
 
       let headers = [];
       let rows = [];
@@ -195,6 +196,20 @@ const params = new URLSearchParams(window.location.search);
         ukcaPackSection.scrollIntoView({ behavior: "smooth", block: "start" });
       };
 
+      const loadConfig = async () => {
+        if (configLoaded) return;
+        try {
+          const response = await fetch("/api/config", { cache: "no-store" });
+          if (!response.ok) return;
+          const payload = await response.json();
+          openFolderEnabled = Boolean(payload.open_folder_enabled);
+          folderPaths = payload.paths || folderPaths;
+          configLoaded = true;
+        } catch (error) {
+          console.error(error);
+        }
+      };
+
       const loadData = async () => {
         const response = await fetch("/api/rows", { cache: "no-store" });
         if (!response.ok) return;
@@ -209,6 +224,8 @@ const params = new URLSearchParams(window.location.search);
           return;
         }
         const row = rows[rowIndex];
+        originalCategory = row.category || originalCategory;
+        originalFolder = row.product_folder || originalFolder;
         productTitle.textContent = row.product_folder || "Product Details";
         categoryInput.value = row.category || "";
         skuInput.value = row.sku || "";
@@ -458,8 +475,8 @@ const params = new URLSearchParams(window.location.search);
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({
-            category: categoryParam,
-            folder_name: productFolderInput.value,
+            category: originalCategory,
+            folder_name: originalFolder,
             status: statusParam,
             action: "read",
           }),
@@ -505,8 +522,8 @@ const params = new URLSearchParams(window.location.search);
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({
-            category: categoryParam,
-            folder_name: productFolderInput.value,
+            category: originalCategory,
+            folder_name: originalFolder,
             status: statusParam,
             action: "write",
             pricing: pricingPayload,
@@ -527,8 +544,8 @@ const params = new URLSearchParams(window.location.search);
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({
-            category: categoryParam,
-            folder_name: productFolderInput.value,
+            category: originalCategory,
+            folder_name: originalFolder,
             status: statusParam,
             action: "read",
           }),
@@ -540,7 +557,7 @@ const params = new URLSearchParams(window.location.search);
 
       const loadMedia = async () => {
         const response = await fetch(
-          `/api/media?category=${encodeURIComponent(categoryParam)}&folder=${encodeURIComponent(productFolderInput.value)}&status=${encodeURIComponent(statusParam)}`
+          `/api/media?category=${encodeURIComponent(originalCategory)}&folder=${encodeURIComponent(originalFolder)}&status=${encodeURIComponent(statusParam)}`
         );
         if (!response.ok) return;
         const payload = await response.json();
@@ -580,7 +597,7 @@ const params = new URLSearchParams(window.location.search);
 
       const load3mf = async () => {
         const response = await fetch(
-          `/api/3mf?category=${encodeURIComponent(categoryParam)}&folder=${encodeURIComponent(productFolderInput.value)}&status=${encodeURIComponent(statusParam)}`
+          `/api/3mf?category=${encodeURIComponent(originalCategory)}&folder=${encodeURIComponent(originalFolder)}&status=${encodeURIComponent(statusParam)}`
         );
         if (!response.ok) return;
         const payload = await response.json();
@@ -616,8 +633,8 @@ const params = new URLSearchParams(window.location.search);
                 method: "POST",
                 headers: { "Content-Type": "application/json" },
                 body: JSON.stringify({
-                  category: categoryParam,
-                  folder_name: productFolderInput.value,
+                  category: originalCategory,
+                  folder_name: originalFolder,
                   status: statusParam,
                   rel_path: file.rel_path,
                 }),
@@ -678,7 +695,7 @@ const params = new URLSearchParams(window.location.search);
           return;
         }
         const response = await fetch(
-          `/api/ukca_pack?category=${encodeURIComponent(categoryParam)}&folder=${encodeURIComponent(productFolderInput.value)}&status=${encodeURIComponent(statusParam)}`
+          `/api/ukca_pack?category=${encodeURIComponent(originalCategory)}&folder=${encodeURIComponent(originalFolder)}&status=${encodeURIComponent(statusParam)}`
         );
         if (!response.ok) return;
         const payload = await response.json();
@@ -880,8 +897,8 @@ const params = new URLSearchParams(window.location.search);
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({
-            category: categoryParam,
-            folder_name: productFolderInput.value,
+            category: originalCategory,
+            folder_name: originalFolder,
             status: statusParam,
             action: "read",
             file: fileKey,
@@ -976,14 +993,30 @@ const params = new URLSearchParams(window.location.search);
       };
 
       const openFolder = () => {
-        const basePath = statusParam === "draft" ? draftBasePath : baseCategoriesPath;
-        const rawPath = `${basePath}/${categoryParam}/${productFolderInput.value}`;
-        const url = encodeURI(`file://${rawPath}`);
-        const popup = window.open(url, "_blank");
-        if (!popup) {
-          navigator.clipboard?.writeText(rawPath).catch(() => {});
-          alert("Popup blocked. Path copied to clipboard.");
-        }
+        const openWithConfig = async () => {
+          await loadConfig();
+          if (!openFolderEnabled) {
+            statusEl.textContent = "Open folder is disabled in this environment.";
+            return;
+          }
+          const basePath = statusParam === "draft"
+            ? folderPaths.drafts
+            : statusParam === "archived"
+              ? folderPaths.archived
+              : folderPaths.categories;
+          if (!basePath) {
+            statusEl.textContent = "Open folder path not available.";
+            return;
+          }
+          const rawPath = `${basePath}/${originalCategory}/${originalFolder}`;
+          const url = encodeURI(`file://${rawPath}`);
+          const popup = window.open(url, "_blank");
+          if (!popup) {
+            navigator.clipboard?.writeText(rawPath).catch(() => {});
+            alert("Popup blocked. Path copied to clipboard.");
+          }
+        };
+        openWithConfig().catch(console.error);
       };
 
       const saveReadme = async () => {
@@ -991,8 +1024,8 @@ const params = new URLSearchParams(window.location.search);
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({
-            category: categoryParam,
-            folder_name: productFolderInput.value,
+            category: originalCategory,
+            folder_name: originalFolder,
             status: statusParam,
             action: "write",
             content: readmeArea.value,
@@ -1026,8 +1059,8 @@ const params = new URLSearchParams(window.location.search);
       const submitUkcaPack = async (event) => {
         event.preventDefault();
         const payload = {
-          category: categoryParam,
-          folder_name: productFolderInput.value,
+          category: originalCategory,
+          folder_name: originalFolder,
           status: statusParam,
           product_name: ukcaProductName.value.trim(),
           sku: ukcaSku.value.trim(),
@@ -1064,8 +1097,8 @@ const params = new URLSearchParams(window.location.search);
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({
-            category: categoryParam,
-            folder_name: productFolderInput.value,
+            category: originalCategory,
+            folder_name: originalFolder,
             status: statusParam,
             action: "write",
             file: fileKey,
@@ -1129,7 +1162,7 @@ const params = new URLSearchParams(window.location.search);
 
       const printUkcaPack = async () => {
         const response = await fetch(
-          `/api/ukca_pack?category=${encodeURIComponent(categoryParam)}&folder=${encodeURIComponent(productFolderInput.value)}&status=${encodeURIComponent(statusParam)}`
+          `/api/ukca_pack?category=${encodeURIComponent(originalCategory)}&folder=${encodeURIComponent(originalFolder)}&status=${encodeURIComponent(statusParam)}`
         );
         if (!response.ok) return;
         const payload = await response.json();
@@ -1146,8 +1179,8 @@ const params = new URLSearchParams(window.location.search);
             method: "POST",
             headers: { "Content-Type": "application/json" },
             body: JSON.stringify({
-              category: categoryParam,
-              folder_name: productFolderInput.value,
+              category: originalCategory,
+              folder_name: originalFolder,
               status: statusParam,
               action: "read",
               file: file.key,
@@ -1192,8 +1225,8 @@ const params = new URLSearchParams(window.location.search);
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({
-            category: categoryParam,
-            folder_name: productFolderInput.value,
+            category: originalCategory,
+            folder_name: originalFolder,
             status: statusParam,
             rel_path: relPath,
           }),
@@ -1211,8 +1244,8 @@ const params = new URLSearchParams(window.location.search);
       const uploadFiles = async (files) => {
         if (!files || !files.length) return;
         const formData = new FormData();
-        formData.append("category", categoryParam);
-        formData.append("folder_name", productFolderInput.value);
+        formData.append("category", originalCategory);
+        formData.append("folder_name", originalFolder);
         formData.append("status", statusParam);
         formData.append("sku", skuInput.value.trim());
         Array.from(files).forEach((file) => formData.append("files", file));
@@ -1254,6 +1287,7 @@ const params = new URLSearchParams(window.location.search);
         uploadFiles(event.dataTransfer.files).catch(console.error);
       });
 
+      loadConfig().catch(console.error);
       if (!categoryParam || !folderParam) {
         statusEl.textContent = "Missing product details in URL.";
       } else {

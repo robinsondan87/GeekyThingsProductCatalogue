@@ -2,6 +2,11 @@
 
 ## Unreleased
 
+## V2.7.10
+- Fix: Hardened file path handling for uploads, delete, and file token operations.
+- Fix: Prevented uploads from overwriting files and enforced size limits.
+- Fix: Product page now uses server config for open-folder and respects updated categories.
+
 ## V2.7.9
 - Minor: Added audit follow-ups to TODO backlog.
 

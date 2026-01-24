@@ -69,6 +69,8 @@ Then open `http://localhost:8555` in a browser.
 - The `.3mf` list is recursive under each product folder.
 - UKCA templates live in `Products/UKCA_Shared` and are copied into `<Product>/UKCA`.
 - Set `PRODUCTS_DIR` if the Products folder is mounted elsewhere.
+- Optional: `UPLOAD_MAX_BYTES` limits upload payload size (default 100MB).
+- Optional: `OPEN_FOLDER_ENABLED=0` disables the open-folder button (default off in Docker).
 
 ## Run the frontend (Vite)
 From `App/ui`:

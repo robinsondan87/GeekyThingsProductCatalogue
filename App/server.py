@@ -32,6 +32,13 @@ CATEGORIES_DIR = PRODUCTS_DIR / 'Categories'
 ARCHIVE_DIR = CATEGORIES_DIR / '_Archive'
 DRAFT_DIR = CATEGORIES_DIR / '_Draft'
 UKCA_SHARED_DIR = PRODUCTS_DIR / 'UKCA_Shared'
+RUNNING_IN_DOCKER = Path('/.dockerenv').exists() or os.environ.get('RUNNING_IN_DOCKER') == '1'
+OPEN_FOLDER_ENABLED = os.environ.get('OPEN_FOLDER_ENABLED')
+if OPEN_FOLDER_ENABLED is None:
+    OPEN_FOLDER_ENABLED = not RUNNING_IN_DOCKER
+else:
+    OPEN_FOLDER_ENABLED = OPEN_FOLDER_ENABLED.lower() in ('1', 'true', 'yes')
+UPLOAD_MAX_BYTES = int(os.environ.get('UPLOAD_MAX_BYTES', str(100 * 1024 * 1024)))
 CATEGORY_PREFIXES = {
     'Automotive': 'GT-AUT',
     'Bookish & Stationery': 'GT-BKS',
@@ -51,9 +58,25 @@ def update_stock_refs(old_category: str, old_folder: str, new_category: str, new
     db.update_stock_refs(old_category, old_folder, new_category, new_folder, new_sku)
 
 
+def is_safe_component(name: str) -> bool:
+    if not name:
+        return False
+    if name in ('.', '..'):
+        return False
+    if os.path.isabs(name):
+        return False
+    if re.match(r'^[a-zA-Z]:', name):
+        return False
+    if '/' in name or '\\' in name:
+        return False
+    return True
+
+
 def safe_path_component(name: str) -> str:
-    # Prevent path traversal by normalizing
-    return name.replace('..', '').strip()
+    cleaned = (name or '').strip()
+    if not is_safe_component(cleaned):
+        return ''
+    return cleaned
 
 
 def sanitize_folder_name(name: str) -> str:
@@ -67,9 +90,24 @@ def normalize_status(value: str) -> str:
 
 def normalize_folder_name(value: str, fallback: str) -> str:
     cleaned = sanitize_folder_name(value or '')
-    if cleaned:
+    if cleaned and is_safe_component(cleaned):
         return cleaned
     return fallback
+
+
+def safe_rel_path(value: str) -> Path | None:
+    cleaned = (value or '').strip()
+    if not cleaned:
+        return None
+    cleaned = cleaned.replace('\\', '/')
+    if cleaned.startswith('/'):
+        return None
+    if re.match(r'^[a-zA-Z]:', cleaned):
+        return None
+    parts = cleaned.split('/')
+    if any(part in ('', '.', '..') for part in parts):
+        return None
+    return Path(*parts)
 
 
 def derive_folder_for_sku(folder_name: str, old_sku: str, new_sku: str) -> tuple[str, bool]:
@@ -193,6 +231,20 @@ def next_sku_filename(dest_dir: Path, sku: str, ext: str) -> str:
                 continue
             max_index = max(max_index, value)
     return f"{sku}-{max_index + 1:03d}{ext}"
+
+
+def unique_filename(dest_dir: Path, name: str) -> str | None:
+    if not name:
+        return None
+    candidate = name
+    if not (dest_dir / candidate).exists():
+        return candidate
+    base, ext = os.path.splitext(name)
+    for index in range(1, 1000):
+        candidate = f"{base}-{index:03d}{ext}"
+        if not (dest_dir / candidate).exists():
+            return candidate
+    return None
 
 
 def next_sku_for_category(category: str) -> str:
@@ -421,6 +473,20 @@ class Handler(BaseHTTPRequestHandler):
                 return
             self._send_json(200, {'authenticated': False})
             return
+        if parsed.path == '/api/config':
+            self._send_json(
+                200,
+                {
+                    'open_folder_enabled': OPEN_FOLDER_ENABLED,
+                    'paths': {
+                        'products': str(PRODUCTS_DIR),
+                        'categories': str(CATEGORIES_DIR),
+                        'drafts': str(DRAFT_DIR),
+                        'archived': str(ARCHIVE_DIR),
+                    },
+                },
+            )
+            return
 
         if parsed.path == '/api/archived':
             items = db.fetch_products_by_status('Archived')
@@ -520,7 +586,7 @@ class Handler(BaseHTTPRequestHandler):
             rel = unquote(parsed.path.replace('/files/', '', 1))
             rel_path = Path(*[p for p in rel.split('/') if p and p not in ('.', '..')])
             file_path = (CATEGORIES_DIR / rel_path).resolve()
-            if not str(file_path).startswith(str(CATEGORIES_DIR.resolve())):
+            if not file_path.is_relative_to(CATEGORIES_DIR.resolve()):
                 self.send_error(403)
                 return
             self._send_file_dynamic(file_path)
@@ -555,6 +621,9 @@ class Handler(BaseHTTPRequestHandler):
                     return
         if parsed.path == '/api/upload':
             content_length = int(self.headers.get('Content-Length', '0'))
+            if content_length > UPLOAD_MAX_BYTES:
+                self._send_json(413, {'error': 'Upload exceeds size limit'})
+                return
             body = self.rfile.read(content_length) if content_length > 0 else b''
             fields, files_field = parse_multipart_form_data(
                 self.headers.get('Content-Type', ''),
@@ -582,6 +651,10 @@ class Handler(BaseHTTPRequestHandler):
                     dest_dir = product_dir(category, folder_name, status) / 'MISC'
                 dest_dir.mkdir(parents=True, exist_ok=True)
                 new_name = next_sku_filename(dest_dir, sku, ext) or name
+                new_name = unique_filename(dest_dir, new_name)
+                if not new_name:
+                    self._send_json(409, {'error': 'Failed to create unique filename'})
+                    return
                 dest_path = dest_dir / new_name
                 with dest_path.open('wb') as f:
                     f.write(item.get('content') or b'')
@@ -651,9 +724,12 @@ class Handler(BaseHTTPRequestHandler):
                 self._send_json(400, {'error': 'Missing category/folder_name/rel_path'})
                 return
             base_path = product_dir(category, folder_name, status).resolve()
-            rel_clean = Path(*[p for p in rel_path.split('/') if p and p not in ('.', '..')])
+            rel_clean = safe_rel_path(rel_path)
+            if not rel_clean:
+                self._send_json(403, {'error': 'Invalid path'})
+                return
             target_path = (base_path / rel_clean).resolve()
-            if not str(target_path).startswith(str(base_path)):
+            if not target_path.is_relative_to(base_path):
                 self._send_json(403, {'error': 'Invalid path'})
                 return
             if not target_path.exists() or not target_path.is_file():
@@ -679,8 +755,12 @@ class Handler(BaseHTTPRequestHandler):
                 self._send_json(400, {'error': 'Missing category/folder_name/rel_path'})
                 return
             base_path = product_dir(category, folder_name, status).resolve()
-            target_path = (base_path / rel_path).resolve()
-            if not str(target_path).startswith(str(base_path)):
+            rel_clean = safe_rel_path(rel_path)
+            if not rel_clean:
+                self._send_json(403, {'error': 'Invalid path'})
+                return
+            target_path = (base_path / rel_clean).resolve()
+            if not target_path.is_relative_to(base_path):
                 self._send_json(403, {'error': 'Invalid path'})
                 return
             if not target_path.exists() or not target_path.is_file():
@@ -908,6 +988,9 @@ class Handler(BaseHTTPRequestHandler):
             status = data.get('status', '')
             if not category or not old_name or not new_name:
                 self._send_json(400, {'error': 'Missing category/old_name/new_name'})
+                return
+            if not is_safe_component(new_name):
+                self._send_json(400, {'error': 'Invalid folder name'})
                 return
             if not db.product_exists(category, old_name):
                 self._send_json(404, {'error': 'Row not found'})

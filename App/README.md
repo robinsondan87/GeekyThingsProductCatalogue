@@ -3,9 +3,9 @@
 Local product management web app for GeekyThings. It provides a simple browser UI to manage products, edit README templates, and access media/print files.
 
 ## What it does
-- Lists products from `categories_index.csv` and allows editing core fields.
-- Table edits auto-save to the master CSV.
-- Opens product folders, renames folders, and writes updates back to the CSV.
+- Lists products from Postgres and allows editing core fields.
+- Table edits auto-save to the database.
+- Opens product folders, renames folders, and writes updates back to the database.
 - Reads/writes per-product `README.md` content.
 - Shows media from each product's `Media` folder.
 - Lists `.3mf` files under the product folder with open/copy helpers.
@@ -16,16 +16,18 @@ Local product management web app for GeekyThings. It provides a simple browser U
 From this folder:
 
 ```
+export DATABASE_URL=postgresql://user:pass@localhost:5432/geekythings
 python3 server.py
 ```
 
 Then open `http://localhost:8555` in a browser.
 
 ## Data layout
-- CSV source: `Products/categories_index.csv`.
-- Stock source: `Products/stock.csv`.
+- Database: Postgres via `DATABASE_URL` (schema in `App/schema.sql`).
+- CSV source: `Products/categories_index.csv` (used for migration only).
+- Stock source: `Products/stock.csv` (used for migration only).
 - Products root: `Products/Categories/<Category>/<Product Folder>`.
-- Pricing file: `Products/Categories/<Category>/<Product Folder>/Pricing.json`.
+- Pricing file: `Products/Categories/<Category>/<Product Folder>/Pricing.json` (legacy; migrated into DB).
 - Media folder: `Products/Categories/<Category>/<Product Folder>/Media`.
 - Files are served via `/files/...` for media and `.3mf` listing.
 
@@ -37,16 +39,16 @@ Then open `http://localhost:8555` in a browser.
 - `server.py`: Local HTTP server and API endpoints.
 
 ## API endpoints
-- `GET /api/rows`: Returns CSV headers and rows.
+- `GET /api/rows`: Returns product headers and rows.
 - `GET /api/archived`: Lists archived rows (Status = Archived).
 - `GET /api/drafts`: Lists draft rows (Status = Draft).
 - `GET /api/media?category=...&folder=...`: Lists files in the product `Media` folder.
 - `GET /api/3mf?category=...&folder=...`: Lists `.3mf` files under the product folder.
 - `GET /api/stock`: Returns stock rows.
 - `POST /api/pricing`: Read/write pricing JSON for a product.
-- `POST /api/save`: Save full table to CSV.
+- `POST /api/save`: Save full table to the database.
 - `POST /api/update_row`: Update a single row and optionally move the folder.
-- `POST /api/add_product`: Create a new product folder and CSV row.
+- `POST /api/add_product`: Create a new product folder and database row.
 - `POST /api/rename`: Rename a product folder.
 - `POST /api/readme`: Read/write per-product `README.md`.
 - `POST /api/approve`: Move a draft product into live categories and mark Status = Live.
@@ -85,6 +87,13 @@ docker compose up --build
 ```
 
 Then open `http://localhost:8555` in a browser.
+
+## Migrate CSV/JSON into Postgres
+With `DATABASE_URL` set (or via Docker Compose):
+
+```
+python3 App/migrate_to_db.py
+```
 
 ## Auth setup
 Set environment variables before running the server or Docker:

@@ -1,11 +1,23 @@
 services:
+  db:
+    image: postgres:16
+    environment:
+      POSTGRES_DB: ${POSTGRES_DB:-geekythings}
+      POSTGRES_USER: ${POSTGRES_USER:-geekythings}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-geekythings}
+    volumes:
+      - geekythings-db:/var/lib/postgresql/data
+
   productmgmt:
     build: .
+    depends_on:
+      - db
     ports:
       - "8555:8555"
     environment:
       CSV_EDITOR_PORT: "8555"
       PRODUCTS_DIR: /data/Products
+      DATABASE_URL: postgres://${POSTGRES_USER:-geekythings}:${POSTGRES_PASSWORD:-geekythings}@db:5432/${POSTGRES_DB:-geekythings}
       AUTH_USERNAME: ${AUTH_USERNAME}
       AUTH_PASSWORD: ${AUTH_PASSWORD}
       AUTH_TOTP_SECRET: ${AUTH_TOTP_SECRET}
@@ -13,3 +25,6 @@ services:
       AUTH_COOKIE_SECURE: ${AUTH_COOKIE_SECURE:-0}
     volumes:
       - ./Products:/data/Products
+
+volumes:
+  geekythings-db:

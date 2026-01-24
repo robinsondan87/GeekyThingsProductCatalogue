@@ -2,6 +2,10 @@
 
 ## Unreleased
 
+## V2.7.0
+- Major: Moved structured product/stock/pricing data to Postgres with migration tooling.
+- Minor: Added Postgres service and env defaults to Docker Compose.
+
 ## V2.6.1
 - Minor: Updated agent notes for the Product Manager app.
 

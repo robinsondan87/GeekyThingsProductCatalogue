@@ -673,7 +673,7 @@ onMounted(() => {
           renderBody();
           updateStatus();
           emptyState.style.display = headers.length ? "none" : "block";
-          statusEl.textContent = "Auto-loaded categories_index.csv via server.";
+          statusEl.textContent = "Auto-loaded products via server.";
           setViewMode(viewMode);
         } catch (error) {
           // Ignore if running on file:// or blocked by CORS.
@@ -871,7 +871,7 @@ onMounted(() => {
           <thead></thead>
           <tbody></tbody>
         </table>
-        <div class="empty" id="emptyState">Loading master CSV...</div>
+        <div class="empty" id="emptyState">Loading products...</div>
       </div>
       <div class="folder-view" id="folderView" hidden>
         <h2 id="folderTitle">Archived Products</h2>

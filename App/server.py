@@ -1,5 +1,4 @@
 #!/usr/bin/env python3
-import csv
 import json
 import mimetypes
 import os
@@ -15,11 +14,12 @@ from http.server import BaseHTTPRequestHandler, HTTPServer
 from pathlib import Path
 from urllib.parse import urlparse, parse_qs, unquote, quote
 
+import db
+
 BASE_DIR = Path(__file__).resolve().parent
 ROOT_DIR = BASE_DIR.parent
 PRODUCTS_DIR = Path(os.environ.get('PRODUCTS_DIR', ROOT_DIR / 'Products')).resolve()
 UI_DIST_DIR = BASE_DIR / 'ui' / 'dist'
-STOCK_PATH = PRODUCTS_DIR / 'stock.csv'
 AUTH_USERNAME = os.environ.get('AUTH_USERNAME')
 AUTH_PASSWORD = os.environ.get('AUTH_PASSWORD')
 AUTH_TOTP_SECRET = os.environ.get('AUTH_TOTP_SECRET')
@@ -28,7 +28,6 @@ SESSION_TTL_SECONDS = int(os.environ.get('SESSION_TTL_SECONDS', '43200'))
 SESSIONS = {}
 FILE_TOKENS = {}
 FILE_TOKEN_TTL_SECONDS = int(os.environ.get('FILE_TOKEN_TTL_SECONDS', '300'))
-CSV_PATH = PRODUCTS_DIR / 'categories_index.csv'
 CATEGORIES_DIR = PRODUCTS_DIR / 'Categories'
 ARCHIVE_DIR = CATEGORIES_DIR / '_Archive'
 DRAFT_DIR = CATEGORIES_DIR / '_Draft'
@@ -48,117 +47,8 @@ CATEGORY_PREFIXES = {
 }
 
 
-def read_csv():
-    if not CSV_PATH.exists():
-        return [], []
-    with CSV_PATH.open(newline='') as f:
-        reader = csv.DictReader(f)
-        rows = list(reader)
-        headers = reader.fieldnames or []
-    if 'tags' not in headers:
-        headers.append('tags')
-    if 'Listings' not in headers:
-        headers.append('Listings')
-    if 'Status' not in headers:
-        headers.append('Status')
-    if 'Colors' not in headers:
-        headers.append('Colors')
-    if 'Sizes' not in headers:
-        headers.append('Sizes')
-    if 'Cost To Make' not in headers:
-        headers.append('Cost To Make')
-    if 'Sale Price' not in headers:
-        headers.append('Sale Price')
-    if 'Postage Price' not in headers:
-        headers.append('Postage Price')
-    for row in rows:
-        row.setdefault('tags', '')
-        row.setdefault('Listings', '')
-        row.setdefault('Colors', '')
-        row.setdefault('Sizes', '')
-        row.setdefault('Cost To Make', '')
-        row.setdefault('Sale Price', '')
-        row.setdefault('Postage Price', '')
-        row['Status'] = normalize_status(row.get('Status'))
-    return headers, rows
-
-
-def write_csv(headers, rows):
-    if 'tags' not in headers:
-        headers.append('tags')
-    if 'Listings' not in headers:
-        headers.append('Listings')
-    if 'Status' not in headers:
-        headers.append('Status')
-    if 'Colors' not in headers:
-        headers.append('Colors')
-    if 'Sizes' not in headers:
-        headers.append('Sizes')
-    if 'Cost To Make' not in headers:
-        headers.append('Cost To Make')
-    if 'Sale Price' not in headers:
-        headers.append('Sale Price')
-    if 'Postage Price' not in headers:
-        headers.append('Postage Price')
-    with CSV_PATH.open('w', newline='') as f:
-        writer = csv.DictWriter(f, fieldnames=headers)
-        writer.writeheader()
-        for row in rows:
-            row.setdefault('tags', '')
-            row.setdefault('Listings', '')
-            row.setdefault('Colors', '')
-            row.setdefault('Sizes', '')
-            row.setdefault('Cost To Make', '')
-            row.setdefault('Sale Price', '')
-            row.setdefault('Postage Price', '')
-            row['Status'] = normalize_status(row.get('Status'))
-            writer.writerow(row)
-
-
-def read_stock():
-    if not STOCK_PATH.exists():
-        headers = ['category', 'product_folder', 'sku', 'color', 'size', 'quantity']
-        return headers, []
-    with STOCK_PATH.open(newline='') as f:
-        reader = csv.DictReader(f)
-        rows = list(reader)
-        headers = reader.fieldnames or []
-    required = ['category', 'product_folder', 'sku', 'color', 'size', 'quantity']
-    for field in required:
-        if field not in headers:
-            headers.append(field)
-    for row in rows:
-        for field in required:
-            row.setdefault(field, '')
-    return headers, rows
-
-
-def write_stock(headers, rows):
-    required = ['category', 'product_folder', 'sku', 'color', 'size', 'quantity']
-    for field in required:
-        if field not in headers:
-            headers.append(field)
-    with STOCK_PATH.open('w', newline='') as f:
-        writer = csv.DictWriter(f, fieldnames=headers)
-        writer.writeheader()
-        for row in rows:
-            for field in required:
-                row.setdefault(field, '')
-            writer.writerow(row)
-
-
 def update_stock_refs(old_category: str, old_folder: str, new_category: str, new_folder: str, new_sku: str | None):
-    headers, rows = read_stock()
-    updated = False
-    for row in rows:
-        if row.get('category') == old_category and row.get('product_folder') == old_folder:
-            row['category'] = new_category
-            row['product_folder'] = new_folder
-            if new_sku:
-                row['sku'] = new_sku
-            updated = True
-    if updated:
-        write_stock(headers, rows)
+    db.update_stock_refs(old_category, old_folder, new_category, new_folder, new_sku)
 
 
 def safe_path_component(name: str) -> str:
@@ -172,26 +62,20 @@ def sanitize_folder_name(name: str) -> str:
 
 
 def normalize_status(value: str) -> str:
-    lowered = (value or '').strip().lower()
-    if lowered == 'draft':
-        return 'Draft'
-    if lowered == 'archived':
-        return 'Archived'
-    return 'Live'
+    return db.normalize_status(value)
 
 
 def product_base_dir(status: str) -> Path:
-    if normalize_status(status) == 'Draft':
+    normalized = normalize_status(status)
+    if normalized == 'Draft':
         return DRAFT_DIR
+    if normalized == 'Archived':
+        return ARCHIVE_DIR
     return CATEGORIES_DIR
 
 
 def product_dir(category: str, folder_name: str, status: str) -> Path:
     return product_base_dir(status) / category / folder_name
-
-
-def pricing_path(category: str, folder_name: str, status: str) -> Path:
-    return product_dir(category, folder_name, status) / 'Pricing.json'
 
 
 def ukca_file_paths(product_path: Path) -> dict:
@@ -265,23 +149,23 @@ def next_sku_for_category(category: str) -> str:
     prefix = CATEGORY_PREFIXES.get(category)
     if not prefix:
         return ''
-    cat_dir = CATEGORIES_DIR / category
-    if not cat_dir.exists():
-        return f'{prefix}-00001'
     max_num = 0
-    for entry in cat_dir.iterdir():
-        if not entry.is_dir():
-            continue
-        name = entry.name
-        if not name.startswith(prefix + '-'):
-            continue
-        parts = name.split(' - ', 1)[0]
-        try:
-            num = int(parts.replace(prefix + '-', ''))
-        except ValueError:
-            continue
-        if num > max_num:
-            max_num = num
+    with db.get_connection() as conn:
+        with conn.cursor() as cur:
+            cur.execute("SELECT sku FROM products WHERE category = %s", (category,))
+            for (sku,) in cur.fetchall():
+                if not sku or not sku.startswith(prefix + '-'):
+                    continue
+                suffix = sku[len(prefix) + 1:]
+                digits = ''.join(ch for ch in suffix if ch.isdigit())
+                if not digits:
+                    continue
+                try:
+                    num = int(digits)
+                except ValueError:
+                    continue
+                if num > max_num:
+                    max_num = num
     return f'{prefix}-{max_num + 1:05d}'
 
 
@@ -474,8 +358,8 @@ class Handler(BaseHTTPRequestHandler):
             self._send_file_dynamic(file_path)
             return
         if parsed.path == '/api/rows':
-            headers, rows = read_csv()
-            self._send_json(200, {'headers': headers, 'rows': rows})
+            rows = db.fetch_products()
+            self._send_json(200, {'headers': db.PRODUCT_HEADERS, 'rows': rows})
             return
 
         if parsed.path == '/api/session':
@@ -489,34 +373,18 @@ class Handler(BaseHTTPRequestHandler):
             return
 
         if parsed.path == '/api/archived':
-            headers, rows = read_csv()
-            items = [
-                {
-                    'category': row.get('category', ''),
-                    'product_folder': row.get('product_folder', ''),
-                }
-                for row in rows
-                if normalize_status(row.get('Status')) == 'Archived'
-            ]
+            items = db.fetch_products_by_status('Archived')
             self._send_json(200, {'items': items})
             return
 
         if parsed.path == '/api/drafts':
-            headers, rows = read_csv()
-            items = [
-                {
-                    'category': row.get('category', ''),
-                    'product_folder': row.get('product_folder', ''),
-                }
-                for row in rows
-                if normalize_status(row.get('Status')) == 'Draft'
-            ]
+            items = db.fetch_products_by_status('Draft')
             self._send_json(200, {'items': items})
             return
 
         if parsed.path == '/api/stock':
-            headers, rows = read_stock()
-            self._send_json(200, {'headers': headers, 'rows': rows})
+            rows = db.fetch_stock()
+            self._send_json(200, {'headers': db.STOCK_HEADERS, 'rows': rows})
             return
 
         if parsed.path == '/api/media':
@@ -846,15 +714,7 @@ class Handler(BaseHTTPRequestHandler):
                 )
                 (ukca_dir / 'EN71-1_Compliance_Pack.md').write_text(header + en71, encoding='utf-8')
 
-            headers, rows = read_csv()
-            updated = False
-            for existing in rows:
-                if existing.get('category') == category and existing.get('product_folder') == folder_name:
-                    existing['UKCA'] = 'Yes'
-                    updated = True
-                    break
-            if updated:
-                write_csv(headers, rows)
+            db.set_product_ukca(category, folder_name, 'Yes')
 
             self._send_json(200, {'ok': True})
             return
@@ -892,9 +752,15 @@ class Handler(BaseHTTPRequestHandler):
             return
 
         if parsed.path == '/api/save':
-            headers = data.get('headers') or []
             rows = data.get('rows') or []
-            write_csv(headers, rows)
+            if not isinstance(rows, list):
+                self._send_json(400, {'error': 'Invalid rows payload'})
+                return
+            for row in rows:
+                if not (row.get('category') or '').strip() or not (row.get('product_folder') or '').strip():
+                    self._send_json(400, {'error': 'Row missing category or product_folder'})
+                    return
+            db.upsert_products(rows)
             self._send_json(200, {'ok': True})
             return
 
@@ -906,6 +772,12 @@ class Handler(BaseHTTPRequestHandler):
             if not category or not old_name or not new_name:
                 self._send_json(400, {'error': 'Missing category/old_name/new_name'})
                 return
+            if not db.product_exists(category, old_name):
+                self._send_json(404, {'error': 'Row not found'})
+                return
+            if db.product_exists(category, new_name):
+                self._send_json(409, {'error': 'Destination already exists'})
+                return
             old_path = product_dir(category, old_name, status)
             new_path = product_dir(category, new_name, status)
             if not old_path.exists():
@@ -915,17 +787,13 @@ class Handler(BaseHTTPRequestHandler):
                 self._send_json(409, {'error': 'Destination already exists'})
                 return
             old_path.rename(new_path)
-            headers, rows = read_csv()
-            updated = False
+            if not db.rename_product(category, old_name, new_name):
+                self._send_json(404, {'error': 'Row not found'})
+                return
             new_sku = None
-            for existing in rows:
-                if existing.get('category') == category and existing.get('product_folder') == old_name:
-                    existing['product_folder'] = new_name
-                    new_sku = existing.get('sku') or None
-                    updated = True
-                    break
-            if updated:
-                write_csv(headers, rows)
+            existing = db.fetch_product(category, new_name)
+            if existing:
+                new_sku = (existing.get('sku') or '').strip() or None
             update_stock_refs(category, old_name, category, new_name, new_sku)
             self._send_json(200, {'ok': True})
             return
@@ -940,17 +808,23 @@ class Handler(BaseHTTPRequestHandler):
             new_category = safe_path_component(row.get('category', '')) or old_category
             new_folder = safe_path_component(row.get('product_folder', '')) or old_product_folder
             new_sku = (row.get('sku') or '').strip() or None
-            headers, rows = read_csv()
-            updated = False
-            for existing in rows:
-                if existing.get('category') == old_category and existing.get('product_folder') == old_product_folder:
-                    existing.update(row)
-                    updated = True
-                    break
-            if not updated:
+            if (
+                (new_category != old_category or new_folder != old_product_folder)
+                and db.product_exists(new_category, new_folder)
+            ):
+                self._send_json(409, {'error': 'Destination already exists'})
+                return
+            existing = db.fetch_product(old_category, old_product_folder)
+            if not existing:
                 self._send_json(404, {'error': 'Row not found'})
                 return
-            write_csv(headers, rows)
+            if 'Status' not in row and 'status' not in row:
+                row['Status'] = existing.get('Status')
+            row['category'] = new_category
+            row['product_folder'] = new_folder
+            if not db.update_product(old_category, old_product_folder, row):
+                self._send_json(404, {'error': 'Row not found'})
+                return
             if new_category != old_category or new_folder != old_product_folder or new_sku:
                 update_stock_refs(old_category, old_product_folder, new_category, new_folder, new_sku)
             self._send_json(200, {'ok': True})
@@ -975,51 +849,27 @@ class Handler(BaseHTTPRequestHandler):
                 self._send_json(400, {'error': 'Delta must be non-zero'})
                 return
             if not sku:
-                _, rows_csv = read_csv()
-                for existing in rows_csv:
-                    if existing.get('category') == category and existing.get('product_folder') == product_folder:
-                        sku = (existing.get('sku') or '').strip()
-                        break
-            headers, rows = read_stock()
-            matched = None
-            for stock_row in rows:
-                if (
-                    stock_row.get('category') == category
-                    and stock_row.get('product_folder') == product_folder
-                    and (stock_row.get('color') or '').strip() == color
-                    and (stock_row.get('size') or '').strip() == size
-                ):
-                    matched = stock_row
-                    break
+                existing = db.fetch_product(category, product_folder)
+                if existing:
+                    sku = (existing.get('sku') or '').strip()
+            matched = db.get_stock_entry(category, product_folder, color, size)
             if matched:
                 try:
                     current_qty = int(matched.get('quantity') or 0)
-                except ValueError:
+                except (TypeError, ValueError):
                     current_qty = 0
                 new_qty = current_qty + delta
                 if new_qty <= 0:
-                    rows.remove(matched)
-                    write_stock(headers, rows)
+                    db.delete_stock_entry(category, product_folder, color, size)
                     self._send_json(200, {'ok': True, 'quantity': 0, 'removed': True})
                     return
-                matched['quantity'] = str(new_qty)
-                if sku:
-                    matched['sku'] = sku
-                write_stock(headers, rows)
+                db.upsert_stock_entry(category, product_folder, sku, color, size, new_qty)
                 self._send_json(200, {'ok': True, 'quantity': new_qty})
                 return
             if delta < 0:
                 self._send_json(400, {'error': 'No existing stock entry to decrement'})
                 return
-            rows.append({
-                'category': category,
-                'product_folder': product_folder,
-                'sku': sku,
-                'color': color,
-                'size': size,
-                'quantity': str(delta),
-            })
-            write_stock(headers, rows)
+            db.upsert_stock_entry(category, product_folder, sku, color, size, delta)
             self._send_json(200, {'ok': True, 'quantity': delta})
             return
 
@@ -1044,27 +894,24 @@ class Handler(BaseHTTPRequestHandler):
         if parsed.path == '/api/pricing':
             category = safe_path_component(data.get('category', ''))
             folder_name = safe_path_component(data.get('folder_name', ''))
-            status = data.get('status', '')
             action = (data.get('action') or '').strip().lower()
             if not category or not folder_name or action not in ('read', 'write'):
                 self._send_json(400, {'error': 'Missing category/folder_name/action'})
                 return
-            target_path = pricing_path(category, folder_name, status)
             if action == 'read':
-                if not target_path.exists():
-                    self._send_json(200, {'ok': True, 'pricing': {'base': {}, 'sizes': []}})
+                pricing_data = db.get_pricing(category, folder_name)
+                if pricing_data is None:
+                    self._send_json(404, {'error': 'Product not found'})
                     return
-                try:
-                    pricing_data = json.loads(target_path.read_text(encoding='utf-8'))
-                except json.JSONDecodeError:
-                    pricing_data = {'base': {}, 'sizes': []}
-                self._send_json(200, {'ok': True, 'pricing': pricing_data})
+                self._send_json(200, {'ok': True, 'pricing': pricing_data or {'base': {}, 'sizes': []}})
                 return
             pricing_data = data.get('pricing') or {}
             if not isinstance(pricing_data, dict):
                 self._send_json(400, {'error': 'Invalid pricing payload'})
                 return
-            target_path.write_text(json.dumps(pricing_data, indent=2), encoding='utf-8')
+            if not db.set_pricing(category, folder_name, pricing_data):
+                self._send_json(404, {'error': 'Product not found'})
+                return
             self._send_json(200, {'ok': True})
             return
 
@@ -1089,6 +936,9 @@ class Handler(BaseHTTPRequestHandler):
             if product_path.exists():
                 self._send_json(409, {'error': 'Folder already exists'})
                 return
+            if db.product_exists(category, product_folder):
+                self._send_json(409, {'error': 'Row already exists'})
+                return
             product_path.mkdir(parents=True, exist_ok=True)
             (product_path / 'Media').mkdir(exist_ok=True)
             (product_path / 'STL').mkdir(exist_ok=True)
@@ -1102,9 +952,6 @@ class Handler(BaseHTTPRequestHandler):
                     content = f"{content}\n## Notes\n{notes}\n"
                 readme_path.write_text(content, encoding='utf-8')
 
-            headers, rows = read_csv()
-            if 'tags' not in headers:
-                headers.append('tags')
             row = {
                 'category': category,
                 'product_folder': product_folder,
@@ -1123,9 +970,8 @@ class Handler(BaseHTTPRequestHandler):
                 'Ebay URL': '',
                 'Etsy URL': '',
             }
-            rows.append(row)
-            write_csv(headers, rows)
-            self._send_json(200, {'ok': True, 'headers': headers, 'row': row})
+            db.insert_product(row)
+            self._send_json(200, {'ok': True, 'headers': db.PRODUCT_HEADERS, 'row': row})
             return
 
         if parsed.path == '/api/archive':
@@ -1145,15 +991,7 @@ class Handler(BaseHTTPRequestHandler):
                 self._send_json(409, {'error': 'Destination already exists'})
                 return
             src_path.rename(dest_path)
-            headers, rows = read_csv()
-            updated = False
-            for existing in rows:
-                if existing.get('category') == category and existing.get('product_folder') == folder_name:
-                    existing['Status'] = 'Archived'
-                    updated = True
-                    break
-            if updated:
-                write_csv(headers, rows)
+            db.set_product_status(category, folder_name, 'Archived')
             self._send_json(200, {'ok': True})
             return
 
@@ -1174,15 +1012,7 @@ class Handler(BaseHTTPRequestHandler):
                 self._send_json(409, {'error': 'Destination already exists'})
                 return
             src_path.rename(dest_path)
-            headers, rows = read_csv()
-            updated = False
-            for existing in rows:
-                if existing.get('category') == category and existing.get('product_folder') == folder_name:
-                    existing['Status'] = 'Live'
-                    updated = True
-                    break
-            if updated:
-                write_csv(headers, rows)
+            db.set_product_status(category, folder_name, 'Live')
             self._send_json(200, {'ok': True})
             return
 
@@ -1203,15 +1033,7 @@ class Handler(BaseHTTPRequestHandler):
                 self._send_json(409, {'error': 'Destination already exists'})
                 return
             src_path.rename(dest_path)
-            headers, rows = read_csv()
-            updated = False
-            for existing in rows:
-                if existing.get('category') == category and existing.get('product_folder') == folder_name:
-                    existing['Status'] = 'Draft'
-                    updated = True
-                    break
-            if updated:
-                write_csv(headers, rows)
+            db.set_product_status(category, folder_name, 'Draft')
             self._send_json(200, {'ok': True})
             return
 
@@ -1219,9 +1041,10 @@ class Handler(BaseHTTPRequestHandler):
 
 
 def main():
+    db.ensure_schema()
     port = int(os.environ.get('CSV_EDITOR_PORT', '8555'))
     server = HTTPServer(('0.0.0.0', port), Handler)
-    print(f'Serving CSV editor at: http://localhost:{port}/')
+    print(f'Serving product manager at: http://localhost:{port}/')
     server.serve_forever()
 
 

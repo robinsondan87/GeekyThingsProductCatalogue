@@ -2,6 +2,9 @@
 
 ## Unreleased
 
+## V2.6.1
+- Minor: Updated agent notes for the Product Manager app.
+
 ## V2.6.0
 - Minor: Added pricing fields (cost, sale, postage) and size-based pricing on product pages.
 

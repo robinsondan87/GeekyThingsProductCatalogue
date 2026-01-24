@@ -39,7 +39,7 @@ onMounted(() => {
       let sortDirection = 1;
       let columnWidths = [];
       let originalNames = [];
-      const hiddenColumns = new Set(["Facebook URL", "TikTok URL", "Ebay URL", "Etsy URL", "Status"]);
+      const hiddenColumns = new Set(["id", "Facebook URL", "TikTok URL", "Ebay URL", "Etsy URL", "Status"]);
       let viewMode = "live";
 
       const normalizeStatus = (value) => {
@@ -779,7 +779,11 @@ onMounted(() => {
             alert(payload.error || "Save failed.");
             return;
           }
-          statusEl.textContent = "Saved changes to file.";
+          statusEl.textContent = "Saved changes.";
+          if (payload.refresh) {
+            await autoLoadDefault();
+            return;
+          }
           setTimeout(updateStatus, 1500);
         } catch (error) {
           console.error(error);

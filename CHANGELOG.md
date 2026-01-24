@@ -2,6 +2,9 @@
 
 ## Unreleased
 
+## V2.7.3
+- Fix: Sync SKU/name edits to disk by renaming folders and SKU-prefixed media on save.
+
 ## V2.7.2
 - Minor: Stored UKCA document content in Postgres while mirroring to disk.
 

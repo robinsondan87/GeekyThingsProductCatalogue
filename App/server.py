@@ -65,6 +65,56 @@ def normalize_status(value: str) -> str:
     return db.normalize_status(value)
 
 
+def normalize_folder_name(value: str, fallback: str) -> str:
+    cleaned = sanitize_folder_name(value or '')
+    if cleaned:
+        return cleaned
+    return fallback
+
+
+def derive_folder_for_sku(folder_name: str, old_sku: str, new_sku: str) -> tuple[str, bool]:
+    if not old_sku or not new_sku or old_sku == new_sku:
+        return folder_name, False
+    if folder_name.startswith(old_sku):
+        return f"{new_sku}{folder_name[len(old_sku):]}", True
+    return folder_name, False
+
+
+def collect_sku_renames(product_path: Path, old_sku: str, new_sku: str) -> tuple[list[tuple[Path, Path]], str | None]:
+    if not old_sku or not new_sku or old_sku == new_sku:
+        return [], None
+    renames = []
+    for path in product_path.rglob('*'):
+        if not path.is_file():
+            continue
+        if '_Deleted' in path.parts:
+            continue
+        name = path.name
+        if not name.startswith(old_sku):
+            continue
+        new_name = f"{new_sku}{name[len(old_sku):]}"
+        if new_name == name:
+            continue
+        renames.append((path, path.with_name(new_name)))
+    dests = set()
+    for src, dest in renames:
+        if dest in dests:
+            return [], f"Duplicate target filename {dest.name}"
+        if dest.exists():
+            return [], f"Target filename already exists: {dest.name}"
+        dests.add(dest)
+    return renames, None
+
+
+def apply_sku_renames(product_path: Path, old_sku: str, new_sku: str) -> tuple[bool, str | None, int]:
+    renames, error = collect_sku_renames(product_path, old_sku, new_sku)
+    if error:
+        return False, error, 0
+    for src, dest in renames:
+        src.rename(dest)
+    return True, None, len(renames)
+
+
 def product_base_dir(status: str) -> Path:
     normalized = normalize_status(status)
     if normalized == 'Draft':
@@ -772,8 +822,83 @@ class Handler(BaseHTTPRequestHandler):
                 if not (row.get('category') or '').strip() or not (row.get('product_folder') or '').strip():
                     self._send_json(400, {'error': 'Row missing category or product_folder'})
                     return
+            existing_rows = db.fetch_products()
+            existing_by_id = {
+                str(row.get('id')): row
+                for row in existing_rows
+                if row.get('id') is not None
+            }
+            existing_by_key = {
+                (row.get('category', ''), row.get('product_folder', '')): row
+                for row in existing_rows
+            }
+            refresh_needed = False
+            for row in rows:
+                row_id = row.get('id')
+                existing = None
+                if row_id is not None:
+                    existing = existing_by_id.get(str(row_id))
+                if not existing:
+                    existing = existing_by_key.get((row.get('category', ''), row.get('product_folder', '')))
+                if not existing:
+                    continue
+                if 'Status' not in row and 'status' not in row:
+                    row['Status'] = existing.get('Status')
+                old_category = existing.get('category', '')
+                old_folder = existing.get('product_folder', '')
+                old_status = existing.get('Status') or 'Live'
+                old_sku = (existing.get('sku') or '').strip()
+                new_category = safe_path_component(row.get('category', '')) or old_category
+                new_folder = normalize_folder_name(row.get('product_folder', ''), old_folder)
+                new_sku = (row.get('sku') or '').strip() or None
+                if new_sku and old_sku and new_folder == old_folder:
+                    new_folder, auto_renamed = derive_folder_for_sku(new_folder, old_sku, new_sku)
+                    if auto_renamed:
+                        row['product_folder'] = new_folder
+                        refresh_needed = True
+                conflict = existing_by_key.get((new_category, new_folder))
+                if conflict and conflict.get('id') != existing.get('id'):
+                    self._send_json(409, {'error': 'Destination already exists'})
+                    return
+                row['category'] = new_category
+                row['product_folder'] = new_folder
+                old_path = product_dir(old_category, old_folder, old_status)
+                new_path = product_dir(new_category, new_folder, old_status)
+                renamed_folder = False
+                if new_category != old_category or new_folder != old_folder:
+                    if not old_path.exists():
+                        self._send_json(404, {'error': 'Source folder not found'})
+                        return
+                    if new_path.exists():
+                        self._send_json(409, {'error': 'Destination already exists'})
+                        return
+                    old_path.rename(new_path)
+                    renamed_folder = True
+                    refresh_needed = True
+                target_path = new_path if renamed_folder else old_path
+                if new_sku and old_sku and new_sku != old_sku:
+                    ok, error, renamed_count = apply_sku_renames(target_path, old_sku, new_sku)
+                    if not ok:
+                        if renamed_folder:
+                            new_path.rename(old_path)
+                        self._send_json(409, {'error': error or 'Failed to rename files'})
+                        return
+                    if renamed_count:
+                        refresh_needed = True
+                if not db.update_product(old_category, old_folder, row):
+                    if renamed_folder:
+                        new_path.rename(old_path)
+                    self._send_json(404, {'error': 'Row not found'})
+                    return
+                if new_category != old_category or new_folder != old_folder or new_sku:
+                    update_stock_refs(old_category, old_folder, new_category, new_folder, new_sku)
+                if renamed_folder:
+                    existing_by_key.pop((old_category, old_folder), None)
+                    existing_by_key[(new_category, new_folder)] = row
+                    if row_id is not None:
+                        existing_by_id[str(row_id)] = row
             db.upsert_products(rows)
-            self._send_json(200, {'ok': True})
+            self._send_json(200, {'ok': True, 'refresh': refresh_needed})
             return
 
         if parsed.path == '/api/rename':
@@ -817,29 +942,56 @@ class Handler(BaseHTTPRequestHandler):
             if not old_category or not old_product_folder:
                 self._send_json(400, {'error': 'Missing old_category/old_product_folder'})
                 return
+            existing = db.fetch_product(old_category, old_product_folder)
+            if not existing:
+                self._send_json(404, {'error': 'Row not found'})
+                return
+            old_status = existing.get('Status') or 'Live'
+            old_sku = (existing.get('sku') or '').strip()
             new_category = safe_path_component(row.get('category', '')) or old_category
-            new_folder = safe_path_component(row.get('product_folder', '')) or old_product_folder
+            new_folder = normalize_folder_name(row.get('product_folder', ''), old_product_folder)
             new_sku = (row.get('sku') or '').strip() or None
+            if new_sku and old_sku and new_folder == old_product_folder:
+                new_folder, _ = derive_folder_for_sku(new_folder, old_sku, new_sku)
+                row['product_folder'] = new_folder
             if (
                 (new_category != old_category or new_folder != old_product_folder)
                 and db.product_exists(new_category, new_folder)
             ):
                 self._send_json(409, {'error': 'Destination already exists'})
                 return
-            existing = db.fetch_product(old_category, old_product_folder)
-            if not existing:
-                self._send_json(404, {'error': 'Row not found'})
-                return
             if 'Status' not in row and 'status' not in row:
                 row['Status'] = existing.get('Status')
             row['category'] = new_category
             row['product_folder'] = new_folder
+            old_path = product_dir(old_category, old_product_folder, old_status)
+            new_path = product_dir(new_category, new_folder, old_status)
+            renamed_folder = False
+            if (new_category != old_category or new_folder != old_product_folder):
+                if not old_path.exists():
+                    self._send_json(404, {'error': 'Source folder not found'})
+                    return
+                if new_path.exists():
+                    self._send_json(409, {'error': 'Destination already exists'})
+                    return
+                old_path.rename(new_path)
+                renamed_folder = True
+            target_path = new_path if renamed_folder else old_path
+            if new_sku and old_sku and new_sku != old_sku:
+                ok, error, _ = apply_sku_renames(target_path, old_sku, new_sku)
+                if not ok:
+                    if renamed_folder:
+                        new_path.rename(old_path)
+                    self._send_json(409, {'error': error or 'Failed to rename files'})
+                    return
             if not db.update_product(old_category, old_product_folder, row):
+                if renamed_folder:
+                    new_path.rename(old_path)
                 self._send_json(404, {'error': 'Row not found'})
                 return
             if new_category != old_category or new_folder != old_product_folder or new_sku:
                 update_stock_refs(old_category, old_product_folder, new_category, new_folder, new_sku)
-            self._send_json(200, {'ok': True})
+            self._send_json(200, {'ok': True, 'row': row})
             return
 
         if parsed.path == '/api/stock_adjust':
@@ -982,7 +1134,9 @@ class Handler(BaseHTTPRequestHandler):
                 'Ebay URL': '',
                 'Etsy URL': '',
             }
-            db.insert_product(row)
+            inserted = db.insert_product(row)
+            if inserted and 'id' in inserted:
+                row['id'] = inserted['id']
             self._send_json(200, {'ok': True, 'headers': db.PRODUCT_HEADERS, 'row': row})
             return
 

@@ -10,6 +10,7 @@ BASE_DIR = Path(__file__).resolve().parent
 SCHEMA_PATH = BASE_DIR / 'schema.sql'
 
 PRODUCT_HEADERS = [
+    'id',
     'category',
     'product_folder',
     'sku',
@@ -32,6 +33,7 @@ STOCK_HEADERS = ['category', 'product_folder', 'sku', 'color', 'size', 'quantity
 
 PRODUCT_SELECT_BASE = """
     SELECT
+        id,
         category,
         product_folder,
         sku,

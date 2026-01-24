@@ -936,14 +936,17 @@ const params = new URLSearchParams(window.location.search);
           statusEl.textContent = payload.error || "Save failed.";
           return;
         }
+        const updatedRow = payload.row || row;
         statusEl.textContent = "Details saved.";
-        originalCategory = row.category;
-        originalFolder = row.product_folder;
+        originalCategory = updatedRow.category;
+        originalFolder = updatedRow.product_folder;
+        categoryInput.value = updatedRow.category || categoryInput.value;
+        productFolderInput.value = updatedRow.product_folder || productFolderInput.value;
         const statusQuery = statusParam ? `&status=${encodeURIComponent(statusParam)}` : "";
         history.replaceState(
           {},
           "",
-          `/product?category=${encodeURIComponent(row.category)}&folder=${encodeURIComponent(row.product_folder)}${statusQuery}`
+          `/product?category=${encodeURIComponent(updatedRow.category)}&folder=${encodeURIComponent(updatedRow.product_folder)}${statusQuery}`
         );
       };
 

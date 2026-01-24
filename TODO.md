@@ -11,3 +11,10 @@
 - Add supplies/materials inventory (filament, boxes, bags, labels) with reorder points and lead times.
 - Add expenses ledger (supplier, invoice, receipt upload, tax category) with yearly totals export.
 - Add quick-count printable tally sheets for event inventory reconciliation.
+- Harden path handling for file APIs (reject absolute paths, use safe relative resolution, validate category list).
+- Fix ProductView to update active category after save so media/README/UKCA use the new category.
+- Replace hardcoded local folder paths with server-provided base path (or disable open-folder in Docker).
+- Add upload size limits/streaming and collision checks to prevent overwrites.
+- Remove innerHTML in stock table rows to avoid HTML injection from SKU/product text.
+- Make folder/file rename operations atomic or add rollback when DB update fails.
+- Prevent auto-refresh from overwriting unsaved table edits (pause refresh or warn).

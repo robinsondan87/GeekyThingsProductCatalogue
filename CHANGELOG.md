@@ -2,6 +2,9 @@
 
 ## Unreleased
 
+## V2.7.9
+- Minor: Added audit follow-ups to TODO backlog.
+
 ## V2.7.8
 - Minor: Expanded TODO backlog with supply tracking, expenses, and Square import ideas.
 

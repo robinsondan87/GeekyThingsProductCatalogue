@@ -411,7 +411,7 @@ def get_pricing(category: str, folder_name: str) -> dict | None:
                     return json.loads(value)
                 except json.JSONDecodeError:
                     return {}
-            return value or {}
+    return value or {}
 
 
 def set_pricing(category: str, folder_name: str, pricing: dict) -> bool:
@@ -429,6 +429,63 @@ def set_pricing(category: str, folder_name: str, pricing: dict) -> bool:
                 DO UPDATE SET pricing = EXCLUDED.pricing
                 """,
                 (product_id, payload),
+            )
+            return True
+
+
+def normalize_ukca_key(value: str) -> str:
+    return _normalize_text(value).lower()
+
+
+def list_ukca_doc_keys(category: str, folder_name: str) -> set[str]:
+    product_id = get_product_id(category, folder_name)
+    if not product_id:
+        return set()
+    with get_connection() as conn:
+        with conn.cursor() as cur:
+            cur.execute(
+                "SELECT file_key FROM ukca_documents WHERE product_id = %s",
+                (product_id,),
+            )
+            return {row[0] for row in cur.fetchall() if row[0]}
+
+
+def get_ukca_doc(category: str, folder_name: str, file_key: str) -> str | None:
+    product_id = get_product_id(category, folder_name)
+    if not product_id:
+        return None
+    key = normalize_ukca_key(file_key)
+    if not key:
+        return None
+    with get_connection() as conn:
+        with conn.cursor() as cur:
+            cur.execute(
+                "SELECT content FROM ukca_documents WHERE product_id = %s AND file_key = %s",
+                (product_id, key),
+            )
+            result = cur.fetchone()
+            if not result:
+                return None
+            return result[0] or ''
+
+
+def set_ukca_doc(category: str, folder_name: str, file_key: str, content: str) -> bool:
+    product_id = get_product_id(category, folder_name)
+    if not product_id:
+        return False
+    key = normalize_ukca_key(file_key)
+    if not key:
+        return False
+    with get_connection() as conn:
+        with conn.cursor() as cur:
+            cur.execute(
+                """
+                INSERT INTO ukca_documents (product_id, file_key, content, updated_at)
+                VALUES (%s, %s, %s, now())
+                ON CONFLICT (product_id, file_key)
+                DO UPDATE SET content = EXCLUDED.content, updated_at = now()
+                """,
+                (product_id, key, content or ''),
             )
             return True
 

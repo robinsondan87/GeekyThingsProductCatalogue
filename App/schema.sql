@@ -30,6 +30,15 @@ CREATE TABLE IF NOT EXISTS product_pricing (
     pricing JSONB NOT NULL DEFAULT '{}'::jsonb
 );
 
+CREATE TABLE IF NOT EXISTS ukca_documents (
+    id BIGSERIAL PRIMARY KEY,
+    product_id BIGINT NOT NULL REFERENCES products(id) ON DELETE CASCADE,
+    file_key TEXT NOT NULL,
+    content TEXT NOT NULL DEFAULT '',
+    updated_at TIMESTAMPTZ NOT NULL DEFAULT now(),
+    UNIQUE (product_id, file_key)
+);
+
 CREATE TABLE IF NOT EXISTS stock (
     id BIGSERIAL PRIMARY KEY,
     category TEXT NOT NULL,

@@ -2,6 +2,9 @@
 
 ## Unreleased
 
+## V2.7.2
+- Minor: Stored UKCA document content in Postgres while mirroring to disk.
+
 ## V2.7.1
 - Fix: Added startup retry loop to wait for Postgres readiness.
 

@@ -29,6 +29,7 @@ Then open `http://localhost:8555` in a browser.
 - Products root: `Products/Categories/<Category>/<Product Folder>`.
 - Pricing file: `Products/Categories/<Category>/<Product Folder>/Pricing.json` (legacy; migrated into DB).
 - Media folder: `Products/Categories/<Category>/<Product Folder>/Media`.
+- UKCA docs: stored in Postgres and mirrored to `<Product>/UKCA`.
 - Files are served via `/files/...` for media and `.3mf` listing.
 
 ## Key files

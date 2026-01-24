@@ -16,15 +16,30 @@ ARCHIVE_DIR = CATEGORIES_DIR / '_Archive'
 DRAFT_DIR = CATEGORIES_DIR / '_Draft'
 
 
-def pricing_path(category: str, folder_name: str, status: str) -> Path:
+def product_base_dir(status: str) -> Path:
     normalized = db.normalize_status(status)
     if normalized == 'Draft':
-        base_dir = DRAFT_DIR
-    elif normalized == 'Archived':
-        base_dir = ARCHIVE_DIR
-    else:
-        base_dir = CATEGORIES_DIR
-    return base_dir / category / folder_name / 'Pricing.json'
+        return DRAFT_DIR
+    if normalized == 'Archived':
+        return ARCHIVE_DIR
+    return CATEGORIES_DIR
+
+
+def product_dir(category: str, folder_name: str, status: str) -> Path:
+    return product_base_dir(status) / category / folder_name
+
+
+def pricing_path(category: str, folder_name: str, status: str) -> Path:
+    return product_dir(category, folder_name, status) / 'Pricing.json'
+
+
+def ukca_file_paths(product_path: Path) -> dict:
+    return {
+        'readme': product_path / 'UKCA' / 'README.md',
+        'declaration': product_path / 'UKCA' / 'Declarations' / 'UKCA_Declaration_of_Conformity.md',
+        'risk_assessment': product_path / 'UKCA' / 'Risk_Assessment' / 'Risk_Assessment.md',
+        'en71': product_path / 'UKCA' / 'EN71-1_Compliance_Pack.md',
+    }
 
 
 def load_products() -> list[dict]:
@@ -83,6 +98,24 @@ def load_pricing(rows: list[dict]) -> int:
     return count
 
 
+def load_ukca_docs(rows: list[dict]) -> int:
+    count = 0
+    for row in rows:
+        category = (row.get('category') or '').strip()
+        folder_name = (row.get('product_folder') or '').strip()
+        status = row.get('Status') or 'Live'
+        if not category or not folder_name:
+            continue
+        product_path = product_dir(category, folder_name, status)
+        for file_key, path in ukca_file_paths(product_path).items():
+            if not path.exists():
+                continue
+            content = path.read_text(encoding='utf-8')
+            if db.set_ukca_doc(category, folder_name, file_key, content):
+                count += 1
+    return count
+
+
 def main():
     db.ensure_schema()
     product_rows = load_products()
@@ -101,7 +134,11 @@ def main():
             row['quantity'],
         )
     pricing_count = load_pricing(product_rows)
-    print(f'Imported {len(product_rows)} products, {len(stock_rows)} stock rows, {pricing_count} pricing files.')
+    ukca_count = load_ukca_docs(product_rows)
+    print(
+        f'Imported {len(product_rows)} products, {len(stock_rows)} stock rows, '
+        f'{pricing_count} pricing files, {ukca_count} UKCA docs.'
+    )
 
 
 if __name__ == '__main__':

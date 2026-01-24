@@ -456,11 +456,12 @@ class Handler(BaseHTTPRequestHandler):
                 self._send_json(400, {'error': 'Missing category/folder'})
                 return
             product_path = product_dir(category, folder_name, status)
+            stored_keys = db.list_ukca_doc_keys(category, folder_name)
             files = []
             for key, path in ukca_file_paths(product_path).items():
                 files.append({
                     'key': key,
-                    'exists': path.exists(),
+                    'exists': path.exists() or key in stored_keys,
                 })
             self._send_json(200, {'files': files})
             return
@@ -689,18 +690,21 @@ class Handler(BaseHTTPRequestHandler):
             ukca_readme = apply_replacements(read_template(readme_template_path), replacements)
             if ukca_readme:
                 (ukca_dir / 'README.md').write_text(ukca_readme, encoding='utf-8')
+                db.set_ukca_doc(category, folder_name, 'readme', ukca_readme)
 
             declaration = apply_replacements(read_template(declaration_template_path), replacements)
             if declaration:
                 (ukca_dir / 'Declarations' / 'UKCA_Declaration_of_Conformity.md').write_text(
                     declaration, encoding='utf-8'
                 )
+                db.set_ukca_doc(category, folder_name, 'declaration', declaration)
 
             risk = apply_replacements(read_template(risk_template_path), replacements)
             if risk:
                 (ukca_dir / 'Risk_Assessment' / 'Risk_Assessment.md').write_text(
                     risk, encoding='utf-8'
                 )
+                db.set_ukca_doc(category, folder_name, 'risk_assessment', risk)
 
             en71 = read_template(en71_template_path)
             if en71:
@@ -712,7 +716,9 @@ class Handler(BaseHTTPRequestHandler):
                     f"Tester: {replacements['TESTER']}\n\n"
                     "---\n\n"
                 )
-                (ukca_dir / 'EN71-1_Compliance_Pack.md').write_text(header + en71, encoding='utf-8')
+                en71_content = header + en71
+                (ukca_dir / 'EN71-1_Compliance_Pack.md').write_text(en71_content, encoding='utf-8')
+                db.set_ukca_doc(category, folder_name, 'en71', en71_content)
 
             db.set_product_ukca(category, folder_name, 'Yes')
 
@@ -734,16 +740,22 @@ class Handler(BaseHTTPRequestHandler):
                 self._send_json(400, {'error': 'Unknown UKCA file'})
                 return
             if action == 'read':
+                stored = db.get_ukca_doc(category, folder_name, file_key)
+                if stored is not None:
+                    self._send_json(200, {'content': stored})
+                    return
                 if not target.exists():
                     self._send_json(404, {'error': 'UKCA file not found'})
                     return
-                self._send_json(200, {'content': target.read_text(encoding='utf-8')})
+                content = target.read_text(encoding='utf-8')
+                db.set_ukca_doc(category, folder_name, file_key, content)
+                self._send_json(200, {'content': content})
                 return
             if action == 'write':
-                if not target.exists():
-                    self._send_json(404, {'error': 'UKCA file not found'})
-                    return
                 content = data.get('content', '')
+                if not db.set_ukca_doc(category, folder_name, file_key, content):
+                    self._send_json(404, {'error': 'Product not found'})
+                    return
                 target.parent.mkdir(parents=True, exist_ok=True)
                 target.write_text(content, encoding='utf-8')
                 self._send_json(200, {'ok': True})

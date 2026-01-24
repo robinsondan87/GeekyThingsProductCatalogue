@@ -15,7 +15,7 @@
 - [x] Add Quick Sale mode for craft fairs (search/scan SKU, select variations, adjust stock, record payment).
 - [x] Add low-stock alerts and print queue (target qty per event, reserve stock, show deficits).
 - [ ] Add WIP/production tracker that moves completed items into stock automatically.
-- [ ] Add quick-count printable tally sheets for event inventory reconciliation.
+- [x] Add quick-count printable tally sheets for event inventory reconciliation.
 
 ## Phase 2 - Imports
 - [ ] Add CSV import wizard for marketplace orders (Etsy CSV, eBay Seller Hub reports, TikTok Shop export orders, Square exports), with SKU mapping and order dedupe.

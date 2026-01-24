@@ -2,6 +2,9 @@
 
 ## Unreleased
 
+## V2.8.2
+- Minor: Added printable tally sheets for event inventory.
+
 ## V2.8.1
 - Minor: Added event totals reporting and stock target print queue.
 

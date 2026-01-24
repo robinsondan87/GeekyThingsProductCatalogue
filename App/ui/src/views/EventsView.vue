@@ -42,6 +42,7 @@ onMounted(() => {
   const targetQtyInput = document.getElementById('targetQtyInput')
   const targetSaveBtn = document.getElementById('targetSaveBtn')
   const printTargetsBtn = document.getElementById('printTargetsBtn')
+  const printTallyBtn = document.getElementById('printTallyBtn')
   const targetStatus = document.getElementById('targetStatus')
   const targetTableBody = document.getElementById('targetTableBody')
   const targetEmpty = document.getElementById('targetEmpty')
@@ -675,6 +676,59 @@ onMounted(() => {
     printWindow.print()
   }
 
+  const printTallySheet = () => {
+    if (!targetRows.length) {
+      setStatus(targetStatus, 'No targets available for tally sheet.')
+      return
+    }
+    const printWindow = window.open('', '_blank')
+    if (!printWindow) {
+      alert('Popup blocked. Allow popups to print.')
+      return
+    }
+    const rowsHtml = targetRows
+      .map((row) => {
+        const variationParts = [row.color, row.size].filter(Boolean)
+        const variation = variationParts.length ? variationParts.join(' / ') : '—'
+        return `<tr><td>${row.sku ? row.sku + ' · ' : ''}${row.product_folder}</td><td>${variation}</td><td>${row.target_qty}</td><td>________</td><td>________</td></tr>`
+      })
+      .join('')
+    const html = `
+      <html>
+        <head>
+          <title>Event Tally Sheet</title>
+          <style>
+            body { font-family: Arial, sans-serif; padding: 24px; color: #0f172a; }
+            h1 { font-size: 20px; margin-bottom: 12px; }
+            table { width: 100%; border-collapse: collapse; font-size: 12px; }
+            th, td { text-align: left; padding: 8px; border-bottom: 1px solid #e2e8f0; }
+            th { text-transform: uppercase; letter-spacing: 0.08em; font-size: 11px; color: #475569; }
+          </style>
+        </head>
+        <body>
+          <h1>Event Tally Sheet</h1>
+          <table>
+            <thead>
+              <tr>
+                <th>Product</th>
+                <th>Variation</th>
+                <th>Target</th>
+                <th>Counted</th>
+                <th>Sold</th>
+              </tr>
+            </thead>
+            <tbody>${rowsHtml}</tbody>
+          </table>
+        </body>
+      </html>
+    `
+    printWindow.document.open()
+    printWindow.document.write(html)
+    printWindow.document.close()
+    printWindow.focus()
+    printWindow.print()
+  }
+
   const recordSale = async () => {
     const eventId = eventSelect.value
     if (!eventId) {
@@ -743,6 +797,7 @@ onMounted(() => {
   targetProductSelect.addEventListener('change', refreshTargetSuggestions)
   targetSaveBtn.addEventListener('click', () => saveTarget().catch(console.error))
   printTargetsBtn.addEventListener('click', printDeficits)
+  printTallyBtn.addEventListener('click', printTallySheet)
   colorSelect.addEventListener('change', updateTotalPrice)
   sizeSelect.addEventListener('change', updateTotalPrice)
   qtyInput.addEventListener('input', updateTotalPrice)
@@ -883,6 +938,7 @@ onMounted(() => {
       <div class="actions" style="margin-top: 12px;">
         <button id="targetSaveBtn" class="btn" type="button">Save Target</button>
         <button id="printTargetsBtn" class="btn ghost" type="button">Print Deficits</button>
+        <button id="printTallyBtn" class="btn ghost" type="button">Print Tally Sheet</button>
       </div>
       <div class="status" id="targetStatus"></div>
       <div class="table-wrap" style="margin-top: 12px;">

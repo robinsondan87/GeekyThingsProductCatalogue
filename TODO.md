@@ -1,10 +1,9 @@
 # TODO
 
-- Review and decide how to handle files over 100 MB (large STL/3MF assets, logs, zips).
-- Completed: Archive now moves items into a `_Archive` folder (Delete removed).
-- Completed: Added Archived/Draft/B2B/Live tabs with archived/draft list views.
-- Completed: Added a B2B category option for product creation.
-- Completed: Review current UKCA folders and design an "Add UKCA" flow on product pages.
-- Completed: Create a UKCA template and prompts to complete certification, referencing top-level UKCA folder.
-- Completed: Include notes that flammability/toxicity (EN71-2/3) are covered by SunLU filament docs.
-- Completed: Research UKCA best practices for small makers to simplify compliance (note: products not for under-3s; stickers already on hand).
+- Add Events feature: event records (name/date/location/fee/notes) and event selector for sales/stock adjustments.
+- Add Sales ledger: per-line item records (SKU, qty, unit price, channel, payment method, fees) with event or online order linkage.
+- Add Quick Sale mode for craft fairs (search/scan SKU, select variations, adjust stock, record payment).
+- Add CSV import wizard for marketplace orders (Etsy CSV, eBay Seller Hub reports, TikTok Shop export orders), with SKU mapping and order dedupe.
+- Add import history/audit log with raw CSV archived for rollback.
+- Add low-stock alerts and print queue (target qty per event, reserve stock, show deficits).
+- Add simple reporting: sales by channel/event, top SKUs, payout/fee totals.

@@ -2,6 +2,9 @@
 
 ## Unreleased
 
+## V2.7.7
+- Minor: Updated TODO backlog with order/event tracking improvements and CSV import ideas.
+
 ## V2.7.6
 - Minor: Show UKCA status as a read-only badge on the main products table.
 

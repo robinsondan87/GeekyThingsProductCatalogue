@@ -391,7 +391,8 @@ class Handler(BaseHTTPRequestHandler):
                     return
 
         if parsed.path.startswith('/files-token/'):
-            token = parsed.path.replace('/files-token/', '', 1)
+            token_part = parsed.path.replace('/files-token/', '', 1)
+            token = token_part.split('/', 1)[0]
             cleanup_file_tokens()
             token_data = FILE_TOKENS.get(token)
             if not token_data:

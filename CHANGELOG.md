@@ -2,6 +2,9 @@
 
 ## Unreleased
 
+## V2.4.1
+- Fix: Added filename to tokenized 3MF URLs for Bambu Studio.
+
 ## V2.4.0
 - Minor: Added Colors and Sizes variations with de-duplication on product pages.
 

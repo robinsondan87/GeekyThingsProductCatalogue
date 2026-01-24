@@ -453,7 +453,7 @@ const params = new URLSearchParams(window.location.search);
                 statusEl.textContent = payload.error || "Failed to open file.";
                 return;
               }
-              const tokenUrl = `${window.location.origin}/files-token/${payload.token}`;
+              const tokenUrl = `${window.location.origin}/files-token/${payload.token}/${encodeURIComponent(file.name)}`;
               const targetUrl = `bambustudioopen://${encodeURIComponent(tokenUrl)}`;
               window.open(targetUrl, "_blank");
             } catch (error) {

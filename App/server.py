@@ -60,9 +60,15 @@ def read_csv():
         headers.append('Listings')
     if 'Status' not in headers:
         headers.append('Status')
+    if 'Colors' not in headers:
+        headers.append('Colors')
+    if 'Sizes' not in headers:
+        headers.append('Sizes')
     for row in rows:
         row.setdefault('tags', '')
         row.setdefault('Listings', '')
+        row.setdefault('Colors', '')
+        row.setdefault('Sizes', '')
         row['Status'] = normalize_status(row.get('Status'))
     return headers, rows
 
@@ -74,12 +80,18 @@ def write_csv(headers, rows):
         headers.append('Listings')
     if 'Status' not in headers:
         headers.append('Status')
+    if 'Colors' not in headers:
+        headers.append('Colors')
+    if 'Sizes' not in headers:
+        headers.append('Sizes')
     with CSV_PATH.open('w', newline='') as f:
         writer = csv.DictWriter(f, fieldnames=headers)
         writer.writeheader()
         for row in rows:
             row.setdefault('tags', '')
             row.setdefault('Listings', '')
+            row.setdefault('Colors', '')
+            row.setdefault('Sizes', '')
             row['Status'] = normalize_status(row.get('Status'))
             writer.writerow(row)
 
@@ -914,6 +926,8 @@ class Handler(BaseHTTPRequestHandler):
                 'UKCA': 'No' if requires_ukca else 'N/A',
                 'Listings': '',
                 'tags': tags,
+                'Colors': '',
+                'Sizes': '',
                 'Status': 'Draft',
                 'Facebook URL': '',
                 'TikTok URL': '',

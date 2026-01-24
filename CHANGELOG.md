@@ -2,6 +2,9 @@
 
 ## Unreleased
 
+## V2.4.0
+- Minor: Added Colors and Sizes variations with de-duplication on product pages.
+
 ## V2.3.2
 - Fix: Added short-lived file tokens for Bambu Studio open links under auth.
 

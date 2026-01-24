@@ -18,6 +18,12 @@ const params = new URLSearchParams(window.location.search);
       const ukcaAddBtn = document.getElementById("ukcaAddBtn");
       const productFolderInput = document.getElementById("productFolder");
       const tagsInput = document.getElementById("tags");
+      const colorsInput = document.getElementById("colorsInput");
+      const sizesInput = document.getElementById("sizesInput");
+      const colorsList = document.getElementById("colorsList");
+      const sizesList = document.getElementById("sizesList");
+      const colorsSuggestions = document.getElementById("colorsSuggestions");
+      const sizesSuggestions = document.getElementById("sizesSuggestions");
       const listingGroup = document.getElementById("listingGroup");
       const listingLinks = document.getElementById("listingLinks");
       const facebookUrlInput = document.getElementById("facebookUrl");
@@ -62,6 +68,8 @@ const params = new URLSearchParams(window.location.search);
       let originalFolder = folderParam;
       let currentUkcaStatus = "No";
       let ukcaPackFiles = [];
+      let currentColors = [];
+      let currentSizes = [];
 
       const ukcaFileLabels = {
         readme: "UKCA README",
@@ -200,6 +208,10 @@ const params = new URLSearchParams(window.location.search);
         updateUkcaDisplay();
         productFolderInput.value = row.product_folder || "";
         tagsInput.value = row.tags || "";
+        currentColors = parseList(row.Colors || "");
+        currentSizes = parseList(row.Sizes || "");
+        renderChips(currentColors, colorsList, removeColor);
+        renderChips(currentSizes, sizesList, removeSize);
         facebookUrlInput.value = row["Facebook URL"] || "";
         tiktokUrlInput.value = row["TikTok URL"] || "";
         ebayUrlInput.value = row["Ebay URL"] || "";
@@ -246,10 +258,94 @@ const params = new URLSearchParams(window.location.search);
           input.addEventListener("input", updateListingLinks);
         });
 
+        populateSuggestions();
+
         await loadReadme();
         await loadMedia();
         await load3mf();
         await loadUkcaPackList();
+      };
+
+      const parseList = (value) => {
+        return (value || "")
+          .split(",")
+          .map((item) => item.trim())
+          .filter((item) => item);
+      };
+
+      const uniqueSorted = (items) => {
+        const seen = new Map();
+        items.forEach((item) => {
+          const key = item.toLowerCase();
+          if (!seen.has(key)) {
+            seen.set(key, item);
+          }
+        });
+        return Array.from(seen.values()).sort((a, b) => a.localeCompare(b));
+      };
+
+      const renderChips = (items, container, onRemove) => {
+        container.innerHTML = "";
+        if (!items.length) {
+          const empty = document.createElement("span");
+          empty.className = "variant-empty";
+          empty.textContent = "None added";
+          container.appendChild(empty);
+          return;
+        }
+        items.forEach((value) => {
+          const chip = document.createElement("span");
+          chip.className = "variant-chip";
+          chip.textContent = value;
+          const removeBtn = document.createElement("button");
+          removeBtn.type = "button";
+          removeBtn.className = "variant-remove";
+          removeBtn.textContent = "×";
+          removeBtn.addEventListener("click", () => onRemove(value));
+          chip.appendChild(removeBtn);
+          container.appendChild(chip);
+        });
+      };
+
+      const addToList = (value, list, setter, container, removeFn) => {
+        const cleaned = (value || "").trim();
+        if (!cleaned) return;
+        const lower = cleaned.toLowerCase();
+        if (list.some((item) => item.toLowerCase() === lower)) return;
+        const next = [...list, cleaned];
+        setter(next);
+        renderChips(next, container, removeFn);
+      };
+
+      const removeColor = (value) => {
+        currentColors = currentColors.filter((item) => item !== value);
+        renderChips(currentColors, colorsList, removeColor);
+      };
+
+      const removeSize = (value) => {
+        currentSizes = currentSizes.filter((item) => item !== value);
+        renderChips(currentSizes, sizesList, removeSize);
+      };
+
+      const populateSuggestions = () => {
+        const colorValues = [];
+        const sizeValues = [];
+        rows.forEach((row) => {
+          colorValues.push(...parseList(row.Colors || ""));
+          sizeValues.push(...parseList(row.Sizes || ""));
+        });
+        colorsSuggestions.innerHTML = "";
+        sizesSuggestions.innerHTML = "";
+        uniqueSorted(colorValues).forEach((value) => {
+          const option = document.createElement("option");
+          option.value = value;
+          colorsSuggestions.appendChild(option);
+        });
+        uniqueSorted(sizeValues).forEach((value) => {
+          const option = document.createElement("option");
+          option.value = value;
+          sizesSuggestions.appendChild(option);
+        });
       };
 
       const loadReadme = async () => {
@@ -641,6 +737,8 @@ const params = new URLSearchParams(window.location.search);
           UKCA: currentUkcaStatus,
           Listings: selectedListings.join(", "),
           tags: tagsInput.value.trim(),
+          Colors: currentColors.join(", "),
+          Sizes: currentSizes.join(", "),
           "Facebook URL": facebookUrlInput.value.trim(),
           "TikTok URL": tiktokUrlInput.value.trim(),
           "Ebay URL": ebayUrlInput.value.trim(),
@@ -799,6 +897,22 @@ const params = new URLSearchParams(window.location.search);
       renameBtn.addEventListener("click", () => renameFolder().catch(console.error));
       openFolderBtn.addEventListener("click", openFolder);
       saveReadmeBtn.addEventListener("click", () => saveReadme().catch(console.error));
+      colorsInput.addEventListener("keydown", (event) => {
+        if (event.key !== "Enter") return;
+        event.preventDefault();
+        addToList(colorsInput.value, currentColors, (list) => {
+          currentColors = list;
+        }, colorsList, removeColor);
+        colorsInput.value = "";
+      });
+      sizesInput.addEventListener("keydown", (event) => {
+        if (event.key !== "Enter") return;
+        event.preventDefault();
+        addToList(sizesInput.value, currentSizes, (list) => {
+          currentSizes = list;
+        }, sizesList, removeSize);
+        sizesInput.value = "";
+      });
       ukcaAddBtn.addEventListener("click", () => {
         if (currentUkcaStatus === "Yes") {
           openUkcaSection().catch(console.error);
@@ -1001,6 +1115,20 @@ const params = new URLSearchParams(window.location.search);
           <div>
             <label for="tags">Tags</label>
             <input id="tags" type="text" placeholder="comma,separated,tags" />
+          </div>
+        </div>
+        <div class="grid" style="margin-top: 12px;">
+          <div>
+            <label for="colorsInput">Colours</label>
+            <input id="colorsInput" type="text" list="colorsSuggestions" placeholder="Add colour and press Enter" />
+            <datalist id="colorsSuggestions"></datalist>
+            <div class="variant-list" id="colorsList"></div>
+          </div>
+          <div>
+            <label for="sizesInput">Sizes</label>
+            <input id="sizesInput" type="text" list="sizesSuggestions" placeholder="Add size and press Enter" />
+            <datalist id="sizesSuggestions"></datalist>
+            <div class="variant-list" id="sizesList"></div>
           </div>
         </div>
         <div style="margin-top: 12px;">

@@ -336,13 +336,35 @@ const params = new URLSearchParams(window.location.search);
 
           const actions = document.createElement("div");
           actions.className = "file-actions";
-          const openLink = document.createElement("a");
+          const openLink = document.createElement("button");
           openLink.className = "btn ghost";
+          openLink.type = "button";
           openLink.textContent = "Open";
-          const fileUrl = file.url ? `${window.location.origin}${file.url}` : "";
-          openLink.href = fileUrl ? `bambustudioopen://${encodeURIComponent(fileUrl)}` : "#";
-          openLink.target = "_blank";
-          openLink.rel = "noopener noreferrer";
+          openLink.addEventListener("click", async () => {
+            try {
+              const response = await fetch("/api/file_token", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({
+                  category: categoryParam,
+                  folder_name: productFolderInput.value,
+                  status: statusParam,
+                  rel_path: file.rel_path,
+                }),
+              });
+              const payload = await response.json();
+              if (!response.ok) {
+                statusEl.textContent = payload.error || "Failed to open file.";
+                return;
+              }
+              const tokenUrl = `${window.location.origin}/files-token/${payload.token}`;
+              const targetUrl = `bambustudioopen://${encodeURIComponent(tokenUrl)}`;
+              window.open(targetUrl, "_blank");
+            } catch (error) {
+              console.error(error);
+              statusEl.textContent = "Failed to open file.";
+            }
+          });
 
           const downloadLink = document.createElement("a");
           downloadLink.className = "btn ghost";

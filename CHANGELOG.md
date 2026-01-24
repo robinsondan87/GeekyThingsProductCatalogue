@@ -2,6 +2,9 @@
 
 ## Unreleased
 
+## V2.3.2
+- Fix: Added short-lived file tokens for Bambu Studio open links under auth.
+
 ## V2.3.1
 - Fix: Passed TOTP secret into Docker container for 2FA enforcement.
 

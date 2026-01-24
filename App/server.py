@@ -25,6 +25,8 @@ AUTH_TOTP_SECRET = os.environ.get('AUTH_TOTP_SECRET')
 AUTH_COOKIE_SECURE = os.environ.get('AUTH_COOKIE_SECURE', '').lower() in ('1', 'true', 'yes')
 SESSION_TTL_SECONDS = int(os.environ.get('SESSION_TTL_SECONDS', '43200'))
 SESSIONS = {}
+FILE_TOKENS = {}
+FILE_TOKEN_TTL_SECONDS = int(os.environ.get('FILE_TOKEN_TTL_SECONDS', '300'))
 CSV_PATH = PRODUCTS_DIR / 'categories_index.csv'
 CATEGORIES_DIR = PRODUCTS_DIR / 'Categories'
 ARCHIVE_DIR = CATEGORIES_DIR / '_Archive'
@@ -241,6 +243,23 @@ def cleanup_sessions():
         SESSIONS.pop(key, None)
 
 
+def cleanup_file_tokens():
+    now = int(time.time())
+    expired = [key for key, value in FILE_TOKENS.items() if value['expires_at'] <= now]
+    for key in expired:
+        FILE_TOKENS.pop(key, None)
+
+
+def create_file_token(path: Path) -> str:
+    cleanup_file_tokens()
+    token = secrets.token_urlsafe(24)
+    FILE_TOKENS[token] = {
+        'path': str(path),
+        'expires_at': int(time.time()) + FILE_TOKEN_TTL_SECONDS,
+    }
+    return token
+
+
 def get_session(headers) -> dict | None:
     cleanup_sessions()
     cookies = parse_cookies(headers.get('Cookie'))
@@ -358,6 +377,20 @@ class Handler(BaseHTTPRequestHandler):
                 if not session:
                     self._send_unauthorized()
                     return
+
+        if parsed.path.startswith('/files-token/'):
+            token = parsed.path.replace('/files-token/', '', 1)
+            cleanup_file_tokens()
+            token_data = FILE_TOKENS.get(token)
+            if not token_data:
+                self.send_error(404)
+                return
+            file_path = Path(token_data['path'])
+            if not file_path.exists():
+                self.send_error(404)
+                return
+            self._send_file_dynamic(file_path)
+            return
         if parsed.path == '/api/rows':
             headers, rows = read_csv()
             self._send_json(200, {'headers': headers, 'rows': rows})
@@ -594,6 +627,34 @@ class Handler(BaseHTTPRequestHandler):
             self.send_header('Content-Type', 'application/json; charset=utf-8')
             self.end_headers()
             self.wfile.write(json.dumps({'ok': True}).encode('utf-8'))
+            return
+
+        if parsed.path == '/api/file_token':
+            length = int(self.headers.get('Content-Length', '0'))
+            body = self.rfile.read(length) if length > 0 else b''
+            try:
+                data = json.loads(body.decode('utf-8') or '{}')
+            except json.JSONDecodeError:
+                self._send_json(400, {'error': 'Invalid JSON'})
+                return
+            category = safe_path_component(data.get('category', ''))
+            folder_name = safe_path_component(data.get('folder_name', ''))
+            status = data.get('status', '')
+            rel_path = data.get('rel_path', '')
+            if not category or not folder_name or not rel_path:
+                self._send_json(400, {'error': 'Missing category/folder_name/rel_path'})
+                return
+            base_path = product_dir(category, folder_name, status).resolve()
+            rel_clean = Path(*[p for p in rel_path.split('/') if p and p not in ('.', '..')])
+            target_path = (base_path / rel_clean).resolve()
+            if not str(target_path).startswith(str(base_path)):
+                self._send_json(403, {'error': 'Invalid path'})
+                return
+            if not target_path.exists() or not target_path.is_file():
+                self._send_json(404, {'error': 'File not found'})
+                return
+            token = create_file_token(target_path)
+            self._send_json(200, {'token': token})
             return
         length = int(self.headers.get('Content-Length', '0'))
         body = self.rfile.read(length) if length > 0 else b''

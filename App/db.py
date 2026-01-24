@@ -566,3 +566,179 @@ def update_stock_refs(old_category: str, old_folder: str, new_category: str, new
                     """,
                     (new_category, new_folder, old_category, old_folder),
                 )
+
+
+def normalize_event_row(row: dict) -> dict:
+    return {
+        'name': _normalize_text(row.get('name')),
+        'event_date': _normalize_text(row.get('event_date')),
+        'location': _normalize_text(row.get('location')),
+        'contact_name': _normalize_text(row.get('contact_name')),
+        'contact_email': _normalize_text(row.get('contact_email')),
+        'notes': _normalize_text(row.get('notes')),
+    }
+
+
+def fetch_events() -> list:
+    with get_connection() as conn:
+        with conn.cursor(row_factory=dict_row) as cur:
+            cur.execute(
+                """
+                SELECT id,
+                       name,
+                       event_date::text AS event_date,
+                       location,
+                       contact_name,
+                       contact_email,
+                       notes,
+                       created_at::text AS created_at,
+                       updated_at::text AS updated_at
+                FROM events
+                ORDER BY event_date DESC, name
+                """
+            )
+            return cur.fetchall()
+
+
+def fetch_event(event_id: int) -> dict | None:
+    with get_connection() as conn:
+        with conn.cursor(row_factory=dict_row) as cur:
+            cur.execute(
+                """
+                SELECT id,
+                       name,
+                       event_date::text AS event_date,
+                       location,
+                       contact_name,
+                       contact_email,
+                       notes,
+                       created_at::text AS created_at,
+                       updated_at::text AS updated_at
+                FROM events
+                WHERE id = %s
+                """,
+                (event_id,),
+            )
+            return cur.fetchone()
+
+
+def insert_event(data: dict) -> dict | None:
+    payload = normalize_event_row(data)
+    with get_connection() as conn:
+        with conn.cursor(row_factory=dict_row) as cur:
+            cur.execute(
+                """
+                INSERT INTO events (name, event_date, location, contact_name, contact_email, notes, updated_at)
+                VALUES (%s, %s::date, %s, %s, %s, %s, now())
+                RETURNING id,
+                          name,
+                          event_date::text AS event_date,
+                          location,
+                          contact_name,
+                          contact_email,
+                          notes,
+                          created_at::text AS created_at,
+                          updated_at::text AS updated_at
+                """,
+                (
+                    payload['name'],
+                    payload['event_date'],
+                    payload['location'],
+                    payload['contact_name'],
+                    payload['contact_email'],
+                    payload['notes'],
+                ),
+            )
+            return cur.fetchone()
+
+
+def update_event(event_id: int, data: dict) -> bool:
+    payload = normalize_event_row(data)
+    with get_connection() as conn:
+        with conn.cursor() as cur:
+            cur.execute(
+                """
+                UPDATE events
+                SET name = %s,
+                    event_date = %s::date,
+                    location = %s,
+                    contact_name = %s,
+                    contact_email = %s,
+                    notes = %s,
+                    updated_at = now()
+                WHERE id = %s
+                RETURNING id
+                """,
+                (
+                    payload['name'],
+                    payload['event_date'],
+                    payload['location'],
+                    payload['contact_name'],
+                    payload['contact_email'],
+                    payload['notes'],
+                    event_id,
+                ),
+            )
+            return cur.fetchone() is not None
+
+
+def delete_event(event_id: int) -> bool:
+    with get_connection() as conn:
+        with conn.cursor() as cur:
+            cur.execute("DELETE FROM events WHERE id = %s RETURNING id", (event_id,))
+            return cur.fetchone() is not None
+
+
+def insert_sale(data: dict) -> dict | None:
+    with get_connection() as conn:
+        with conn.cursor(row_factory=dict_row) as cur:
+            cur.execute(
+                """
+                INSERT INTO sales (
+                    event_id,
+                    product_id,
+                    category,
+                    product_folder,
+                    sku,
+                    color,
+                    size,
+                    quantity,
+                    unit_price,
+                    override_price,
+                    payment_method
+                )
+                VALUES (
+                    %(event_id)s,
+                    %(product_id)s,
+                    %(category)s,
+                    %(product_folder)s,
+                    %(sku)s,
+                    %(color)s,
+                    %(size)s,
+                    %(quantity)s,
+                    %(unit_price)s,
+                    %(override_price)s,
+                    %(payment_method)s
+                )
+                RETURNING id, event_id, product_id, category, product_folder, sku, color, size,
+                          quantity, unit_price, override_price, payment_method, sold_at::text AS sold_at
+                """,
+                data,
+            )
+            return cur.fetchone()
+
+
+def fetch_sales(event_id: int) -> list:
+    with get_connection() as conn:
+        with conn.cursor(row_factory=dict_row) as cur:
+            cur.execute(
+                """
+                SELECT id, event_id, product_id, category, product_folder, sku, color, size,
+                       quantity, unit_price, override_price, payment_method, sold_at::text AS sold_at
+                FROM sales
+                WHERE event_id = %s
+                ORDER BY sold_at DESC, id DESC
+                """,
+                (event_id,),
+            )
+            return cur.fetchall()

@@ -10,9 +10,9 @@
 - [x] Prevent auto-refresh from overwriting unsaved table edits (pause refresh or warn).
 
 ## Phase 1 - Core Ops
-- [ ] Add Events feature: event records (name/date/location/fee/notes) and event selector for sales/stock adjustments.
-- [ ] Add Sales ledger: per-line item records (SKU, qty, unit price, channel, payment method, fees) with event or online order linkage.
-- [ ] Add Quick Sale mode for craft fairs (search/scan SKU, select variations, adjust stock, record payment).
+- [x] Add Events feature: event records (name/date/location/fee/notes) and event selector for sales/stock adjustments.
+- [x] Add Sales ledger: per-line item records (SKU, qty, unit price, channel, payment method, fees) with event or online order linkage.
+- [x] Add Quick Sale mode for craft fairs (search/scan SKU, select variations, adjust stock, record payment).
 - [ ] Add low-stock alerts and print queue (target qty per event, reserve stock, show deficits).
 - [ ] Add WIP/production tracker that moves completed items into stock automatically.
 - [ ] Add quick-count printable tally sheets for event inventory reconciliation.

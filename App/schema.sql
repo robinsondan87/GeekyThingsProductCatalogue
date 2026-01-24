@@ -53,3 +53,37 @@ CREATE UNIQUE INDEX IF NOT EXISTS stock_unique_idx
     ON stock (category, product_folder, color, size);
 CREATE INDEX IF NOT EXISTS stock_sku_idx
     ON stock (sku);
+
+CREATE TABLE IF NOT EXISTS events (
+    id BIGSERIAL PRIMARY KEY,
+    name TEXT NOT NULL,
+    event_date DATE NOT NULL,
+    location TEXT NOT NULL DEFAULT '',
+    contact_name TEXT NOT NULL DEFAULT '',
+    contact_email TEXT NOT NULL DEFAULT '',
+    notes TEXT NOT NULL DEFAULT '',
+    created_at TIMESTAMPTZ NOT NULL DEFAULT now(),
+    updated_at TIMESTAMPTZ NOT NULL DEFAULT now()
+);
+
+CREATE INDEX IF NOT EXISTS events_date_idx
+    ON events (event_date);
+
+CREATE TABLE IF NOT EXISTS sales (
+    id BIGSERIAL PRIMARY KEY,
+    event_id BIGINT NOT NULL REFERENCES events(id) ON DELETE CASCADE,
+    product_id BIGINT REFERENCES products(id) ON DELETE SET NULL,
+    category TEXT NOT NULL DEFAULT '',
+    product_folder TEXT NOT NULL DEFAULT '',
+    sku TEXT NOT NULL DEFAULT '',
+    color TEXT NOT NULL DEFAULT '',
+    size TEXT NOT NULL DEFAULT '',
+    quantity INTEGER NOT NULL DEFAULT 1,
+    unit_price NUMERIC(10, 2) NOT NULL DEFAULT 0,
+    override_price TEXT NOT NULL DEFAULT '',
+    payment_method TEXT NOT NULL DEFAULT '',
+    sold_at TIMESTAMPTZ NOT NULL DEFAULT now()
+);
+
+CREATE INDEX IF NOT EXISTS sales_event_idx
+    ON sales (event_id);

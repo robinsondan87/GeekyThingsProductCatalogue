@@ -10,6 +10,7 @@ Local product management web app for GeekyThings. It provides a simple browser U
 - Shows media from each product's `Media` folder.
 - Lists `.3mf` files under the product folder with open/copy helpers.
 - Tracks simple stock counts by product, color, and size.
+- Records in-person craft fair events and sales.
 - Stores pricing fields and optional size-based pricing per product.
 
 ## Run locally (backend)
@@ -60,6 +61,10 @@ Then open `http://localhost:8555` in a browser.
 - `GET /api/ukca_pack`: List available UKCA files for a product.
 - `POST /api/ukca_pack`: Read/write UKCA pack files.
 - `POST /api/stock_adjust`: Add or subtract stock rows.
+- `GET /api/events`: List craft fair events.
+- `POST /api/events`: Create/update/delete events.
+- `GET /api/sales`: List sales for an event.
+- `POST /api/sale`: Record an in-person sale and adjust stock.
 
 ## Notes
 - This is a local-only tool. It serves files directly from disk.

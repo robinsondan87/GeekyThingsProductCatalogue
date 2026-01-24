@@ -2,6 +2,9 @@
 
 ## Unreleased
 
+## V2.8.0
+- Major: Added events and in-person sales tracking with Quick Sale flow.
+
 ## V2.7.13
 - Minor: Added Phase 5 for unit testing coverage.
 

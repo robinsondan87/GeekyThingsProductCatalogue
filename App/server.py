@@ -8,6 +8,7 @@ import time
 import secrets
 import hmac
 import pyotp
+from decimal import Decimal, InvalidOperation
 from email import message_from_bytes
 from email.policy import default
 from http.server import BaseHTTPRequestHandler, HTTPServer
@@ -52,6 +53,7 @@ CATEGORY_PREFIXES = {
     'Toys & Games': 'GT-TOY',
     'Uncategorized': 'GT-UNC',
 }
+EVENT_DATE_RE = re.compile(r'^\d{4}-\d{2}-\d{2}$')
 
 
 def update_stock_refs(old_category: str, old_folder: str, new_category: str, new_folder: str, new_sku: str | None):
@@ -523,6 +525,23 @@ class Handler(BaseHTTPRequestHandler):
             self._send_json(200, {'headers': db.STOCK_HEADERS, 'rows': rows})
             return
 
+        if parsed.path == '/api/events':
+            events = db.fetch_events()
+            self._send_json(200, {'events': events})
+            return
+
+        if parsed.path == '/api/sales':
+            query = parse_qs(parsed.query)
+            event_id_raw = query.get('event_id', [''])[0]
+            try:
+                event_id = int(event_id_raw)
+            except (TypeError, ValueError):
+                self._send_json(400, {'error': 'Invalid event_id'})
+                return
+            rows = db.fetch_sales(event_id)
+            self._send_json(200, {'rows': rows})
+            return
+
         if parsed.path == '/api/media':
             query = parse_qs(parsed.query)
             category = safe_path_component(query.get('category', [''])[0])
@@ -911,6 +930,147 @@ class Handler(BaseHTTPRequestHandler):
                 self._send_json(200, {'ok': True})
                 return
             self._send_json(400, {'error': 'Invalid action'})
+            return
+
+        if parsed.path == '/api/events':
+            action = (data.get('action') or 'create').strip().lower()
+            event = data.get('event') or {}
+            event_id = data.get('id') or event.get('id')
+            if action == 'delete':
+                try:
+                    event_id = int(event_id)
+                except (TypeError, ValueError):
+                    self._send_json(400, {'error': 'Invalid event id'})
+                    return
+                if not db.delete_event(event_id):
+                    self._send_json(404, {'error': 'Event not found'})
+                    return
+                self._send_json(200, {'ok': True})
+                return
+
+            name = (event.get('name') or '').strip()
+            event_date = (event.get('event_date') or '').strip()
+            if not name or not event_date:
+                self._send_json(400, {'error': 'Missing event name or date'})
+                return
+            if not EVENT_DATE_RE.match(event_date):
+                self._send_json(400, {'error': 'Event date must be YYYY-MM-DD'})
+                return
+            payload = {
+                'name': name,
+                'event_date': event_date,
+                'location': (event.get('location') or '').strip(),
+                'contact_name': (event.get('contact_name') or '').strip(),
+                'contact_email': (event.get('contact_email') or '').strip(),
+                'notes': (event.get('notes') or '').strip(),
+            }
+            if action == 'update':
+                try:
+                    event_id = int(event_id)
+                except (TypeError, ValueError):
+                    self._send_json(400, {'error': 'Invalid event id'})
+                    return
+                if not db.update_event(event_id, payload):
+                    self._send_json(404, {'error': 'Event not found'})
+                    return
+                updated = db.fetch_event(event_id)
+                self._send_json(200, {'ok': True, 'event': updated})
+                return
+            inserted = db.insert_event(payload)
+            if not inserted:
+                self._send_json(500, {'error': 'Failed to create event'})
+                return
+            self._send_json(200, {'ok': True, 'event': inserted})
+            return
+
+        if parsed.path == '/api/sale':
+            event_id_raw = data.get('event_id')
+            try:
+                event_id = int(event_id_raw)
+            except (TypeError, ValueError):
+                self._send_json(400, {'error': 'Invalid event id'})
+                return
+            if not db.fetch_event(event_id):
+                self._send_json(404, {'error': 'Event not found'})
+                return
+            category = safe_path_component(data.get('category', ''))
+            product_folder = safe_path_component(data.get('product_folder', ''))
+            if not category or not product_folder:
+                self._send_json(400, {'error': 'Missing category/product_folder'})
+                return
+            try:
+                quantity = int(data.get('quantity', 1))
+            except (TypeError, ValueError):
+                self._send_json(400, {'error': 'Invalid quantity'})
+                return
+            if quantity <= 0:
+                self._send_json(400, {'error': 'Quantity must be greater than 0'})
+                return
+            unit_price_raw = (data.get('unit_price') or '').strip()
+            try:
+                unit_price = Decimal(unit_price_raw)
+            except (InvalidOperation, TypeError):
+                self._send_json(400, {'error': 'Invalid unit price'})
+                return
+            if unit_price < 0:
+                self._send_json(400, {'error': 'Unit price must be non-negative'})
+                return
+            unit_price = unit_price.quantize(Decimal('0.01'))
+            override_price = (data.get('override_price') or '').strip()
+            payment_method = (data.get('payment_method') or '').strip()
+            color = (data.get('color') or '').strip()
+            size = (data.get('size') or '').strip()
+
+            product = db.fetch_product(category, product_folder)
+            sku = (data.get('sku') or '').strip()
+            product_id = None
+            if product:
+                product_id = product.get('id')
+                sku = (product.get('sku') or '').strip() or sku
+
+            sale_row = db.insert_sale({
+                'event_id': event_id,
+                'product_id': product_id,
+                'category': category,
+                'product_folder': product_folder,
+                'sku': sku,
+                'color': color,
+                'size': size,
+                'quantity': quantity,
+                'unit_price': unit_price,
+                'override_price': override_price,
+                'payment_method': payment_method,
+            })
+            if not sale_row:
+                self._send_json(500, {'error': 'Failed to record sale'})
+                return
+
+            stock_adjusted = False
+            new_qty = None
+            existing = db.get_stock_entry(category, product_folder, color, size)
+            if existing:
+                try:
+                    current_qty = int(existing.get('quantity') or 0)
+                except (TypeError, ValueError):
+                    current_qty = 0
+                updated_qty = current_qty - quantity
+                if updated_qty <= 0:
+                    db.delete_stock_entry(category, product_folder, color, size)
+                    new_qty = 0
+                else:
+                    db.upsert_stock_entry(category, product_folder, sku, color, size, updated_qty)
+                    new_qty = updated_qty
+                stock_adjusted = True
+
+            self._send_json(
+                200,
+                {
+                    'ok': True,
+                    'sale': sale_row,
+                    'stock_adjusted': stock_adjusted,
+                    'new_quantity': new_qty,
+                },
+            )
             return
 
         if parsed.path == '/api/save':

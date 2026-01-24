@@ -4,10 +4,12 @@ import AddView from '../views/AddView.vue'
 import ProductView from '../views/ProductView.vue'
 import LoginView from '../views/LoginView.vue'
 import StockView from '../views/StockView.vue'
+import EventsView from '../views/EventsView.vue'
 
 const routes = [
   { path: '/', name: 'home', component: IndexView },
   { path: '/stock', name: 'stock', component: StockView },
+  { path: '/events', name: 'events', component: EventsView },
   { path: '/add', name: 'add', component: AddView },
   { path: '/product', name: 'product', component: ProductView },
   { path: '/login', name: 'login', component: LoginView },

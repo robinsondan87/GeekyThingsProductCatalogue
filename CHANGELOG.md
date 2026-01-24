@@ -2,6 +2,9 @@
 
 ## Unreleased
 
+## V2.6.0
+- Minor: Added pricing fields (cost, sale, postage) and size-based pricing on product pages.
+
 ## V2.5.2
 - Minor: Added product search on stock page and dropdowns for color/size.
 

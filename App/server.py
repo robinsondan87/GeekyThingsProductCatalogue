@@ -65,11 +65,20 @@ def read_csv():
         headers.append('Colors')
     if 'Sizes' not in headers:
         headers.append('Sizes')
+    if 'Cost To Make' not in headers:
+        headers.append('Cost To Make')
+    if 'Sale Price' not in headers:
+        headers.append('Sale Price')
+    if 'Postage Price' not in headers:
+        headers.append('Postage Price')
     for row in rows:
         row.setdefault('tags', '')
         row.setdefault('Listings', '')
         row.setdefault('Colors', '')
         row.setdefault('Sizes', '')
+        row.setdefault('Cost To Make', '')
+        row.setdefault('Sale Price', '')
+        row.setdefault('Postage Price', '')
         row['Status'] = normalize_status(row.get('Status'))
     return headers, rows
 
@@ -85,6 +94,12 @@ def write_csv(headers, rows):
         headers.append('Colors')
     if 'Sizes' not in headers:
         headers.append('Sizes')
+    if 'Cost To Make' not in headers:
+        headers.append('Cost To Make')
+    if 'Sale Price' not in headers:
+        headers.append('Sale Price')
+    if 'Postage Price' not in headers:
+        headers.append('Postage Price')
     with CSV_PATH.open('w', newline='') as f:
         writer = csv.DictWriter(f, fieldnames=headers)
         writer.writeheader()
@@ -93,6 +108,9 @@ def write_csv(headers, rows):
             row.setdefault('Listings', '')
             row.setdefault('Colors', '')
             row.setdefault('Sizes', '')
+            row.setdefault('Cost To Make', '')
+            row.setdefault('Sale Price', '')
+            row.setdefault('Postage Price', '')
             row['Status'] = normalize_status(row.get('Status'))
             writer.writerow(row)
 
@@ -170,6 +188,10 @@ def product_base_dir(status: str) -> Path:
 
 def product_dir(category: str, folder_name: str, status: str) -> Path:
     return product_base_dir(status) / category / folder_name
+
+
+def pricing_path(category: str, folder_name: str, status: str) -> Path:
+    return product_dir(category, folder_name, status) / 'Pricing.json'
 
 
 def ukca_file_paths(product_path: Path) -> dict:
@@ -1019,6 +1041,33 @@ class Handler(BaseHTTPRequestHandler):
             self._send_json(200, {'ok': True})
             return
 
+        if parsed.path == '/api/pricing':
+            category = safe_path_component(data.get('category', ''))
+            folder_name = safe_path_component(data.get('folder_name', ''))
+            status = data.get('status', '')
+            action = (data.get('action') or '').strip().lower()
+            if not category or not folder_name or action not in ('read', 'write'):
+                self._send_json(400, {'error': 'Missing category/folder_name/action'})
+                return
+            target_path = pricing_path(category, folder_name, status)
+            if action == 'read':
+                if not target_path.exists():
+                    self._send_json(200, {'ok': True, 'pricing': {'base': {}, 'sizes': []}})
+                    return
+                try:
+                    pricing_data = json.loads(target_path.read_text(encoding='utf-8'))
+                except json.JSONDecodeError:
+                    pricing_data = {'base': {}, 'sizes': []}
+                self._send_json(200, {'ok': True, 'pricing': pricing_data})
+                return
+            pricing_data = data.get('pricing') or {}
+            if not isinstance(pricing_data, dict):
+                self._send_json(400, {'error': 'Invalid pricing payload'})
+                return
+            target_path.write_text(json.dumps(pricing_data, indent=2), encoding='utf-8')
+            self._send_json(200, {'ok': True})
+            return
+
         if parsed.path == '/api/add_product':
             category = safe_path_component(data.get('category', ''))
             description = sanitize_folder_name(data.get('description', ''))
@@ -1065,6 +1114,9 @@ class Handler(BaseHTTPRequestHandler):
                 'tags': tags,
                 'Colors': '',
                 'Sizes': '',
+                'Cost To Make': '',
+                'Sale Price': '',
+                'Postage Price': '',
                 'Status': 'Draft',
                 'Facebook URL': '',
                 'TikTok URL': '',

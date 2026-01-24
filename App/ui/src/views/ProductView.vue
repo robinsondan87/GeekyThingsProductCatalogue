@@ -18,12 +18,19 @@ const params = new URLSearchParams(window.location.search);
       const ukcaAddBtn = document.getElementById("ukcaAddBtn");
       const productFolderInput = document.getElementById("productFolder");
       const tagsInput = document.getElementById("tags");
+      const costToMakeInput = document.getElementById("costToMake");
+      const salePriceInput = document.getElementById("salePrice");
+      const postagePriceInput = document.getElementById("postagePrice");
+      const onlinePrice = document.getElementById("onlinePrice");
+      const inPersonPrice = document.getElementById("inPersonPrice");
       const colorsInput = document.getElementById("colorsInput");
       const sizesInput = document.getElementById("sizesInput");
       const colorsList = document.getElementById("colorsList");
       const sizesList = document.getElementById("sizesList");
       const colorsSuggestions = document.getElementById("colorsSuggestions");
       const sizesSuggestions = document.getElementById("sizesSuggestions");
+      const sizePricingBody = document.getElementById("sizePricingBody");
+      const savePricingBtn = document.getElementById("savePricingBtn");
       const listingGroup = document.getElementById("listingGroup");
       const listingLinks = document.getElementById("listingLinks");
       const facebookUrlInput = document.getElementById("facebookUrl");
@@ -70,6 +77,7 @@ const params = new URLSearchParams(window.location.search);
       let ukcaPackFiles = [];
       let currentColors = [];
       let currentSizes = [];
+      let pricingData = { base: {}, sizes: [] };
 
       const ukcaFileLabels = {
         readme: "UKCA README",
@@ -208,6 +216,10 @@ const params = new URLSearchParams(window.location.search);
         updateUkcaDisplay();
         productFolderInput.value = row.product_folder || "";
         tagsInput.value = row.tags || "";
+        costToMakeInput.value = row["Cost To Make"] || "";
+        salePriceInput.value = row["Sale Price"] || "";
+        postagePriceInput.value = row["Postage Price"] || "";
+        updateBasePricingSummary();
         currentColors = parseList(row.Colors || "");
         currentSizes = parseList(row.Sizes || "");
         renderChips(currentColors, colorsList, removeColor);
@@ -260,6 +272,7 @@ const params = new URLSearchParams(window.location.search);
 
         populateSuggestions();
 
+        await loadPricing();
         await loadReadme();
         await loadMedia();
         await load3mf();
@@ -325,6 +338,7 @@ const params = new URLSearchParams(window.location.search);
       const removeSize = (value) => {
         currentSizes = currentSizes.filter((item) => item !== value);
         renderChips(currentSizes, sizesList, removeSize);
+        renderSizePricing();
       };
 
       const populateSuggestions = () => {
@@ -346,6 +360,166 @@ const params = new URLSearchParams(window.location.search);
           option.value = value;
           sizesSuggestions.appendChild(option);
         });
+      };
+
+      const parsePrice = (value) => {
+        const number = parseFloat(value);
+        return Number.isFinite(number) ? number : 0;
+      };
+
+      const formatPrice = (value) => {
+        if (!Number.isFinite(value)) return "0.00";
+        return value.toFixed(2);
+      };
+
+      const updateBasePricingSummary = () => {
+        const sale = parsePrice(salePriceInput.value);
+        const postage = parsePrice(postagePriceInput.value);
+        inPersonPrice.textContent = `In-person price: ${formatPrice(sale)} GBP`;
+        onlinePrice.textContent = `Online price: ${formatPrice(sale + postage)} GBP`;
+      };
+
+      const renderSizePricing = () => {
+        sizePricingBody.innerHTML = "";
+        if (!currentSizes.length) {
+          const emptyRow = document.createElement("tr");
+          const cell = document.createElement("td");
+          cell.colSpan = 5;
+          cell.textContent = "Add sizes to enable size-based pricing.";
+          emptyRow.appendChild(cell);
+          sizePricingBody.appendChild(emptyRow);
+          return;
+        }
+        const sizeMap = new Map();
+        (pricingData.sizes || []).forEach((entry) => {
+          if (!entry || !entry.size) return;
+          sizeMap.set(entry.size, entry);
+        });
+        const makeInput = (value, field) => {
+          const input = document.createElement("input");
+          input.type = "number";
+          input.min = "0";
+          input.step = "0.01";
+          input.value = value || "";
+          input.dataset.field = field;
+          input.className = "price-input";
+          return input;
+        };
+        const updateRowSummary = (summary, saleInput, postageInput) => {
+          const sale = parsePrice(saleInput.value);
+          const postage = parsePrice(postageInput.value);
+          summary.textContent = `Online: ${formatPrice(sale + postage)} GBP · In-person: ${formatPrice(sale)} GBP`;
+        };
+
+        currentSizes
+          .slice()
+          .sort((a, b) => a.localeCompare(b))
+          .forEach((size) => {
+            const entry = sizeMap.get(size) || {};
+            const row = document.createElement("tr");
+            row.dataset.size = size;
+
+            const sizeCell = document.createElement("td");
+            sizeCell.textContent = size;
+            row.appendChild(sizeCell);
+
+            const costCell = document.createElement("td");
+            const costInput = makeInput(entry.cost_to_make, "cost_to_make");
+            costCell.appendChild(costInput);
+            row.appendChild(costCell);
+
+            const saleCell = document.createElement("td");
+            const saleInput = makeInput(entry.sale_price, "sale_price");
+            saleCell.appendChild(saleInput);
+            row.appendChild(saleCell);
+
+            const postageCell = document.createElement("td");
+            const postageInput = makeInput(entry.postage_price, "postage_price");
+            postageCell.appendChild(postageInput);
+            row.appendChild(postageCell);
+
+            const summaryCell = document.createElement("td");
+            const summary = document.createElement("div");
+            summary.className = "price-summary";
+            updateRowSummary(summary, saleInput, postageInput);
+            summaryCell.appendChild(summary);
+            row.appendChild(summaryCell);
+
+            [saleInput, postageInput].forEach((input) => {
+              input.addEventListener("input", () => updateRowSummary(summary, saleInput, postageInput));
+            });
+
+            sizePricingBody.appendChild(row);
+          });
+      };
+
+      const loadPricing = async () => {
+        const response = await fetch("/api/pricing", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            category: categoryParam,
+            folder_name: productFolderInput.value,
+            status: statusParam,
+            action: "read",
+          }),
+        });
+        const payload = await response.json();
+        if (!response.ok) {
+          statusEl.textContent = payload.error || "Failed to load pricing.";
+          return;
+        }
+        pricingData = payload.pricing || { base: {}, sizes: [] };
+        renderSizePricing();
+      };
+
+      const collectSizePricing = () => {
+        const entries = [];
+        sizePricingBody.querySelectorAll("tr[data-size]").forEach((row) => {
+          const size = row.dataset.size || "";
+          const cost = row.querySelector('[data-field="cost_to_make"]')?.value.trim() || "";
+          const sale = row.querySelector('[data-field="sale_price"]')?.value.trim() || "";
+          const postage = row.querySelector('[data-field="postage_price"]')?.value.trim() || "";
+          if (!cost && !sale && !postage) return;
+          entries.push({
+            size,
+            cost_to_make: cost,
+            sale_price: sale,
+            postage_price: postage,
+          });
+        });
+        return entries;
+      };
+
+      const savePricing = async () => {
+        await saveDetails();
+        const pricingPayload = {
+          base: {
+            cost_to_make: costToMakeInput.value.trim(),
+            sale_price: salePriceInput.value.trim(),
+            postage_price: postagePriceInput.value.trim(),
+          },
+          sizes: collectSizePricing(),
+        };
+        const response = await fetch("/api/pricing", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            category: categoryParam,
+            folder_name: productFolderInput.value,
+            status: statusParam,
+            action: "write",
+            pricing: pricingPayload,
+          }),
+        });
+        const payload = await response.json();
+        if (!response.ok) {
+          statusEl.textContent = payload.error || "Failed to save pricing.";
+          return;
+        }
+        pricingData = pricingPayload;
+        renderSizePricing();
+        statusEl.textContent = "Pricing saved.";
       };
 
       const loadReadme = async () => {
@@ -739,6 +913,9 @@ const params = new URLSearchParams(window.location.search);
           tags: tagsInput.value.trim(),
           Colors: currentColors.join(", "),
           Sizes: currentSizes.join(", "),
+          "Cost To Make": costToMakeInput.value.trim(),
+          "Sale Price": salePriceInput.value.trim(),
+          "Postage Price": postagePriceInput.value.trim(),
           "Facebook URL": facebookUrlInput.value.trim(),
           "TikTok URL": tiktokUrlInput.value.trim(),
           "Ebay URL": ebayUrlInput.value.trim(),
@@ -894,9 +1071,13 @@ const params = new URLSearchParams(window.location.search);
       };
 
       saveDetailsBtn.addEventListener("click", () => saveDetails().catch(console.error));
+      savePricingBtn.addEventListener("click", () => savePricing().catch(console.error));
       renameBtn.addEventListener("click", () => renameFolder().catch(console.error));
       openFolderBtn.addEventListener("click", openFolder);
       saveReadmeBtn.addEventListener("click", () => saveReadme().catch(console.error));
+      [costToMakeInput, salePriceInput, postagePriceInput].forEach((input) => {
+        input.addEventListener("input", updateBasePricingSummary);
+      });
       colorsInput.addEventListener("keydown", (event) => {
         if (event.key !== "Enter") return;
         event.preventDefault();
@@ -911,6 +1092,7 @@ const params = new URLSearchParams(window.location.search);
         addToList(sizesInput.value, currentSizes, (list) => {
           currentSizes = list;
         }, sizesList, removeSize);
+        renderSizePricing();
         sizesInput.value = "";
       });
       ukcaAddBtn.addEventListener("click", () => {
@@ -1131,6 +1313,41 @@ const params = new URLSearchParams(window.location.search);
             <datalist id="sizesSuggestions"></datalist>
             <div class="variant-list" id="sizesList"></div>
           </div>
+        </div>
+        <div class="grid" style="margin-top: 12px;">
+          <div>
+            <label for="costToMake">Cost to make</label>
+            <input id="costToMake" type="number" min="0" step="0.01" placeholder="0.00" />
+          </div>
+          <div>
+            <label for="salePrice">Sale price</label>
+            <input id="salePrice" type="number" min="0" step="0.01" placeholder="0.00" />
+          </div>
+          <div>
+            <label for="postagePrice">Postage price</label>
+            <input id="postagePrice" type="number" min="0" step="0.01" placeholder="0.00" />
+          </div>
+        </div>
+        <div class="price-summary" style="margin-top: 10px;">
+          <span id="inPersonPrice">In-person price: 0.00 GBP</span>
+          <span id="onlinePrice">Online price: 0.00 GBP</span>
+        </div>
+        <div class="table-wrap" style="margin-top: 12px;">
+          <table class="pricing-table">
+            <thead>
+              <tr>
+                <th>Size</th>
+                <th>Cost to make</th>
+                <th>Sale price</th>
+                <th>Postage price</th>
+                <th>Summary</th>
+              </tr>
+            </thead>
+            <tbody id="sizePricingBody"></tbody>
+          </table>
+        </div>
+        <div class="actions" style="margin-top: 12px;">
+          <button class="btn secondary" id="savePricingBtn" type="button">Save Pricing</button>
         </div>
         <div style="margin-top: 12px;">
           <label>Listings (auto from URLs)</label>

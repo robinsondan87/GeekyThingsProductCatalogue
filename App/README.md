@@ -10,6 +10,7 @@ Local product management web app for GeekyThings. It provides a simple browser U
 - Shows media from each product's `Media` folder.
 - Lists `.3mf` files under the product folder with open/copy helpers.
 - Tracks simple stock counts by product, color, and size.
+- Stores pricing fields and optional size-based pricing per product.
 
 ## Run locally (backend)
 From this folder:
@@ -24,6 +25,7 @@ Then open `http://localhost:8555` in a browser.
 - CSV source: `Products/categories_index.csv`.
 - Stock source: `Products/stock.csv`.
 - Products root: `Products/Categories/<Category>/<Product Folder>`.
+- Pricing file: `Products/Categories/<Category>/<Product Folder>/Pricing.json`.
 - Media folder: `Products/Categories/<Category>/<Product Folder>/Media`.
 - Files are served via `/files/...` for media and `.3mf` listing.
 
@@ -41,6 +43,7 @@ Then open `http://localhost:8555` in a browser.
 - `GET /api/media?category=...&folder=...`: Lists files in the product `Media` folder.
 - `GET /api/3mf?category=...&folder=...`: Lists `.3mf` files under the product folder.
 - `GET /api/stock`: Returns stock rows.
+- `POST /api/pricing`: Read/write pricing JSON for a product.
 - `POST /api/save`: Save full table to CSV.
 - `POST /api/update_row`: Update a single row and optionally move the folder.
 - `POST /api/add_product`: Create a new product folder and CSV row.

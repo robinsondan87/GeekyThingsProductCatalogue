@@ -1,5 +1,6 @@
 import json
 import os
+import time
 from pathlib import Path
 
 import psycopg
@@ -66,9 +67,20 @@ def get_connection():
 
 def ensure_schema():
     schema_sql = SCHEMA_PATH.read_text(encoding='utf-8')
-    with get_connection() as conn:
-        with conn.cursor() as cur:
-            cur.execute(schema_sql)
+    retries = int(os.environ.get('DB_CONNECT_RETRIES', '30'))
+    delay = float(os.environ.get('DB_CONNECT_DELAY_SECONDS', '1'))
+    last_error = None
+    for _ in range(max(retries, 1)):
+        try:
+            with get_connection() as conn:
+                with conn.cursor() as cur:
+                    cur.execute(schema_sql)
+            return
+        except psycopg.OperationalError as exc:
+            last_error = exc
+            time.sleep(delay)
+    if last_error:
+        raise last_error
 
 
 def normalize_status(value: str) -> str:

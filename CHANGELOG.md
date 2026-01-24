@@ -2,6 +2,9 @@
 
 ## Unreleased
 
+## V2.7.1
+- Fix: Added startup retry loop to wait for Postgres readiness.
+
 ## V2.7.0
 - Major: Moved structured product/stock/pricing data to Postgres with migration tooling.
 - Minor: Added Postgres service and env defaults to Docker Compose.

@@ -2,6 +2,9 @@
 
 ## Unreleased
 
+## V2.7.6
+- Minor: Show UKCA status as a read-only badge on the main products table.
+
 ## V2.7.5
 - Minor: Added a UKCA reset script and defaulted UKCA test date to today.
 

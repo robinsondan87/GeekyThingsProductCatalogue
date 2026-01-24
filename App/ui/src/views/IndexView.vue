@@ -32,7 +32,7 @@ onMounted(() => {
       let autosaveTimer = null;
       let headers = [];
       let rows = [];
-      const dropdownColumns = new Set(["UKCA"]);
+      const dropdownColumns = new Set([]);
       const chipColumns = new Set(["tags", "Colors", "Sizes"]);
       const listingOptions = ["Facebook", "TikTok", "Ebay", "Etsy"];
       const columnFilters = new Map();
@@ -58,6 +58,13 @@ onMounted(() => {
         if (lowered === "draft") return "Draft";
         if (lowered === "archived") return "Archived";
         return "Live";
+      };
+
+      const normalizeUkca = (value) => {
+        const lowered = String(value || "").trim().toLowerCase();
+        if (lowered === "yes") return "Yes";
+        if (lowered === "n/a" || lowered === "na") return "N/A";
+        return "No";
       };
 
       const getListingsForRow = (row) => {
@@ -390,6 +397,8 @@ onMounted(() => {
           if (headers[colIndex] === "Listings") {
             cell = getListingsForRow(row).map((item) => item.name).join(", ");
             if (!cell.toLowerCase().includes(value.toLowerCase())) return false;
+          } else if (headers[colIndex] === "UKCA") {
+            if (normalizeUkca(cell) !== value) return false;
           } else if (dropdownColumns.has(headers[colIndex])) {
             if (cell !== value) return false;
           } else if (!cell.toLowerCase().includes(value.toLowerCase())) {
@@ -451,6 +460,14 @@ onMounted(() => {
                 });
               }
               td.appendChild(wrapper);
+            } else if (header === "UKCA") {
+              const badge = document.createElement("span");
+              const value = normalizeUkca(row[colIndex]);
+              badge.className = `ukca-badge ${
+                value === "Yes" ? "is-yes" : value === "N/A" ? "is-na" : "is-no"
+              }`;
+              badge.textContent = value;
+              td.appendChild(badge);
             } else if (dropdownColumns.has(header)) {
               const select = document.createElement("select");
               ["No", "Yes", "N/A"].forEach((optionValue) => {

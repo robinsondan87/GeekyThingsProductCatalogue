@@ -27,3 +27,6 @@
 
 ## Phase 4 - Reporting
 - [ ] Add simple reporting: sales by channel/event, top SKUs, payout/fee totals.
+
+## Phase 5 - Tests
+- [ ] Add unit test coverage for backend paths, renames, and upload handling.

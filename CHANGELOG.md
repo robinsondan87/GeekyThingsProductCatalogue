@@ -2,6 +2,9 @@
 
 ## Unreleased
 
+## V2.7.13
+- Minor: Added Phase 5 for unit testing coverage.
+
 ## V2.7.12
 - Fix: Avoided HTML injection in stock table rows.
 - Fix: Added rollback for rename operations when DB updates fail.

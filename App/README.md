@@ -96,6 +96,13 @@ With `DATABASE_URL` set (or via Docker Compose):
 python3 App/migrate_to_db.py
 ```
 
+## Reset UKCA status/packs
+Set all UKCA statuses to No and optionally remove on-disk UKCA folders:
+
+```
+python3 App/reset_ukca.py --delete-files --confirm
+```
+
 ## Auth setup
 Set environment variables before running the server or Docker:
 

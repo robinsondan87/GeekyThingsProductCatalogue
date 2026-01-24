@@ -2,6 +2,9 @@
 
 ## Unreleased
 
+## V2.7.5
+- Minor: Added a UKCA reset script and defaulted UKCA test date to today.
+
 ## V2.7.4
 - Minor: Added chip-style editing for tags, colors, and sizes on the main products table.
 - Minor: Hid cost/sale/postage columns in the main products overview.

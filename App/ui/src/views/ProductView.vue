@@ -1013,6 +1013,13 @@ const params = new URLSearchParams(window.location.search);
         if (!ukcaManufacturer.value) ukcaManufacturer.value = "GeekyThingsUK";
         if (!ukcaAddress.value) ukcaAddress.value = "United Kingdom";
         if (!ukcaTester.value) ukcaTester.value = "Dan Robinson";
+        if (!ukcaTestDate.value) {
+          const today = new Date();
+          const yyyy = today.getFullYear();
+          const mm = String(today.getMonth() + 1).padStart(2, "0");
+          const dd = String(today.getDate()).padStart(2, "0");
+          ukcaTestDate.value = `${yyyy}-${mm}-${dd}`;
+        }
         ukcaDialog.showModal();
       };
 

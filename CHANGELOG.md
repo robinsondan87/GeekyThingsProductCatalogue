@@ -2,6 +2,10 @@
 
 ## Unreleased
 
+## V2.7.4
+- Minor: Added chip-style editing for tags, colors, and sizes on the main products table.
+- Minor: Hid cost/sale/postage columns in the main products overview.
+
 ## V2.7.3
 - Fix: Sync SKU/name edits to disk by renaming folders and SKU-prefixed media on save.
 

@@ -509,6 +509,22 @@ tbody tr:hover {
   font-size: 12px;
 }
 
+.chip-editor {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  min-width: 200px;
+}
+
+.chip-editor .variant-list {
+  margin-top: 0;
+}
+
+.chip-input {
+  padding: 6px 10px;
+  font-size: 12px;
+}
+
 .ukca-status {
   display: flex;
   flex-wrap: wrap;

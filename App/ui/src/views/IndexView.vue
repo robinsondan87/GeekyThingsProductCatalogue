@@ -33,13 +33,24 @@ onMounted(() => {
       let headers = [];
       let rows = [];
       const dropdownColumns = new Set(["UKCA"]);
+      const chipColumns = new Set(["tags", "Colors", "Sizes"]);
       const listingOptions = ["Facebook", "TikTok", "Ebay", "Etsy"];
       const columnFilters = new Map();
       let sortIndex = -1;
       let sortDirection = 1;
       let columnWidths = [];
       let originalNames = [];
-      const hiddenColumns = new Set(["id", "Facebook URL", "TikTok URL", "Ebay URL", "Etsy URL", "Status"]);
+      const hiddenColumns = new Set([
+        "id",
+        "Facebook URL",
+        "TikTok URL",
+        "Ebay URL",
+        "Etsy URL",
+        "Status",
+        "Cost To Make",
+        "Sale Price",
+        "Postage Price",
+      ]);
       let viewMode = "live";
 
       const normalizeStatus = (value) => {
@@ -106,6 +117,54 @@ onMounted(() => {
         }
 
         return output;
+      };
+
+      const parseList = (value) =>
+        (value || "")
+          .split(",")
+          .map((item) => item.trim())
+          .filter((item) => item.length);
+
+      const uniqueSorted = (items) => {
+        const seen = new Map();
+        items.forEach((item) => {
+          const key = item.toLowerCase();
+          if (!seen.has(key)) {
+            seen.set(key, item);
+          }
+        });
+        return Array.from(seen.values()).sort((a, b) => a.localeCompare(b));
+      };
+
+      const renderChipList = (items, container, onRemove) => {
+        container.innerHTML = "";
+        if (!items.length) {
+          const empty = document.createElement("span");
+          empty.className = "variant-empty";
+          empty.textContent = "None added";
+          container.appendChild(empty);
+          return;
+        }
+        items.forEach((value) => {
+          const chip = document.createElement("span");
+          chip.className = "variant-chip";
+          chip.textContent = value;
+          const removeBtn = document.createElement("button");
+          removeBtn.type = "button";
+          removeBtn.className = "variant-remove";
+          removeBtn.textContent = "×";
+          removeBtn.addEventListener("click", () => onRemove(value));
+          chip.appendChild(removeBtn);
+          container.appendChild(chip);
+        });
+      };
+
+      const addToList = (value, list) => {
+        const cleaned = (value || "").trim().replace(/,+$/, "");
+        if (!cleaned) return list;
+        const lower = cleaned.toLowerCase();
+        if (list.some((item) => item.toLowerCase() === lower)) return list;
+        return uniqueSorted([...list, cleaned]);
       };
 
       const csvEscape = (value) => {
@@ -451,6 +510,52 @@ onMounted(() => {
                 }
               });
               wrapper.appendChild(input);
+              td.appendChild(wrapper);
+            } else if (chipColumns.has(header)) {
+              const wrapper = document.createElement("div");
+              wrapper.className = "chip-editor";
+              const listEl = document.createElement("div");
+              listEl.className = "variant-list";
+              const input = document.createElement("input");
+              input.type = "text";
+              input.className = "chip-input";
+              input.placeholder = `Add ${header === "tags" ? "tag" : header.toLowerCase()}`;
+              let current = uniqueSorted(parseList(row[colIndex] || ""));
+
+              const setList = (next) => {
+                current = uniqueSorted(next);
+                rows[rowIndex][colIndex] = current.join(", ");
+                scheduleSave();
+                renderChipList(current, listEl, removeItem);
+              };
+
+              const removeItem = (value) => {
+                setList(current.filter((item) => item !== value));
+              };
+
+              renderChipList(current, listEl, removeItem);
+
+              input.addEventListener("keydown", (event) => {
+                if (event.key === "Enter" || event.key === ",") {
+                  event.preventDefault();
+                  const next = addToList(input.value, current);
+                  if (next !== current) {
+                    setList(next);
+                  }
+                  input.value = "";
+                }
+              });
+
+              input.addEventListener("blur", () => {
+                const next = addToList(input.value, current);
+                if (next !== current) {
+                  setList(next);
+                }
+                input.value = "";
+              });
+
+              wrapper.appendChild(input);
+              wrapper.appendChild(listEl);
               td.appendChild(wrapper);
             } else {
               const input = document.createElement("input");

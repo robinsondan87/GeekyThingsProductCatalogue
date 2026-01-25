@@ -23,3 +23,11 @@
 
 ## Phase 5 - Tests
 - [x] Add unit test coverage for backend paths, renames, and upload handling.
+
+## Low Priority - Workflow Ops
+- [ ] Add event pack checklist and packing list (stock, supplies, signage).
+- [ ] Add barcode/QR scanning for Quick Sale (camera/USB scanner).
+- [ ] Add end-of-event reconcile flow with before/after snapshot and CSV export.
+- [ ] Auto-generate print-run list from event sales, low stock, and production queue.
+- [ ] Add weekly low-stock digest for supplies with one-click reorder list.
+- [ ] Add "Today" dashboard (upcoming events, print queue, low stock, last event summary).

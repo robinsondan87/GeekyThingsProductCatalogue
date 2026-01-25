@@ -2,6 +2,13 @@
 
 ## Unreleased
 
+## V2.8.16
+- Fix: Event totals now use override price when provided.
+- Fix: Event delete now removes stored event images.
+- Fix: Event media delete reports file errors and avoids orphaned DB rows.
+- Fix: Event upload cleans up files if DB insert fails.
+- Minor: Added low-priority workflow ops ideas to TODO.
+
 ## V2.8.15
 - Minor: Removed the pending extended reporting TODO item.
 

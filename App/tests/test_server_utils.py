@@ -72,3 +72,32 @@ def test_parse_multipart_form_data_extracts_file():
     assert len(files) == 1
     assert files[0]['filename'] == 'poster.png'
     assert files[0]['content'] == b'PNGDATA'
+
+
+def test_calculate_event_totals_uses_override_price():
+    rows = [
+        {
+            'quantity': 2,
+            'unit_price': '5.00',
+            'override_price': '4.50',
+            'payment_method': 'Cash',
+        }
+    ]
+    totals = server.calculate_event_totals(rows)
+    assert totals['total_items'] == 2
+    assert totals['total_revenue'] == '9.00'
+    assert totals['payments']['Cash'] == '9.00'
+
+
+def test_calculate_event_totals_ignores_invalid_override():
+    rows = [
+        {
+            'quantity': 1,
+            'unit_price': '7.25',
+            'override_price': 'freebie',
+            'payment_method': '',
+        }
+    ]
+    totals = server.calculate_event_totals(rows)
+    assert totals['total_revenue'] == '7.25'
+    assert totals['payments']['Unknown'] == '7.25'

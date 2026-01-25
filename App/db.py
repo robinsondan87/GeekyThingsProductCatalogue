@@ -965,6 +965,20 @@ def fetch_event_media(event_id: int) -> list:
             return cur.fetchall()
 
 
+def fetch_event_media_by_id(media_id: int) -> dict | None:
+    with get_connection() as conn:
+        with conn.cursor(row_factory=dict_row) as cur:
+            cur.execute(
+                """
+                SELECT id, event_id, file_path, uploaded_at::text AS uploaded_at
+                FROM event_media
+                WHERE id = %s
+                """,
+                (media_id,),
+            )
+            return cur.fetchone()
+
+
 def insert_event_media(event_id: int, file_path: str) -> dict | None:
     with get_connection() as conn:
         with conn.cursor(row_factory=dict_row) as cur:

@@ -410,6 +410,52 @@ def parse_multipart_form_data(content_type: str, body: bytes) -> tuple[dict, lis
     return fields, files
 
 
+def parse_price(value):
+    if value is None:
+        return None
+    text = str(value).strip()
+    if not text:
+        return None
+    try:
+        return Decimal(text)
+    except (InvalidOperation, ValueError):
+        return None
+
+
+def format_money(value) -> str:
+    if value is None:
+        value = Decimal('0')
+    try:
+        quantized = value.quantize(Decimal('0.01'))
+    except (InvalidOperation, AttributeError):
+        quantized = Decimal('0.00')
+    return format(quantized, '.2f')
+
+
+def calculate_event_totals(rows: list[dict]) -> dict:
+    total_items = 0
+    total_revenue = Decimal('0.00')
+    payments: dict[str, Decimal] = {}
+    for row in rows:
+        try:
+            quantity = int(row.get('quantity') or 0)
+        except (TypeError, ValueError):
+            quantity = 0
+        unit_price = parse_price(row.get('unit_price')) or Decimal('0.00')
+        override_price = parse_price(row.get('override_price'))
+        effective_price = override_price if override_price is not None else unit_price
+        line_total = effective_price * quantity
+        total_items += quantity
+        total_revenue += line_total
+        payment_method = row.get('payment_method') or 'Unknown'
+        payments[payment_method] = payments.get(payment_method, Decimal('0.00')) + line_total
+    return {
+        'total_items': total_items,
+        'total_revenue': format_money(total_revenue),
+        'payments': {name: format_money(value) for name, value in payments.items()},
+    }
+
+
 class Handler(BaseHTTPRequestHandler):
     def _send_json(self, status, payload):
         data = json.dumps(payload).encode('utf-8')
@@ -592,7 +638,8 @@ class Handler(BaseHTTPRequestHandler):
             if not db.fetch_event(event_id):
                 self._send_json(404, {'error': 'Event not found'})
                 return
-            totals = db.fetch_event_totals(event_id)
+            rows = db.fetch_sales(event_id)
+            totals = calculate_event_totals(rows)
             self._send_json(200, {'totals': totals})
             return
 
@@ -911,6 +958,11 @@ class Handler(BaseHTTPRequestHandler):
                 row = db.insert_event_media(event_id, rel_path)
                 if row:
                     rows.append(row)
+                else:
+                    try:
+                        dest_path.unlink()
+                    except OSError:
+                        pass
             if not rows:
                 self._send_json(400, {'error': 'No valid images to upload', 'skipped': skipped})
                 return
@@ -1164,6 +1216,12 @@ class Handler(BaseHTTPRequestHandler):
                 if not db.delete_event(event_id):
                     self._send_json(404, {'error': 'Event not found'})
                     return
+                event_dir = (EVENT_MEDIA_DIR / str(event_id)).resolve()
+                try:
+                    if event_dir.is_relative_to(EVENT_MEDIA_DIR.resolve()) and event_dir.exists():
+                        shutil.rmtree(event_dir)
+                except OSError:
+                    pass
                 self._send_json(200, {'ok': True})
                 return
 
@@ -1213,19 +1271,22 @@ class Handler(BaseHTTPRequestHandler):
             except (TypeError, ValueError):
                 self._send_json(400, {'error': 'Invalid media id'})
                 return
-            row = db.delete_event_media(media_id)
+            row = db.fetch_event_media_by_id(media_id)
             if not row:
                 self._send_json(404, {'error': 'Media not found'})
                 return
             rel_path = safe_rel_path(row.get('file_path') or '')
             if rel_path:
                 file_path = (RECORDS_DIR / rel_path).resolve()
-                if file_path.is_relative_to(RECORDS_DIR.resolve()):
+                if file_path.is_relative_to(RECORDS_DIR.resolve()) and file_path.exists():
                     try:
-                        if file_path.exists():
-                            file_path.unlink()
+                        file_path.unlink()
                     except OSError:
-                        pass
+                        self._send_json(500, {'error': 'Failed to delete media file'})
+                        return
+            if not db.delete_event_media(media_id):
+                self._send_json(500, {'error': 'Failed to delete media record'})
+                return
             self._send_json(200, {'ok': True})
             return
 

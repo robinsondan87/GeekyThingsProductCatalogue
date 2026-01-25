@@ -21,9 +21,5 @@
 - [x] Add supplies/materials inventory (filament, boxes, bags, labels) with reorder points and lead times.
 - [x] Add expenses ledger (supplier, invoice, receipt upload, tax category) with yearly totals export.
 
-## Phase 4 - Reporting
-- [x] Add per-event totals summary (items, revenue, payment breakdown).
-- [ ] Add extended reporting: top SKUs, payout/fee totals.
-
 ## Phase 5 - Tests
 - [x] Add unit test coverage for backend paths, renames, and upload handling.

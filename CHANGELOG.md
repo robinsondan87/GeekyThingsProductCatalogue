@@ -2,6 +2,9 @@
 
 ## Unreleased
 
+## V2.8.15
+- Minor: Removed the pending extended reporting TODO item.
+
 ## V2.8.14
 - Minor: Surface skipped event image uploads in the UI.
 

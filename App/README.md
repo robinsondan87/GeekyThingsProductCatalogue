@@ -63,6 +63,8 @@ Then open `http://localhost:8555` in a browser.
 - `POST /api/stock_adjust`: Add or subtract stock rows.
 - `GET /api/events`: List craft fair events.
 - `POST /api/events`: Create/update/delete events.
+- `GET /api/event_media`: List event media for an event.
+- `POST /api/event_upload`: Upload event poster images.
 - `GET /api/sales`: List sales for an event.
 - `POST /api/sale`: Record an in-person sale and adjust stock.
 - `POST /api/sale_update`: Update a sale entry.
@@ -91,6 +93,7 @@ Then open `http://localhost:8555` in a browser.
 - Set `PRODUCTS_DIR` if the Products folder is mounted elsewhere.
 - Expense receipts are served from `/files-records/<path>` under `Records/Expenses`.
 - Set `RECORDS_DIR` if you want receipts stored elsewhere.
+- Event poster uploads are stored under `Records/Events/<event_id>/` and served via `/files-records/<path>`.
 - Recording an in-person sale adds the item to the production queue to replenish stock.
 - Optional: `UPLOAD_MAX_BYTES` limits upload payload size (default 100MB).
 - Optional: `OPEN_FOLDER_ENABLED=0` disables the open-folder button (default off in Docker).

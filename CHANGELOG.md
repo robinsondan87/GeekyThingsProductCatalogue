@@ -2,6 +2,9 @@
 
 ## Unreleased
 
+## V2.8.8
+- Minor: Added event image uploads with previews and delete support.
+
 ## V2.8.7
 - Major: Added production queue with auto-replenish from event sales and one-click move-to-stock.
 

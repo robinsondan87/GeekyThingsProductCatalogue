@@ -950,6 +950,49 @@ def adjust_production_by_key(
             return cur.fetchone()
 
 
+def fetch_event_media(event_id: int) -> list:
+    with get_connection() as conn:
+        with conn.cursor(row_factory=dict_row) as cur:
+            cur.execute(
+                """
+                SELECT id, event_id, file_path, uploaded_at::text AS uploaded_at
+                FROM event_media
+                WHERE event_id = %s
+                ORDER BY uploaded_at DESC, id DESC
+                """,
+                (event_id,),
+            )
+            return cur.fetchall()
+
+
+def insert_event_media(event_id: int, file_path: str) -> dict | None:
+    with get_connection() as conn:
+        with conn.cursor(row_factory=dict_row) as cur:
+            cur.execute(
+                """
+                INSERT INTO event_media (event_id, file_path)
+                VALUES (%s, %s)
+                RETURNING id, event_id, file_path, uploaded_at::text AS uploaded_at
+                """,
+                (event_id, file_path),
+            )
+            return cur.fetchone()
+
+
+def delete_event_media(media_id: int) -> dict | None:
+    with get_connection() as conn:
+        with conn.cursor(row_factory=dict_row) as cur:
+            cur.execute(
+                """
+                DELETE FROM event_media
+                WHERE id = %s
+                RETURNING id, event_id, file_path, uploaded_at::text AS uploaded_at
+                """,
+                (media_id,),
+            )
+            return cur.fetchone()
+
+
 def fetch_sale(sale_id: int) -> dict | None:
     with get_connection() as conn:
         with conn.cursor(row_factory=dict_row) as cur:

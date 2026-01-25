@@ -22,6 +22,7 @@ ROOT_DIR = BASE_DIR.parent
 PRODUCTS_DIR = Path(os.environ.get('PRODUCTS_DIR', ROOT_DIR / 'Products')).resolve()
 RECORDS_DIR = Path(os.environ.get('RECORDS_DIR', ROOT_DIR / 'Records')).resolve()
 EXPENSES_DIR = RECORDS_DIR / 'Expenses'
+EVENT_MEDIA_DIR = RECORDS_DIR / 'Events'
 UI_DIST_DIR = BASE_DIR / 'ui' / 'dist'
 AUTH_USERNAME = os.environ.get('AUTH_USERNAME')
 AUTH_PASSWORD = os.environ.get('AUTH_PASSWORD')
@@ -537,6 +538,21 @@ class Handler(BaseHTTPRequestHandler):
             self._send_json(200, {'events': events})
             return
 
+        if parsed.path == '/api/event_media':
+            query = parse_qs(parsed.query)
+            event_id_raw = query.get('event_id', [''])[0]
+            try:
+                event_id = int(event_id_raw)
+            except (TypeError, ValueError):
+                self._send_json(400, {'error': 'Invalid event_id'})
+                return
+            if not db.fetch_event(event_id):
+                self._send_json(404, {'error': 'Event not found'})
+                return
+            rows = db.fetch_event_media(event_id)
+            self._send_json(200, {'rows': rows})
+            return
+
         if parsed.path == '/api/sales':
             query = parse_qs(parsed.query)
             event_id_raw = query.get('event_id', [''])[0]
@@ -840,6 +856,59 @@ class Handler(BaseHTTPRequestHandler):
             self._send_json(200, {'receipt_path': rel_path})
             return
 
+        if parsed.path == '/api/event_upload':
+            content_length = int(self.headers.get('Content-Length', '0'))
+            if content_length > UPLOAD_MAX_BYTES:
+                self._send_json(413, {'error': 'Upload exceeds size limit'})
+                return
+            body = self.rfile.read(content_length) if content_length > 0 else b''
+            fields, files_field = parse_multipart_form_data(
+                self.headers.get('Content-Type', ''),
+                body,
+            )
+            event_id_raw = fields.get('event_id', '')
+            try:
+                event_id = int(event_id_raw)
+            except (TypeError, ValueError):
+                self._send_json(400, {'error': 'Invalid event_id'})
+                return
+            if not db.fetch_event(event_id):
+                self._send_json(404, {'error': 'Event not found'})
+                return
+            if not files_field:
+                self._send_json(400, {'error': 'Missing image files'})
+                return
+            allowed_exts = {'.png', '.jpg', '.jpeg', '.gif', '.webp'}
+            rows = []
+            for item in files_field:
+                filename = item.get('filename') or ''
+                content = item.get('content') or b''
+                if not filename or not content:
+                    continue
+                base_name = os.path.basename(filename)
+                name_part, ext = os.path.splitext(base_name)
+                ext = ext.lower()
+                if ext not in allowed_exts:
+                    self._send_json(400, {'error': f'Unsupported file type: {ext or \"unknown\"}'})
+                    return
+                safe_name = sanitize_filename(name_part) or 'event'
+                timestamp = time.strftime('%Y%m%d-%H%M%S')
+                token = secrets.token_hex(4)
+                dest_dir = EVENT_MEDIA_DIR / str(event_id)
+                dest_dir.mkdir(parents=True, exist_ok=True)
+                dest_name = f\"{timestamp}-{token}-{safe_name}{ext}\"
+                dest_path = dest_dir / dest_name
+                if dest_path.exists():
+                    dest_name = f\"{timestamp}-{token}-{secrets.token_hex(2)}-{safe_name}{ext}\"
+                    dest_path = dest_dir / dest_name
+                dest_path.write_bytes(content)
+                rel_path = dest_path.relative_to(RECORDS_DIR).as_posix()
+                row = db.insert_event_media(event_id, rel_path)
+                if row:
+                    rows.append(row)
+            self._send_json(200, {'rows': rows})
+            return
+
         if parsed.path == '/api/login':
             length = int(self.headers.get('Content-Length', '0'))
             body = self.rfile.read(length) if length > 0 else b''
@@ -1120,6 +1189,33 @@ class Handler(BaseHTTPRequestHandler):
                 self._send_json(500, {'error': 'Failed to create event'})
                 return
             self._send_json(200, {'ok': True, 'event': inserted})
+            return
+
+        if parsed.path == '/api/event_media':
+            action = (data.get('action') or '').strip().lower()
+            if action != 'delete':
+                self._send_json(400, {'error': 'Invalid action'})
+                return
+            media_id = data.get('id')
+            try:
+                media_id = int(media_id)
+            except (TypeError, ValueError):
+                self._send_json(400, {'error': 'Invalid media id'})
+                return
+            row = db.delete_event_media(media_id)
+            if not row:
+                self._send_json(404, {'error': 'Media not found'})
+                return
+            rel_path = safe_rel_path(row.get('file_path') or '')
+            if rel_path:
+                file_path = (RECORDS_DIR / rel_path).resolve()
+                if file_path.is_relative_to(RECORDS_DIR.resolve()):
+                    try:
+                        if file_path.exists():
+                            file_path.unlink()
+                    except OSError:
+                        pass
+            self._send_json(200, {'ok': True})
             return
 
         if parsed.path == '/api/sale':

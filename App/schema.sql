@@ -124,6 +124,16 @@ CREATE UNIQUE INDEX IF NOT EXISTS production_queue_unique_idx
 CREATE INDEX IF NOT EXISTS production_queue_status_idx
     ON production_queue (status);
 
+CREATE TABLE IF NOT EXISTS event_media (
+    id BIGSERIAL PRIMARY KEY,
+    event_id BIGINT NOT NULL REFERENCES events(id) ON DELETE CASCADE,
+    file_path TEXT NOT NULL DEFAULT '',
+    uploaded_at TIMESTAMPTZ NOT NULL DEFAULT now()
+);
+
+CREATE INDEX IF NOT EXISTS event_media_event_idx
+    ON event_media (event_id);
+
 CREATE TABLE IF NOT EXISTS supplies (
     id BIGSERIAL PRIMARY KEY,
     name TEXT NOT NULL,

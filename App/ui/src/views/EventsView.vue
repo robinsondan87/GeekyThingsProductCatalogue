@@ -21,6 +21,12 @@ onMounted(() => {
   const salesBody = document.getElementById('salesTableBody')
   const salesEmpty = document.getElementById('salesEmpty')
   const salesStatus = document.getElementById('salesStatus')
+  const eventMediaSelect = document.getElementById('eventMediaSelect')
+  const eventMediaInput = document.getElementById('eventMediaInput')
+  const eventMediaUploadBtn = document.getElementById('eventMediaUploadBtn')
+  const eventMediaBody = document.getElementById('eventMediaBody')
+  const eventMediaEmpty = document.getElementById('eventMediaEmpty')
+  const eventMediaStatus = document.getElementById('eventMediaStatus')
   const logoutBtn = document.getElementById('logoutBtn')
 
   let events = []
@@ -156,6 +162,24 @@ onMounted(() => {
     }
   }
 
+  const renderMediaSelect = () => {
+    const current = eventMediaSelect.value
+    eventMediaSelect.innerHTML = '<option value="">Select event</option>'
+    events.forEach((event) => {
+      const option = document.createElement('option')
+      option.value = event.id
+      option.textContent = `${event.name} (${formatEventDate(event.event_date)})`
+      eventMediaSelect.appendChild(option)
+    })
+    if (current && [...eventMediaSelect.options].some((option) => option.value === current)) {
+      eventMediaSelect.value = current
+      return
+    }
+    if (events.length) {
+      eventMediaSelect.value = events[0].id
+    }
+  }
+
   const loadEvents = async () => {
     const response = await fetch('/api/events', { cache: 'no-store' })
     if (!response.ok) {
@@ -166,7 +190,9 @@ onMounted(() => {
     events = payload.events || []
     renderEventList()
     renderSalesSelect()
+    renderMediaSelect()
     await loadEventSales()
+    await loadEventMedia()
   }
 
   const saveEvent = async () => {
@@ -277,6 +303,112 @@ onMounted(() => {
     })
   }
 
+  const loadEventMedia = async () => {
+    const eventId = eventMediaSelect.value
+    if (!eventId) {
+      eventMediaBody.innerHTML = ''
+      eventMediaEmpty.hidden = false
+      setStatus(eventMediaStatus, 'Select an event to view media.')
+      return
+    }
+    const response = await fetch(`/api/event_media?event_id=${encodeURIComponent(eventId)}`)
+    if (!response.ok) {
+      setStatus(eventMediaStatus, 'Failed to load event media.')
+      return
+    }
+    const payload = await response.json()
+    const rows = payload.rows || []
+    eventMediaBody.innerHTML = ''
+    if (!rows.length) {
+      eventMediaEmpty.hidden = false
+      return
+    }
+    eventMediaEmpty.hidden = true
+    rows.forEach((row) => {
+      const tr = document.createElement('tr')
+
+      const previewCell = document.createElement('td')
+      const img = document.createElement('img')
+      img.src = `/files-records/${encodeURI(row.file_path)}`
+      img.alt = 'Event poster'
+      img.style.maxWidth = '120px'
+      img.style.borderRadius = '8px'
+      previewCell.appendChild(img)
+
+      const nameCell = document.createElement('td')
+      const fileName = (row.file_path || '').split('/').pop()
+      nameCell.textContent = fileName || row.file_path || 'Image'
+
+      const actionsCell = document.createElement('td')
+      const actions = document.createElement('div')
+      actions.className = 'row-actions'
+      const openLink = document.createElement('a')
+      openLink.href = `/files-records/${encodeURI(row.file_path)}`
+      openLink.target = '_blank'
+      openLink.rel = 'noopener noreferrer'
+      openLink.textContent = 'Open'
+      openLink.className = 'btn ghost'
+      const deleteBtn = document.createElement('button')
+      deleteBtn.type = 'button'
+      deleteBtn.textContent = 'Delete'
+      deleteBtn.addEventListener('click', () => {
+        if (!confirm('Delete this event image?')) return
+        deleteEventMedia(row.id).catch(console.error)
+      })
+      actions.appendChild(openLink)
+      actions.appendChild(deleteBtn)
+      actionsCell.appendChild(actions)
+
+      tr.appendChild(previewCell)
+      tr.appendChild(nameCell)
+      tr.appendChild(actionsCell)
+      eventMediaBody.appendChild(tr)
+    })
+  }
+
+  const uploadEventMedia = async () => {
+    const eventId = eventMediaSelect.value
+    if (!eventId) {
+      setStatus(eventMediaStatus, 'Select an event first.')
+      return
+    }
+    if (!eventMediaInput.files || !eventMediaInput.files.length) {
+      setStatus(eventMediaStatus, 'Choose images to upload.')
+      return
+    }
+    const formData = new FormData()
+    formData.append('event_id', eventId)
+    Array.from(eventMediaInput.files).forEach((file) => {
+      formData.append('file', file)
+    })
+    const response = await fetch('/api/event_upload', {
+      method: 'POST',
+      body: formData,
+    })
+    const data = await response.json()
+    if (!response.ok) {
+      setStatus(eventMediaStatus, data.error || 'Failed to upload images.')
+      return
+    }
+    eventMediaInput.value = ''
+    setStatus(eventMediaStatus, 'Images uploaded.')
+    await loadEventMedia()
+  }
+
+  const deleteEventMedia = async (mediaId) => {
+    const response = await fetch('/api/event_media', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ action: 'delete', id: mediaId }),
+    })
+    const data = await response.json()
+    if (!response.ok) {
+      setStatus(eventMediaStatus, data.error || 'Failed to delete image.')
+      return
+    }
+    await loadEventMedia()
+  }
+
   eventSaveBtn.addEventListener('click', () => saveEvent().catch(console.error))
   eventCancelBtn.addEventListener('click', () => {
     resetEventForm()
@@ -284,6 +416,12 @@ onMounted(() => {
   })
   eventSalesSelect.addEventListener('change', () => {
     loadEventSales().catch(console.error)
+  })
+  eventMediaSelect.addEventListener('change', () => {
+    loadEventMedia().catch(console.error)
+  })
+  eventMediaUploadBtn.addEventListener('click', () => {
+    uploadEventMedia().catch(console.error)
   })
 
   logoutBtn.addEventListener('click', async () => {
@@ -392,6 +530,37 @@ onMounted(() => {
           <tbody id="salesTableBody"></tbody>
         </table>
         <div class="empty" id="salesEmpty">No sales recorded yet.</div>
+      </div>
+    </section>
+
+    <section class="card">
+      <h2>Event images</h2>
+      <div class="grid">
+        <div>
+          <label for="eventMediaSelect">Event</label>
+          <select id="eventMediaSelect"></select>
+        </div>
+        <div>
+          <label for="eventMediaInput">Upload posters</label>
+          <input id="eventMediaInput" type="file" accept="image/*" multiple />
+        </div>
+      </div>
+      <div class="actions" style="margin-top: 12px;">
+        <button id="eventMediaUploadBtn" class="btn" type="button">Upload Images</button>
+      </div>
+      <div class="status" id="eventMediaStatus"></div>
+      <div class="table-wrap" style="margin-top: 12px;">
+        <table>
+          <thead>
+            <tr>
+              <th>Preview</th>
+              <th>Filename</th>
+              <th>Actions</th>
+            </tr>
+          </thead>
+          <tbody id="eventMediaBody"></tbody>
+        </table>
+        <div class="empty" id="eventMediaEmpty">No images uploaded yet.</div>
       </div>
     </section>
   </main>

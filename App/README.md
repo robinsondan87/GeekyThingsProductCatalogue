@@ -64,8 +64,9 @@ Then open `http://localhost:8555` in a browser.
 - `GET /api/events`: List craft fair events.
 - `POST /api/events`: Create/update/delete events.
 - `GET /api/sales`: List sales for an event.
-- `GET /api/sales_recent`: List recent sales across events (optional `limit`).
 - `POST /api/sale`: Record an in-person sale and adjust stock.
+- `POST /api/sale_update`: Update a sale entry.
+- `POST /api/sale_delete`: Delete a sale entry.
 - `GET /api/event_totals`: Summarize totals for an event.
 - `GET /api/event_targets`: List stock targets/deficits for an event.
 - `POST /api/event_targets`: Create/update/delete stock targets.

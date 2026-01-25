@@ -746,6 +746,67 @@ def fetch_sales(event_id: int) -> list:
             return cur.fetchall()
 
 
+def fetch_sale(sale_id: int) -> dict | None:
+    with get_connection() as conn:
+        with conn.cursor(row_factory=dict_row) as cur:
+            cur.execute(
+                """
+                SELECT id, event_id, product_id, category, product_folder, sku, color, size,
+                       quantity, unit_price::text AS unit_price, override_price,
+                       payment_method, sold_at::text AS sold_at
+                FROM sales
+                WHERE id = %s
+                """,
+                (sale_id,),
+            )
+            return cur.fetchone()
+
+
+def update_sale(sale_id: int, data: dict) -> dict | None:
+    with get_connection() as conn:
+        with conn.cursor(row_factory=dict_row) as cur:
+            cur.execute(
+                """
+                UPDATE sales
+                SET product_id = %(product_id)s,
+                    category = %(category)s,
+                    product_folder = %(product_folder)s,
+                    sku = %(sku)s,
+                    color = %(color)s,
+                    size = %(size)s,
+                    quantity = %(quantity)s,
+                    unit_price = %(unit_price)s,
+                    override_price = %(override_price)s,
+                    payment_method = %(payment_method)s
+                WHERE id = %(sale_id)s
+                RETURNING id, event_id, product_id, category, product_folder, sku, color, size,
+                          quantity, unit_price::text AS unit_price, override_price,
+                          payment_method, sold_at::text AS sold_at
+                """,
+                {
+                    'sale_id': sale_id,
+                    **data,
+                },
+            )
+            return cur.fetchone()
+
+
+def delete_sale(sale_id: int) -> dict | None:
+    with get_connection() as conn:
+        with conn.cursor(row_factory=dict_row) as cur:
+            cur.execute(
+                """
+                DELETE FROM sales
+                WHERE id = %s
+                RETURNING id, event_id, product_id, category, product_folder, sku, color, size,
+                          quantity, unit_price::text AS unit_price, override_price,
+                          payment_method, sold_at::text AS sold_at
+                """,
+                (sale_id,),
+            )
+            return cur.fetchone()
+
+
 def fetch_recent_sales(limit: int) -> list:
     with get_connection() as conn:
         with conn.cursor(row_factory=dict_row) as cur:

@@ -16,9 +16,11 @@ onMounted(() => {
   const eventSaveBtn = document.getElementById('eventSaveBtn')
   const eventCancelBtn = document.getElementById('eventCancelBtn')
   const eventList = document.getElementById('eventList')
-  const recentSalesBody = document.getElementById('recentSalesBody')
-  const recentSalesEmpty = document.getElementById('recentSalesEmpty')
-  const recentSalesStatus = document.getElementById('recentSalesStatus')
+  const eventSalesSelect = document.getElementById('eventSalesSelect')
+  const salesEventName = document.getElementById('salesEventName')
+  const salesBody = document.getElementById('salesTableBody')
+  const salesEmpty = document.getElementById('salesEmpty')
+  const salesStatus = document.getElementById('salesStatus')
   const logoutBtn = document.getElementById('logoutBtn')
 
   let events = []
@@ -136,6 +138,24 @@ onMounted(() => {
     })
   }
 
+  const renderSalesSelect = () => {
+    const current = eventSalesSelect.value
+    eventSalesSelect.innerHTML = '<option value="">Select event</option>'
+    events.forEach((event) => {
+      const option = document.createElement('option')
+      option.value = event.id
+      option.textContent = `${event.name} (${formatEventDate(event.event_date)})`
+      eventSalesSelect.appendChild(option)
+    })
+    if (current && [...eventSalesSelect.options].some((option) => option.value === current)) {
+      eventSalesSelect.value = current
+      return
+    }
+    if (events.length) {
+      eventSalesSelect.value = events[0].id
+    }
+  }
+
   const loadEvents = async () => {
     const response = await fetch('/api/events', { cache: 'no-store' })
     if (!response.ok) {
@@ -145,6 +165,8 @@ onMounted(() => {
     const payload = await response.json()
     events = payload.events || []
     renderEventList()
+    renderSalesSelect()
+    await loadEventSales()
   }
 
   const saveEvent = async () => {
@@ -192,25 +214,33 @@ onMounted(() => {
     await loadEvents()
   }
 
-  const loadRecentSales = async () => {
-    const response = await fetch('/api/sales_recent?limit=50', { cache: 'no-store' })
+  const loadEventSales = async () => {
+    const eventId = eventSalesSelect.value
+    if (!eventId) {
+      salesBody.innerHTML = ''
+      salesEmpty.hidden = false
+      salesEventName.textContent = 'Select an event to view sales.'
+      return
+    }
+    const eventMatch = events.find((event) => String(event.id) === String(eventId))
+    salesEventName.textContent = eventMatch
+      ? `${eventMatch.name} · ${formatEventDate(eventMatch.event_date)}`
+      : 'Event sales'
+    const response = await fetch(`/api/sales?event_id=${encodeURIComponent(eventId)}`)
     if (!response.ok) {
-      setStatus(recentSalesStatus, 'Failed to load recent sales.')
+      setStatus(salesStatus, 'Failed to load sales.')
       return
     }
     const payload = await response.json()
     const rows = payload.rows || []
-    recentSalesBody.innerHTML = ''
+    salesBody.innerHTML = ''
     if (!rows.length) {
-      recentSalesEmpty.hidden = false
+      salesEmpty.hidden = false
       return
     }
-    recentSalesEmpty.hidden = true
+    salesEmpty.hidden = true
     rows.forEach((row) => {
       const tr = document.createElement('tr')
-
-      const eventCell = document.createElement('td')
-      eventCell.textContent = row.event_name || 'Event'
 
       const whenCell = document.createElement('td')
       const when = new Date(row.sold_at)
@@ -236,7 +266,6 @@ onMounted(() => {
       const overrideCell = document.createElement('td')
       overrideCell.textContent = row.override_price || '—'
 
-      tr.appendChild(eventCell)
       tr.appendChild(whenCell)
       tr.appendChild(productCell)
       tr.appendChild(variationCell)
@@ -244,7 +273,7 @@ onMounted(() => {
       tr.appendChild(priceCell)
       tr.appendChild(paymentCell)
       tr.appendChild(overrideCell)
-      recentSalesBody.appendChild(tr)
+      salesBody.appendChild(tr)
     })
   }
 
@@ -252,6 +281,9 @@ onMounted(() => {
   eventCancelBtn.addEventListener('click', () => {
     resetEventForm()
     setStatus(eventStatus, '')
+  })
+  eventSalesSelect.addEventListener('change', () => {
+    loadEventSales().catch(console.error)
   })
 
   logoutBtn.addEventListener('click', async () => {
@@ -261,7 +293,6 @@ onMounted(() => {
 
   resetEventForm()
   loadEvents().catch(console.error)
-  loadRecentSales().catch(console.error)
 })
 </script>
 
@@ -274,7 +305,7 @@ onMounted(() => {
       </div>
       <div class="nav-center">
         <h1 class="title">Events</h1>
-        <p class="subtitle">Manage craft fair events and review recent sales.</p>
+        <p class="subtitle">Manage craft fair events and review sales.</p>
         <p class="version">
           Version <a :href="changeLogUrl" target="_blank" rel="noopener noreferrer">{{ version }}</a>
         </p>
@@ -332,13 +363,22 @@ onMounted(() => {
     </section>
 
     <section class="card">
-      <h2>Recent sales</h2>
-      <div class="status" id="recentSalesStatus"></div>
-      <div class="table-wrap">
+      <h2>Event sales</h2>
+      <div class="grid">
+        <div>
+          <label for="eventSalesSelect">Event</label>
+          <select id="eventSalesSelect"></select>
+        </div>
+        <div>
+          <label>Selected event</label>
+          <div class="status" id="salesEventName">Select an event to view sales.</div>
+        </div>
+      </div>
+      <div class="status" id="salesStatus"></div>
+      <div class="table-wrap" style="margin-top: 12px;">
         <table>
           <thead>
             <tr>
-              <th>Event</th>
               <th>Time</th>
               <th>Product</th>
               <th>Variation</th>
@@ -348,9 +388,9 @@ onMounted(() => {
               <th>Override</th>
             </tr>
           </thead>
-          <tbody id="recentSalesBody"></tbody>
+          <tbody id="salesTableBody"></tbody>
         </table>
-        <div class="empty" id="recentSalesEmpty">No sales recorded yet.</div>
+        <div class="empty" id="salesEmpty">No sales recorded yet.</div>
       </div>
     </section>
   </main>

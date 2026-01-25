@@ -1205,6 +1205,216 @@ class Handler(BaseHTTPRequestHandler):
             )
             return
 
+        if parsed.path == '/api/sale_update':
+            sale_id_raw = data.get('id')
+            try:
+                sale_id = int(sale_id_raw)
+            except (TypeError, ValueError):
+                self._send_json(400, {'error': 'Invalid sale id'})
+                return
+            existing = db.fetch_sale(sale_id)
+            if not existing:
+                self._send_json(404, {'error': 'Sale not found'})
+                return
+            event_id_raw = data.get('event_id')
+            if event_id_raw is not None:
+                try:
+                    event_id = int(event_id_raw)
+                except (TypeError, ValueError):
+                    self._send_json(400, {'error': 'Invalid event id'})
+                    return
+                if event_id != existing.get('event_id'):
+                    self._send_json(400, {'error': 'Event mismatch'})
+                    return
+            category = safe_path_component(data.get('category', ''))
+            product_folder = safe_path_component(data.get('product_folder', ''))
+            if not category or not product_folder:
+                self._send_json(400, {'error': 'Missing category/product_folder'})
+                return
+            quantity_raw = data.get('quantity')
+            try:
+                quantity = int(quantity_raw)
+            except (TypeError, ValueError):
+                self._send_json(400, {'error': 'Invalid quantity'})
+                return
+            if quantity <= 0:
+                self._send_json(400, {'error': 'Quantity must be greater than 0'})
+                return
+            unit_price_raw = (data.get('unit_price') or '').strip()
+            try:
+                unit_price = Decimal(unit_price_raw)
+            except (InvalidOperation, TypeError):
+                self._send_json(400, {'error': 'Invalid unit price'})
+                return
+            if unit_price < 0:
+                self._send_json(400, {'error': 'Unit price must be non-negative'})
+                return
+            unit_price = unit_price.quantize(Decimal('0.01'))
+            override_price = (data.get('override_price') or '').strip()
+            payment_method = (data.get('payment_method') or '').strip()
+            color = (data.get('color') or '').strip()
+            size = (data.get('size') or '').strip()
+
+            product = db.fetch_product(category, product_folder)
+            if not product:
+                self._send_json(404, {'error': 'Product not found'})
+                return
+            sku = (product.get('sku') or '').strip()
+            product_id = product.get('id')
+
+            updated = db.update_sale(
+                sale_id,
+                {
+                    'product_id': product_id,
+                    'category': category,
+                    'product_folder': product_folder,
+                    'sku': sku,
+                    'color': color,
+                    'size': size,
+                    'quantity': quantity,
+                    'unit_price': unit_price,
+                    'override_price': override_price,
+                    'payment_method': payment_method,
+                },
+            )
+            if not updated:
+                self._send_json(500, {'error': 'Failed to update sale'})
+                return
+
+            stock_adjusted = False
+            new_qty = None
+            old_key = (
+                existing.get('category', ''),
+                existing.get('product_folder', ''),
+                existing.get('color', ''),
+                existing.get('size', ''),
+            )
+            try:
+                old_qty = int(existing.get('quantity') or 0)
+            except (TypeError, ValueError):
+                old_qty = 0
+            new_key = (category, product_folder, color, size)
+            if old_key == new_key:
+                existing_stock = db.get_stock_entry(category, product_folder, color, size)
+                if existing_stock:
+                    try:
+                        current_qty = int(existing_stock.get('quantity') or 0)
+                    except (TypeError, ValueError):
+                        current_qty = 0
+                    delta = quantity - old_qty
+                    updated_qty = current_qty - delta
+                    if updated_qty <= 0:
+                        db.delete_stock_entry(category, product_folder, color, size)
+                        new_qty = 0
+                    else:
+                        db.upsert_stock_entry(category, product_folder, sku, color, size, updated_qty)
+                        new_qty = updated_qty
+                    stock_adjusted = True
+            else:
+                old_stock = db.get_stock_entry(*old_key)
+                if old_stock:
+                    try:
+                        current_qty = int(old_stock.get('quantity') or 0)
+                    except (TypeError, ValueError):
+                        current_qty = 0
+                    updated_qty = current_qty + old_qty
+                    db.upsert_stock_entry(
+                        old_key[0],
+                        old_key[1],
+                        existing.get('sku') or '',
+                        old_key[2],
+                        old_key[3],
+                        updated_qty,
+                    )
+                    stock_adjusted = True
+                new_stock = db.get_stock_entry(category, product_folder, color, size)
+                if new_stock:
+                    try:
+                        current_qty = int(new_stock.get('quantity') or 0)
+                    except (TypeError, ValueError):
+                        current_qty = 0
+                    updated_qty = current_qty - quantity
+                    if updated_qty <= 0:
+                        db.delete_stock_entry(category, product_folder, color, size)
+                        new_qty = 0
+                    else:
+                        db.upsert_stock_entry(category, product_folder, sku, color, size, updated_qty)
+                        new_qty = updated_qty
+                    stock_adjusted = True
+
+            self._send_json(
+                200,
+                {
+                    'ok': True,
+                    'sale': updated,
+                    'stock_adjusted': stock_adjusted,
+                    'new_quantity': new_qty,
+                },
+            )
+            return
+
+        if parsed.path == '/api/sale_delete':
+            sale_id_raw = data.get('id')
+            try:
+                sale_id = int(sale_id_raw)
+            except (TypeError, ValueError):
+                self._send_json(400, {'error': 'Invalid sale id'})
+                return
+            existing = db.fetch_sale(sale_id)
+            if not existing:
+                self._send_json(404, {'error': 'Sale not found'})
+                return
+            event_id_raw = data.get('event_id')
+            if event_id_raw is not None:
+                try:
+                    event_id = int(event_id_raw)
+                except (TypeError, ValueError):
+                    self._send_json(400, {'error': 'Invalid event id'})
+                    return
+                if event_id != existing.get('event_id'):
+                    self._send_json(400, {'error': 'Event mismatch'})
+                    return
+            deleted = db.delete_sale(sale_id)
+            if not deleted:
+                self._send_json(500, {'error': 'Failed to delete sale'})
+                return
+            stock_adjusted = False
+            new_qty = None
+            category = existing.get('category', '')
+            product_folder = existing.get('product_folder', '')
+            color = existing.get('color', '')
+            size = existing.get('size', '')
+            try:
+                old_qty = int(existing.get('quantity') or 0)
+            except (TypeError, ValueError):
+                old_qty = 0
+            existing_stock = db.get_stock_entry(category, product_folder, color, size)
+            if existing_stock:
+                try:
+                    current_qty = int(existing_stock.get('quantity') or 0)
+                except (TypeError, ValueError):
+                    current_qty = 0
+                updated_qty = current_qty + old_qty
+                db.upsert_stock_entry(
+                    category,
+                    product_folder,
+                    existing.get('sku') or '',
+                    color,
+                    size,
+                    updated_qty,
+                )
+                stock_adjusted = True
+                new_qty = updated_qty
+            self._send_json(
+                200,
+                {
+                    'ok': True,
+                    'stock_adjusted': stock_adjusted,
+                    'new_quantity': new_qty,
+                },
+            )
+            return
+
         if parsed.path == '/api/event_targets':
             action = (data.get('action') or 'upsert').strip().lower()
             if action == 'delete':

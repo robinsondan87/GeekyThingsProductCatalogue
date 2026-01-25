@@ -2,6 +2,9 @@
 
 ## Unreleased
 
+## V2.8.6
+- Major: Removed event stock targets; added event-specific sales view and sale edit/delete actions.
+
 ## V2.8.5
 - Minor: Split active-event sales into a dedicated page and show recent sales on Events.
 

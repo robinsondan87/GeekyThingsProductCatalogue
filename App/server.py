@@ -880,17 +880,22 @@ class Handler(BaseHTTPRequestHandler):
                 return
             allowed_exts = {'.png', '.jpg', '.jpeg', '.gif', '.webp'}
             rows = []
+            skipped = []
             for item in files_field:
                 filename = item.get('filename') or ''
                 content = item.get('content') or b''
                 if not filename or not content:
+                    skipped.append({'filename': filename or 'unknown', 'reason': 'empty file'})
                     continue
                 base_name = os.path.basename(filename)
                 name_part, ext = os.path.splitext(base_name)
                 ext = ext.lower()
                 if ext not in allowed_exts:
-                    self._send_json(400, {'error': f"Unsupported file type: {ext or 'unknown'}"})
-                    return
+                    skipped.append({
+                        'filename': base_name or filename or 'unknown',
+                        'reason': f"unsupported file type: {ext or 'unknown'}",
+                    })
+                    continue
                 safe_name = sanitize_filename(name_part) or 'event'
                 timestamp = time.strftime('%Y%m%d-%H%M%S')
                 token = secrets.token_hex(4)
@@ -906,7 +911,13 @@ class Handler(BaseHTTPRequestHandler):
                 row = db.insert_event_media(event_id, rel_path)
                 if row:
                     rows.append(row)
-            self._send_json(200, {'rows': rows})
+            if not rows:
+                self._send_json(400, {'error': 'No valid images to upload', 'skipped': skipped})
+                return
+            payload = {'rows': rows}
+            if skipped:
+                payload['skipped'] = skipped
+            self._send_json(200, payload)
             return
 
         if parsed.path == '/api/login':

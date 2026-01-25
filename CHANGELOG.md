@@ -2,6 +2,9 @@
 
 ## Unreleased
 
+## V2.8.13
+- Fix: Event image uploads now skip unsupported files and report them instead of failing the whole batch.
+
 ## V2.8.12
 - Minor: Added initial backend unit tests for path safety, renames, and upload parsing.
 

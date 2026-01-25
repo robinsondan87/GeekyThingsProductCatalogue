@@ -721,7 +721,8 @@ def insert_sale(data: dict) -> dict | None:
                     %(payment_method)s
                 )
                 RETURNING id, event_id, product_id, category, product_folder, sku, color, size,
-                          quantity, unit_price, override_price, payment_method, sold_at::text AS sold_at
+                          quantity, unit_price::text AS unit_price, override_price,
+                          payment_method, sold_at::text AS sold_at
                 """,
                 data,
             )
@@ -734,7 +735,8 @@ def fetch_sales(event_id: int) -> list:
             cur.execute(
                 """
                 SELECT id, event_id, product_id, category, product_folder, sku, color, size,
-                       quantity, unit_price, override_price, payment_method, sold_at::text AS sold_at
+                       quantity, unit_price::text AS unit_price, override_price,
+                       payment_method, sold_at::text AS sold_at
                 FROM sales
                 WHERE event_id = %s
                 ORDER BY sold_at DESC, id DESC

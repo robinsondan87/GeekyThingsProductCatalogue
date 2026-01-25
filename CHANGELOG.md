@@ -2,6 +2,9 @@
 
 ## Unreleased
 
+## V2.8.4
+- Fix: Avoided JSON serialization errors for sales prices in API responses.
+
 ## V2.8.3
 - Major: Added supplies inventory and expenses ledger with receipt uploads and yearly totals.
 

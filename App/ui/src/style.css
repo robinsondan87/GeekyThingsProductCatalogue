@@ -228,6 +228,10 @@ textarea {
   resize: vertical;
 }
 
+#readme {
+  min-height: 320px;
+}
+
 .table-wrap {
   overflow-x: auto;
 }

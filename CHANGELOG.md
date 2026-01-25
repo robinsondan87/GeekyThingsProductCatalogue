@@ -1,6 +1,7 @@
 # Changelog
 
 ## Unreleased
+- Minor: Increased product README editor default height.
 
 ## V2.8.16
 - Fix: Event totals now use override price when provided.

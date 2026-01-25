@@ -896,10 +896,10 @@ class Handler(BaseHTTPRequestHandler):
                 token = secrets.token_hex(4)
                 dest_dir = EVENT_MEDIA_DIR / str(event_id)
                 dest_dir.mkdir(parents=True, exist_ok=True)
-                dest_name = f\"{timestamp}-{token}-{safe_name}{ext}\"
+                dest_name = f"{timestamp}-{token}-{safe_name}{ext}"
                 dest_path = dest_dir / dest_name
                 if dest_path.exists():
-                    dest_name = f\"{timestamp}-{token}-{secrets.token_hex(2)}-{safe_name}{ext}\"
+                    dest_name = f"{timestamp}-{token}-{secrets.token_hex(2)}-{safe_name}{ext}"
                     dest_path = dest_dir / dest_name
                 dest_path.write_bytes(content)
                 rel_path = dest_path.relative_to(RECORDS_DIR).as_posix()

@@ -2,6 +2,9 @@
 
 ## Unreleased
 
+## V2.8.10
+- Fix: Corrected event media upload filename handling.
+
 ## V2.8.9
 - Fix: Corrected event media upload error message handling.
 

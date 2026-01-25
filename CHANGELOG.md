@@ -2,6 +2,9 @@
 
 ## Unreleased
 
+## V2.8.14
+- Minor: Surface skipped event image uploads in the UI.
+
 ## V2.8.13
 - Fix: Event image uploads now skip unsupported files and report them instead of failing the whole batch.
 

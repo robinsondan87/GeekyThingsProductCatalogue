@@ -75,6 +75,17 @@ onMounted(() => {
     el.textContent = message
   }
 
+  const formatSkippedFiles = (items) => {
+    if (!Array.isArray(items) || !items.length) return ''
+    return items
+      .map((item) => {
+        const name = item && item.filename ? item.filename : 'unknown'
+        const reason = item && item.reason ? item.reason : ''
+        return reason ? `${name} (${reason})` : name
+      })
+      .join(', ')
+  }
+
   const formatEventDate = (value) => {
     if (!value) return ''
     return value
@@ -433,11 +444,17 @@ onMounted(() => {
     })
     const data = await response.json()
     if (!response.ok) {
-      setStatus(eventMediaStatus, data.error || 'Failed to upload images.')
+      const skipped = formatSkippedFiles(data.skipped)
+      const message = data.error || 'Failed to upload images.'
+      setStatus(eventMediaStatus, skipped ? `${message} Skipped: ${skipped}` : message)
       return
     }
     eventMediaInput.value = ''
-    setStatus(eventMediaStatus, 'Images uploaded.')
+    const skipped = formatSkippedFiles(data.skipped)
+    setStatus(
+      eventMediaStatus,
+      skipped ? `Images uploaded. Skipped: ${skipped}` : 'Images uploaded.',
+    )
     await loadEventMedia()
   }
 

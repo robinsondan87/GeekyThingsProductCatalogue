@@ -2,6 +2,9 @@
 
 ## Unreleased
 
+## V2.8.9
+- Fix: Corrected event media upload error message handling.
+
 ## V2.8.8
 - Minor: Added event image uploads with previews and delete support.
 

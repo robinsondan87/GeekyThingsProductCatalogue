@@ -889,7 +889,7 @@ class Handler(BaseHTTPRequestHandler):
                 name_part, ext = os.path.splitext(base_name)
                 ext = ext.lower()
                 if ext not in allowed_exts:
-                    self._send_json(400, {'error': f'Unsupported file type: {ext or \"unknown\"}'})
+                    self._send_json(400, {'error': f"Unsupported file type: {ext or 'unknown'}"})
                     return
                 safe_name = sanitize_filename(name_part) or 'event'
                 timestamp = time.strftime('%Y%m%d-%H%M%S')

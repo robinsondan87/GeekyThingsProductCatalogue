@@ -746,6 +746,210 @@ def fetch_sales(event_id: int) -> list:
             return cur.fetchall()
 
 
+def normalize_production_row(row: dict) -> dict:
+    return {
+        'category': _normalize_text(row.get('category')),
+        'product_folder': _normalize_text(row.get('product_folder')),
+        'sku': _normalize_text(row.get('sku')),
+        'color': _normalize_text(row.get('color')),
+        'size': _normalize_text(row.get('size')),
+        'status': _normalize_text(row.get('status')) or 'Queued',
+        'quantity': row.get('quantity', 0),
+    }
+
+
+def fetch_production_queue(status: str | None = None) -> list:
+    with get_connection() as conn:
+        with conn.cursor(row_factory=dict_row) as cur:
+            if status:
+                cur.execute(
+                    """
+                    SELECT id, category, product_folder, sku, color, size, quantity,
+                           status, created_at::text AS created_at, updated_at::text AS updated_at
+                    FROM production_queue
+                    WHERE status = %s
+                    ORDER BY updated_at DESC, id DESC
+                    """,
+                    (status,),
+                )
+            else:
+                cur.execute(
+                    """
+                    SELECT id, category, product_folder, sku, color, size, quantity,
+                           status, created_at::text AS created_at, updated_at::text AS updated_at
+                    FROM production_queue
+                    ORDER BY updated_at DESC, id DESC
+                    """
+                )
+            return cur.fetchall()
+
+
+def fetch_production_item(item_id: int) -> dict | None:
+    with get_connection() as conn:
+        with conn.cursor(row_factory=dict_row) as cur:
+            cur.execute(
+                """
+                SELECT id, category, product_folder, sku, color, size, quantity,
+                       status, created_at::text AS created_at, updated_at::text AS updated_at
+                FROM production_queue
+                WHERE id = %s
+                """,
+                (item_id,),
+            )
+            return cur.fetchone()
+
+
+def insert_production_item(data: dict) -> dict | None:
+    payload = normalize_production_row(data)
+    with get_connection() as conn:
+        with conn.cursor(row_factory=dict_row) as cur:
+            cur.execute(
+                """
+                INSERT INTO production_queue (
+                    category,
+                    product_folder,
+                    sku,
+                    color,
+                    size,
+                    quantity,
+                    status,
+                    updated_at
+                )
+                VALUES (%s, %s, %s, %s, %s, %s, %s, now())
+                ON CONFLICT (category, product_folder, color, size, status)
+                DO UPDATE SET
+                    quantity = production_queue.quantity + EXCLUDED.quantity,
+                    sku = EXCLUDED.sku,
+                    updated_at = now()
+                RETURNING id, category, product_folder, sku, color, size, quantity,
+                          status, created_at::text AS created_at, updated_at::text AS updated_at
+                """,
+                (
+                    payload['category'],
+                    payload['product_folder'],
+                    payload['sku'],
+                    payload['color'],
+                    payload['size'],
+                    payload['quantity'],
+                    payload['status'],
+                ),
+            )
+            return cur.fetchone()
+
+
+def update_production_status(item_id: int, status: str) -> bool:
+    with get_connection() as conn:
+        with conn.cursor() as cur:
+            cur.execute(
+                """
+                UPDATE production_queue
+                SET status = %s, updated_at = now()
+                WHERE id = %s
+                RETURNING id
+                """,
+                (status, item_id),
+            )
+            return cur.fetchone() is not None
+
+
+def delete_production_item(item_id: int) -> bool:
+    with get_connection() as conn:
+        with conn.cursor() as cur:
+            cur.execute("DELETE FROM production_queue WHERE id = %s RETURNING id", (item_id,))
+            return cur.fetchone() is not None
+
+
+def adjust_production_quantity(item_id: int, delta: int) -> dict | None:
+    with get_connection() as conn:
+        with conn.cursor(row_factory=dict_row) as cur:
+            cur.execute(
+                """
+                UPDATE production_queue
+                SET quantity = quantity + %s, updated_at = now()
+                WHERE id = %s
+                RETURNING id, category, product_folder, sku, color, size, quantity,
+                          status, created_at::text AS created_at, updated_at::text AS updated_at
+                """,
+                (delta, item_id),
+            )
+            row = cur.fetchone()
+            if not row:
+                return None
+            if row['quantity'] <= 0:
+                cur.execute("DELETE FROM production_queue WHERE id = %s", (item_id,))
+                return None
+            return row
+
+
+def adjust_production_by_key(
+    category: str,
+    product_folder: str,
+    sku: str,
+    color: str,
+    size: str,
+    delta: int,
+    status: str = 'Queued',
+) -> dict | None:
+    if delta == 0:
+        return None
+    with get_connection() as conn:
+        with conn.cursor(row_factory=dict_row) as cur:
+            if delta > 0:
+                cur.execute(
+                    """
+                    INSERT INTO production_queue (
+                        category,
+                        product_folder,
+                        sku,
+                        color,
+                        size,
+                        quantity,
+                        status,
+                        updated_at
+                    )
+                    VALUES (%s, %s, %s, %s, %s, %s, %s, now())
+                    ON CONFLICT (category, product_folder, color, size, status)
+                    DO UPDATE SET
+                        quantity = production_queue.quantity + EXCLUDED.quantity,
+                        sku = EXCLUDED.sku,
+                        updated_at = now()
+                    RETURNING id, category, product_folder, sku, color, size, quantity,
+                              status, created_at::text AS created_at, updated_at::text AS updated_at
+                    """,
+                    (category, product_folder, sku, color, size, delta, status),
+                )
+                return cur.fetchone()
+            cur.execute(
+                """
+                UPDATE production_queue
+                SET quantity = quantity + %s, updated_at = now()
+                WHERE category = %s
+                  AND product_folder = %s
+                  AND color = %s
+                  AND size = %s
+                  AND status = %s
+                RETURNING id, quantity
+                """,
+                (delta, category, product_folder, color, size, status),
+            )
+            row = cur.fetchone()
+            if not row:
+                return None
+            if row['quantity'] <= 0:
+                cur.execute("DELETE FROM production_queue WHERE id = %s", (row['id'],))
+                return None
+            cur.execute(
+                """
+                SELECT id, category, product_folder, sku, color, size, quantity,
+                       status, created_at::text AS created_at, updated_at::text AS updated_at
+                FROM production_queue
+                WHERE id = %s
+                """,
+                (row['id'],),
+            )
+            return cur.fetchone()
+
+
 def fetch_sale(sale_id: int) -> dict | None:
     with get_connection() as conn:
         with conn.cursor(row_factory=dict_row) as cur:

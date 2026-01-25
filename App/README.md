@@ -67,6 +67,10 @@ Then open `http://localhost:8555` in a browser.
 - `POST /api/sale`: Record an in-person sale and adjust stock.
 - `POST /api/sale_update`: Update a sale entry.
 - `POST /api/sale_delete`: Delete a sale entry.
+- `GET /api/production`: List production queue items (optional `status` filter).
+- `POST /api/production`: Create/update/delete production items.
+- `POST /api/production_adjust`: Adjust production queue quantities.
+- `POST /api/production_complete`: Move a production item into stock.
 - `GET /api/event_totals`: Summarize totals for an event.
 - `GET /api/event_targets`: List stock targets/deficits for an event.
 - `POST /api/event_targets`: Create/update/delete stock targets.
@@ -87,6 +91,7 @@ Then open `http://localhost:8555` in a browser.
 - Set `PRODUCTS_DIR` if the Products folder is mounted elsewhere.
 - Expense receipts are served from `/files-records/<path>` under `Records/Expenses`.
 - Set `RECORDS_DIR` if you want receipts stored elsewhere.
+- Recording an in-person sale adds the item to the production queue to replenish stock.
 - Optional: `UPLOAD_MAX_BYTES` limits upload payload size (default 100MB).
 - Optional: `OPEN_FOLDER_ENABLED=0` disables the open-folder button (default off in Docker).
 

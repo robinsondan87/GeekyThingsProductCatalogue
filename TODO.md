@@ -14,7 +14,7 @@
 - [x] Add Sales ledger: per-line item records (SKU, qty, unit price, channel, payment method, fees) with event or online order linkage.
 - [x] Add Quick Sale mode for craft fairs (search/scan SKU, select variations, adjust stock, record payment).
 - [x] Add low-stock alerts and print queue (target qty per event, reserve stock, show deficits).
-- [ ] Add WIP/production tracker that moves completed items into stock automatically.
+- [x] Add WIP/production tracker that moves completed items into stock automatically.
 - [x] Add quick-count printable tally sheets for event inventory reconciliation.
 
 ## Phase 2 - Imports

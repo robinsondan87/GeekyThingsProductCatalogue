@@ -105,6 +105,25 @@ CREATE TABLE IF NOT EXISTS event_targets (
 CREATE UNIQUE INDEX IF NOT EXISTS event_targets_unique_idx
     ON event_targets (event_id, category, product_folder, color, size);
 
+CREATE TABLE IF NOT EXISTS production_queue (
+    id BIGSERIAL PRIMARY KEY,
+    category TEXT NOT NULL DEFAULT '',
+    product_folder TEXT NOT NULL DEFAULT '',
+    sku TEXT NOT NULL DEFAULT '',
+    color TEXT NOT NULL DEFAULT '',
+    size TEXT NOT NULL DEFAULT '',
+    quantity INTEGER NOT NULL DEFAULT 0,
+    status TEXT NOT NULL DEFAULT 'Queued',
+    created_at TIMESTAMPTZ NOT NULL DEFAULT now(),
+    updated_at TIMESTAMPTZ NOT NULL DEFAULT now()
+);
+
+CREATE UNIQUE INDEX IF NOT EXISTS production_queue_unique_idx
+    ON production_queue (category, product_folder, color, size, status);
+
+CREATE INDEX IF NOT EXISTS production_queue_status_idx
+    ON production_queue (status);
+
 CREATE TABLE IF NOT EXISTS supplies (
     id BIGSERIAL PRIMARY KEY,
     name TEXT NOT NULL,

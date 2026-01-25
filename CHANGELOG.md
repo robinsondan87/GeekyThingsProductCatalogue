@@ -2,6 +2,9 @@
 
 ## Unreleased
 
+## V2.8.7
+- Major: Added production queue with auto-replenish from event sales and one-click move-to-stock.
+
 ## V2.8.6
 - Major: Removed event stock targets; added event-specific sales view and sale edit/delete actions.
 

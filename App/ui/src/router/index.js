@@ -7,12 +7,14 @@ import StockView from '../views/StockView.vue'
 import EventsView from '../views/EventsView.vue'
 import SuppliesView from '../views/SuppliesView.vue'
 import EventActiveView from '../views/EventActiveView.vue'
+import ProductionView from '../views/ProductionView.vue'
 
 const routes = [
   { path: '/', name: 'home', component: IndexView },
   { path: '/stock', name: 'stock', component: StockView },
   { path: '/events', name: 'events', component: EventsView },
   { path: '/event', name: 'event', component: EventActiveView },
+  { path: '/production', name: 'production', component: ProductionView },
   { path: '/supplies', name: 'supplies', component: SuppliesView },
   { path: '/add', name: 'add', component: AddView },
   { path: '/product', name: 'product', component: ProductView },

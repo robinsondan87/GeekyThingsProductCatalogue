@@ -624,6 +624,13 @@ class Handler(BaseHTTPRequestHandler):
             self._send_json(200, {'rows': rows})
             return
 
+        if parsed.path == '/api/production':
+            query = parse_qs(parsed.query)
+            status = (query.get('status', [''])[0] or '').strip()
+            rows = db.fetch_production_queue(status or None)
+            self._send_json(200, {'rows': rows})
+            return
+
         if parsed.path == '/api/media':
             query = parse_qs(parsed.query)
             category = safe_path_component(query.get('category', [''])[0])
@@ -1194,6 +1201,16 @@ class Handler(BaseHTTPRequestHandler):
                     new_qty = updated_qty
                 stock_adjusted = True
 
+            db.adjust_production_by_key(
+                category,
+                product_folder,
+                sku,
+                color,
+                size,
+                quantity,
+                'Queued',
+            )
+
             self._send_json(
                 200,
                 {
@@ -1342,6 +1359,36 @@ class Handler(BaseHTTPRequestHandler):
                         new_qty = updated_qty
                     stock_adjusted = True
 
+            if old_key == new_key:
+                db.adjust_production_by_key(
+                    category,
+                    product_folder,
+                    sku,
+                    color,
+                    size,
+                    quantity - old_qty,
+                    'Queued',
+                )
+            else:
+                db.adjust_production_by_key(
+                    old_key[0],
+                    old_key[1],
+                    existing.get('sku') or '',
+                    old_key[2],
+                    old_key[3],
+                    -old_qty,
+                    'Queued',
+                )
+                db.adjust_production_by_key(
+                    category,
+                    product_folder,
+                    sku,
+                    color,
+                    size,
+                    quantity,
+                    'Queued',
+                )
+
             self._send_json(
                 200,
                 {
@@ -1405,6 +1452,15 @@ class Handler(BaseHTTPRequestHandler):
                 )
                 stock_adjusted = True
                 new_qty = updated_qty
+            db.adjust_production_by_key(
+                category,
+                product_folder,
+                existing.get('sku') or '',
+                color,
+                size,
+                -old_qty,
+                'Queued',
+            )
             self._send_json(
                 200,
                 {
@@ -1592,6 +1648,140 @@ class Handler(BaseHTTPRequestHandler):
                 self._send_json(404, {'error': 'Expense not found'})
                 return
             self._send_json(200, {'ok': True})
+            return
+
+        if parsed.path == '/api/production':
+            action = (data.get('action') or '').strip().lower()
+            if action not in ('create', 'update', 'delete'):
+                self._send_json(400, {'error': 'Invalid action'})
+                return
+            if action == 'delete':
+                item_id = data.get('id')
+                try:
+                    item_id = int(item_id)
+                except (TypeError, ValueError):
+                    self._send_json(400, {'error': 'Invalid production id'})
+                    return
+                if not db.delete_production_item(item_id):
+                    self._send_json(404, {'error': 'Production item not found'})
+                    return
+                self._send_json(200, {'ok': True})
+                return
+            if action == 'update':
+                item_id = data.get('id')
+                status = (data.get('status') or '').strip() or 'Queued'
+                if status not in ('Queued', 'Printing'):
+                    self._send_json(400, {'error': 'Invalid status'})
+                    return
+                try:
+                    item_id = int(item_id)
+                except (TypeError, ValueError):
+                    self._send_json(400, {'error': 'Invalid production id'})
+                    return
+                if not db.update_production_status(item_id, status):
+                    self._send_json(404, {'error': 'Production item not found'})
+                    return
+                self._send_json(200, {'ok': True})
+                return
+
+            category = safe_path_component(data.get('category', ''))
+            product_folder = safe_path_component(data.get('product_folder', ''))
+            if not category or not product_folder:
+                self._send_json(400, {'error': 'Missing category/product_folder'})
+                return
+            quantity_raw = data.get('quantity')
+            try:
+                quantity = int(quantity_raw)
+            except (TypeError, ValueError):
+                self._send_json(400, {'error': 'Invalid quantity'})
+                return
+            if quantity <= 0:
+                self._send_json(400, {'error': 'Quantity must be greater than 0'})
+                return
+            status = (data.get('status') or '').strip() or 'Queued'
+            if status not in ('Queued', 'Printing'):
+                self._send_json(400, {'error': 'Invalid status'})
+                return
+            color = (data.get('color') or '').strip()
+            size = (data.get('size') or '').strip()
+            product = db.fetch_product(category, product_folder)
+            if not product:
+                self._send_json(404, {'error': 'Product not found'})
+                return
+            sku = (product.get('sku') or '').strip()
+            row = db.insert_production_item(
+                {
+                    'category': category,
+                    'product_folder': product_folder,
+                    'sku': sku,
+                    'color': color,
+                    'size': size,
+                    'quantity': quantity,
+                    'status': status,
+                }
+            )
+            if not row:
+                self._send_json(500, {'error': 'Failed to save production item'})
+                return
+            self._send_json(200, {'row': row})
+            return
+
+        if parsed.path == '/api/production_adjust':
+            item_id = data.get('id')
+            delta = data.get('delta')
+            try:
+                item_id = int(item_id)
+                delta = int(delta)
+            except (TypeError, ValueError):
+                self._send_json(400, {'error': 'Invalid production adjustment'})
+                return
+            existing = db.fetch_production_item(item_id)
+            if not existing:
+                self._send_json(404, {'error': 'Production item not found'})
+                return
+            row = db.adjust_production_quantity(item_id, delta)
+            if not row:
+                self._send_json(200, {'ok': True, 'deleted': True})
+                return
+            self._send_json(200, {'row': row})
+            return
+
+        if parsed.path == '/api/production_complete':
+            item_id = data.get('id')
+            try:
+                item_id = int(item_id)
+            except (TypeError, ValueError):
+                self._send_json(400, {'error': 'Invalid production id'})
+                return
+            item = db.fetch_production_item(item_id)
+            if not item:
+                self._send_json(404, {'error': 'Production item not found'})
+                return
+            try:
+                quantity = int(item.get('quantity') or 0)
+            except (TypeError, ValueError):
+                quantity = 0
+            if quantity <= 0:
+                db.delete_production_item(item_id)
+                self._send_json(200, {'ok': True, 'stock_adjusted': False})
+                return
+            category = item.get('category', '')
+            product_folder = item.get('product_folder', '')
+            color = item.get('color', '')
+            size = item.get('size', '')
+            sku = item.get('sku', '')
+            existing_stock = db.get_stock_entry(category, product_folder, color, size)
+            if existing_stock:
+                try:
+                    current_qty = int(existing_stock.get('quantity') or 0)
+                except (TypeError, ValueError):
+                    current_qty = 0
+            else:
+                current_qty = 0
+            new_qty = current_qty + quantity
+            db.upsert_stock_entry(category, product_folder, sku, color, size, new_qty)
+            db.delete_production_item(item_id)
+            self._send_json(200, {'ok': True, 'stock_adjusted': True, 'new_quantity': new_qty})
             return
 
         if parsed.path == '/api/save':

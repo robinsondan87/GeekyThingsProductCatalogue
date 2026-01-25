@@ -1305,6 +1305,7 @@ const params = new URLSearchParams(window.location.search);
         <div class="nav-links">
           <RouterLink to="/">Products</RouterLink>
           <RouterLink to="/stock">Stock</RouterLink>
+          <RouterLink to="/production">Production</RouterLink>
           <RouterLink to="/events">Events</RouterLink>
           <RouterLink to="/supplies">Supplies</RouterLink>
           <RouterLink to="/add">Add Product</RouterLink>

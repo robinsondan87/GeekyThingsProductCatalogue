@@ -17,10 +17,6 @@
 - [x] Add WIP/production tracker that moves completed items into stock automatically.
 - [x] Add quick-count printable tally sheets for event inventory reconciliation.
 
-## Phase 2 - Imports
-- [ ] Add CSV import wizard for marketplace orders (Etsy CSV, eBay Seller Hub reports, TikTok Shop export orders, Square exports), with SKU mapping and order dedupe.
-- [ ] Add import history/audit log with raw CSV archived for rollback.
-
 ## Phase 3 - Inventory + Finance
 - [x] Add supplies/materials inventory (filament, boxes, bags, labels) with reorder points and lead times.
 - [x] Add expenses ledger (supplier, invoice, receipt upload, tax category) with yearly totals export.
@@ -30,4 +26,4 @@
 - [ ] Add extended reporting: top SKUs, payout/fee totals.
 
 ## Phase 5 - Tests
-- [ ] Add unit test coverage for backend paths, renames, and upload handling.
+- [x] Add unit test coverage for backend paths, renames, and upload handling.

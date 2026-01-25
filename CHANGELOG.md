@@ -2,6 +2,9 @@
 
 ## Unreleased
 
+## V2.8.12
+- Minor: Added initial backend unit tests for path safety, renames, and upload parsing.
+
 ## V2.8.11
 - Minor: Moved event image uploads onto the active event page.
 

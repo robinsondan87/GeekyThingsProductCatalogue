@@ -2,6 +2,9 @@
 
 ## Unreleased
 
+## V2.8.3
+- Major: Added supplies inventory and expenses ledger with receipt uploads and yearly totals.
+
 ## V2.8.2
 - Minor: Added printable tally sheets for event inventory.
 

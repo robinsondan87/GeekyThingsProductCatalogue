@@ -22,8 +22,8 @@
 - [ ] Add import history/audit log with raw CSV archived for rollback.
 
 ## Phase 3 - Inventory + Finance
-- [ ] Add supplies/materials inventory (filament, boxes, bags, labels) with reorder points and lead times.
-- [ ] Add expenses ledger (supplier, invoice, receipt upload, tax category) with yearly totals export.
+- [x] Add supplies/materials inventory (filament, boxes, bags, labels) with reorder points and lead times.
+- [x] Add expenses ledger (supplier, invoice, receipt upload, tax category) with yearly totals export.
 
 ## Phase 4 - Reporting
 - [x] Add per-event totals summary (items, revenue, payment breakdown).

@@ -838,3 +838,251 @@ def fetch_event_totals(event_id: int) -> dict:
         'total_revenue': totals.get('total_revenue', '0.00'),
         'payments': payments,
     }
+
+
+def normalize_supply_row(row: dict) -> dict:
+    return {
+        'name': _normalize_text(row.get('name')),
+        'category': _normalize_text(row.get('category')),
+        'unit': _normalize_text(row.get('unit')),
+        'vendor': _normalize_text(row.get('vendor')),
+        'location': _normalize_text(row.get('location')),
+        'notes': _normalize_text(row.get('notes')),
+        'quantity': row.get('quantity', 0),
+        'reorder_point': row.get('reorder_point', 0),
+        'lead_time_days': row.get('lead_time_days', 0),
+    }
+
+
+def fetch_supplies() -> list:
+    with get_connection() as conn:
+        with conn.cursor(row_factory=dict_row) as cur:
+            cur.execute(
+                """
+                SELECT id, name, category, unit, quantity, reorder_point, vendor,
+                       lead_time_days, location, notes, created_at::text AS created_at,
+                       updated_at::text AS updated_at
+                FROM supplies
+                ORDER BY name
+                """
+            )
+            return cur.fetchall()
+
+
+def insert_supply(data: dict) -> dict | None:
+    payload = normalize_supply_row(data)
+    with get_connection() as conn:
+        with conn.cursor(row_factory=dict_row) as cur:
+            cur.execute(
+                """
+                INSERT INTO supplies (
+                    name,
+                    category,
+                    unit,
+                    quantity,
+                    reorder_point,
+                    vendor,
+                    lead_time_days,
+                    location,
+                    notes,
+                    updated_at
+                )
+                VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, now())
+                RETURNING id, name, category, unit, quantity, reorder_point, vendor,
+                          lead_time_days, location, notes, created_at::text AS created_at,
+                          updated_at::text AS updated_at
+                """,
+                (
+                    payload['name'],
+                    payload['category'],
+                    payload['unit'],
+                    payload['quantity'],
+                    payload['reorder_point'],
+                    payload['vendor'],
+                    payload['lead_time_days'],
+                    payload['location'],
+                    payload['notes'],
+                ),
+            )
+            return cur.fetchone()
+
+
+def update_supply(supply_id: int, data: dict) -> bool:
+    payload = normalize_supply_row(data)
+    with get_connection() as conn:
+        with conn.cursor() as cur:
+            cur.execute(
+                """
+                UPDATE supplies
+                SET name = %s,
+                    category = %s,
+                    unit = %s,
+                    quantity = %s,
+                    reorder_point = %s,
+                    vendor = %s,
+                    lead_time_days = %s,
+                    location = %s,
+                    notes = %s,
+                    updated_at = now()
+                WHERE id = %s
+                RETURNING id
+                """,
+                (
+                    payload['name'],
+                    payload['category'],
+                    payload['unit'],
+                    payload['quantity'],
+                    payload['reorder_point'],
+                    payload['vendor'],
+                    payload['lead_time_days'],
+                    payload['location'],
+                    payload['notes'],
+                    supply_id,
+                ),
+            )
+            return cur.fetchone() is not None
+
+
+def delete_supply(supply_id: int) -> bool:
+    with get_connection() as conn:
+        with conn.cursor() as cur:
+            cur.execute("DELETE FROM supplies WHERE id = %s RETURNING id", (supply_id,))
+            return cur.fetchone() is not None
+
+
+def adjust_supply_quantity(supply_id: int, delta: int) -> dict | None:
+    with get_connection() as conn:
+        with conn.cursor(row_factory=dict_row) as cur:
+            cur.execute(
+                """
+                UPDATE supplies
+                SET quantity = quantity + %s, updated_at = now()
+                WHERE id = %s
+                RETURNING id, name, category, unit, quantity, reorder_point, vendor,
+                          lead_time_days, location, notes, created_at::text AS created_at,
+                          updated_at::text AS updated_at
+                """,
+                (delta, supply_id),
+            )
+            return cur.fetchone()
+
+
+def normalize_expense_row(row: dict) -> dict:
+    return {
+        'expense_date': _normalize_text(row.get('expense_date')),
+        'vendor': _normalize_text(row.get('vendor')),
+        'description': _normalize_text(row.get('description')),
+        'category': _normalize_text(row.get('category')),
+        'amount': _normalize_text(row.get('amount')),
+        'payment_method': _normalize_text(row.get('payment_method')),
+        'reference': _normalize_text(row.get('reference')),
+        'receipt_path': _normalize_text(row.get('receipt_path')),
+    }
+
+
+def fetch_expenses() -> list:
+    with get_connection() as conn:
+        with conn.cursor(row_factory=dict_row) as cur:
+            cur.execute(
+                """
+                SELECT id,
+                       expense_date::text AS expense_date,
+                       vendor,
+                       description,
+                       category,
+                       amount::text AS amount,
+                       payment_method,
+                       reference,
+                       receipt_path,
+                       created_at::text AS created_at,
+                       updated_at::text AS updated_at
+                FROM expenses
+                ORDER BY expense_date DESC, id DESC
+                """
+            )
+            return cur.fetchall()
+
+
+def insert_expense(data: dict) -> dict | None:
+    payload = normalize_expense_row(data)
+    with get_connection() as conn:
+        with conn.cursor(row_factory=dict_row) as cur:
+            cur.execute(
+                """
+                INSERT INTO expenses (
+                    expense_date,
+                    vendor,
+                    description,
+                    category,
+                    amount,
+                    payment_method,
+                    reference,
+                    receipt_path,
+                    updated_at
+                )
+                VALUES (%s::date, %s, %s, %s, %s::numeric, %s, %s, %s, now())
+                RETURNING id,
+                          expense_date::text AS expense_date,
+                          vendor,
+                          description,
+                          category,
+                          amount::text AS amount,
+                          payment_method,
+                          reference,
+                          receipt_path,
+                          created_at::text AS created_at,
+                          updated_at::text AS updated_at
+                """,
+                (
+                    payload['expense_date'],
+                    payload['vendor'],
+                    payload['description'],
+                    payload['category'],
+                    payload['amount'] or '0',
+                    payload['payment_method'],
+                    payload['reference'],
+                    payload['receipt_path'],
+                ),
+            )
+            return cur.fetchone()
+
+
+def update_expense(expense_id: int, data: dict) -> bool:
+    payload = normalize_expense_row(data)
+    with get_connection() as conn:
+        with conn.cursor() as cur:
+            cur.execute(
+                """
+                UPDATE expenses
+                SET expense_date = %s::date,
+                    vendor = %s,
+                    description = %s,
+                    category = %s,
+                    amount = %s::numeric,
+                    payment_method = %s,
+                    reference = %s,
+                    receipt_path = %s,
+                    updated_at = now()
+                WHERE id = %s
+                RETURNING id
+                """,
+                (
+                    payload['expense_date'],
+                    payload['vendor'],
+                    payload['description'],
+                    payload['category'],
+                    payload['amount'] or '0',
+                    payload['payment_method'],
+                    payload['reference'],
+                    payload['receipt_path'],
+                    expense_id,
+                ),
+            )
+            return cur.fetchone() is not None
+
+
+def delete_expense(expense_id: int) -> bool:
+    with get_connection() as conn:
+        with conn.cursor() as cur:
+            cur.execute("DELETE FROM expenses WHERE id = %s RETURNING id", (expense_id,))
+            return cur.fetchone() is not None

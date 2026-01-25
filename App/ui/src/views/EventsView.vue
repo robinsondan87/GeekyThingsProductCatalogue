@@ -835,6 +835,7 @@ onMounted(() => {
         <RouterLink to="/">Products</RouterLink>
         <RouterLink to="/stock">Stock</RouterLink>
         <RouterLink to="/events">Events</RouterLink>
+        <RouterLink to="/supplies">Supplies</RouterLink>
         <RouterLink to="/add">Add Product</RouterLink>
         <button class="ghost" id="logoutBtn" type="button">Logout</button>
       </div>

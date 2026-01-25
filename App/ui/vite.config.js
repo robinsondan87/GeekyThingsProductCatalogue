@@ -8,6 +8,7 @@ export default defineConfig({
     proxy: {
       '/api': 'http://localhost:8555',
       '/files': 'http://localhost:8555',
+      '/files-records': 'http://localhost:8555',
     },
   },
 })

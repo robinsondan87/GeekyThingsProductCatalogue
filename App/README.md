@@ -68,6 +68,12 @@ Then open `http://localhost:8555` in a browser.
 - `GET /api/event_totals`: Summarize totals for an event.
 - `GET /api/event_targets`: List stock targets/deficits for an event.
 - `POST /api/event_targets`: Create/update/delete stock targets.
+- `GET /api/supplies`: List supplies inventory rows.
+- `POST /api/supplies`: Create/update/delete supplies.
+- `POST /api/supply_adjust`: Adjust supply quantity.
+- `GET /api/expenses`: List expenses ledger rows.
+- `POST /api/expenses`: Create/update/delete expenses.
+- `POST /api/expense_upload`: Upload receipts for expenses.
 
 ## Notes
 - This is a local-only tool. It serves files directly from disk.
@@ -77,6 +83,8 @@ Then open `http://localhost:8555` in a browser.
 - The `.3mf` list is recursive under each product folder.
 - UKCA templates live in `Products/UKCA_Shared` and are copied into `<Product>/UKCA`.
 - Set `PRODUCTS_DIR` if the Products folder is mounted elsewhere.
+- Expense receipts are served from `/files-records/<path>` under `Records/Expenses`.
+- Set `RECORDS_DIR` if you want receipts stored elsewhere.
 - Optional: `UPLOAD_MAX_BYTES` limits upload payload size (default 100MB).
 - Optional: `OPEN_FOLDER_ENABLED=0` disables the open-folder button (default off in Docker).
 

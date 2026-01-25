@@ -20,6 +20,8 @@ import db
 BASE_DIR = Path(__file__).resolve().parent
 ROOT_DIR = BASE_DIR.parent
 PRODUCTS_DIR = Path(os.environ.get('PRODUCTS_DIR', ROOT_DIR / 'Products')).resolve()
+RECORDS_DIR = Path(os.environ.get('RECORDS_DIR', ROOT_DIR / 'Records')).resolve()
+EXPENSES_DIR = RECORDS_DIR / 'Expenses'
 UI_DIST_DIR = BASE_DIR / 'ui' / 'dist'
 AUTH_USERNAME = os.environ.get('AUTH_USERNAME')
 AUTH_PASSWORD = os.environ.get('AUTH_PASSWORD')
@@ -84,6 +86,11 @@ def safe_path_component(name: str) -> str:
 def sanitize_folder_name(name: str) -> str:
     cleaned = name.replace('/', '-').replace('\\', '-').strip()
     return ' '.join(cleaned.split())
+
+
+def sanitize_filename(name: str) -> str:
+    cleaned = re.sub(r'[^A-Za-z0-9._-]+', '_', name or '').strip('._')
+    return cleaned
 
 
 def normalize_status(value: str) -> str:
@@ -462,7 +469,7 @@ class Handler(BaseHTTPRequestHandler):
                 if not session:
                     self._send_unauthorized()
                     return
-            if parsed.path.startswith('/files/'):
+            if parsed.path.startswith('/files/') or parsed.path.startswith('/files-records/'):
                 if not session:
                     self._send_unauthorized()
                     return
@@ -591,6 +598,16 @@ class Handler(BaseHTTPRequestHandler):
             self._send_json(200, {'rows': enriched})
             return
 
+        if parsed.path == '/api/supplies':
+            rows = db.fetch_supplies()
+            self._send_json(200, {'rows': rows})
+            return
+
+        if parsed.path == '/api/expenses':
+            rows = db.fetch_expenses()
+            self._send_json(200, {'rows': rows})
+            return
+
         if parsed.path == '/api/media':
             query = parse_qs(parsed.query)
             category = safe_path_component(query.get('category', [''])[0])
@@ -680,6 +697,19 @@ class Handler(BaseHTTPRequestHandler):
             self._send_file_dynamic(file_path)
             return
 
+        if parsed.path.startswith('/files-records/'):
+            rel = unquote(parsed.path.replace('/files-records/', '', 1))
+            rel_path = safe_rel_path(rel)
+            if not rel_path:
+                self.send_error(403)
+                return
+            file_path = (RECORDS_DIR / rel_path).resolve()
+            if not file_path.is_relative_to(RECORDS_DIR.resolve()):
+                self.send_error(403)
+                return
+            self._send_file_dynamic(file_path)
+            return
+
         if UI_DIST_DIR.exists():
             if parsed.path == '/':
                 self._send_file(UI_DIST_DIR / 'index.html')
@@ -748,6 +778,43 @@ class Handler(BaseHTTPRequestHandler):
                     f.write(item.get('content') or b'')
                 saved.append(str(dest_path))
             self._send_json(200, {'ok': True, 'saved': saved})
+            return
+
+        if parsed.path == '/api/expense_upload':
+            content_length = int(self.headers.get('Content-Length', '0'))
+            if content_length > UPLOAD_MAX_BYTES:
+                self._send_json(413, {'error': 'Upload exceeds size limit'})
+                return
+            body = self.rfile.read(content_length) if content_length > 0 else b''
+            _, files_field = parse_multipart_form_data(
+                self.headers.get('Content-Type', ''),
+                body,
+            )
+            if not files_field:
+                self._send_json(400, {'error': 'Missing receipt file'})
+                return
+            file_item = files_field[0]
+            filename = file_item.get('filename') or ''
+            content = file_item.get('content') or b''
+            if not filename or not content:
+                self._send_json(400, {'error': 'Invalid receipt upload'})
+                return
+            base_name = os.path.basename(filename)
+            name_part, ext = os.path.splitext(base_name)
+            safe_name = sanitize_filename(name_part) or 'receipt'
+            safe_ext = re.sub(r'[^A-Za-z0-9.]', '', ext.lower())
+            timestamp = time.strftime('%Y%m%d-%H%M%S')
+            token = secrets.token_hex(4)
+            dest_dir = EXPENSES_DIR / time.strftime('%Y')
+            dest_dir.mkdir(parents=True, exist_ok=True)
+            dest_name = f"{timestamp}-{token}-{safe_name}{safe_ext}"
+            dest_path = dest_dir / dest_name
+            if dest_path.exists():
+                dest_name = f"{timestamp}-{token}-{secrets.token_hex(2)}-{safe_name}{safe_ext}"
+                dest_path = dest_dir / dest_name
+            dest_path.write_bytes(content)
+            rel_path = dest_path.relative_to(RECORDS_DIR).as_posix()
+            self._send_json(200, {'receipt_path': rel_path})
             return
 
         if parsed.path == '/api/login':
@@ -1181,6 +1248,124 @@ class Handler(BaseHTTPRequestHandler):
                 self._send_json(500, {'error': 'Failed to save target'})
                 return
             self._send_json(200, {'ok': True, 'target': target})
+            return
+
+        if parsed.path == '/api/supplies':
+            action = (data.get('action') or '').strip().lower()
+            if action == 'create':
+                supply = data.get('supply', {})
+                if not (supply.get('name') or '').strip():
+                    self._send_json(400, {'error': 'Supply name is required'})
+                    return
+                row = db.insert_supply(supply)
+                if not row:
+                    self._send_json(500, {'error': 'Failed to save supply'})
+                    return
+                self._send_json(200, {'row': row})
+                return
+            if action == 'update':
+                supply_id = data.get('id')
+                supply = data.get('supply', {})
+                try:
+                    supply_id = int(supply_id)
+                except (TypeError, ValueError):
+                    self._send_json(400, {'error': 'Invalid supply id'})
+                    return
+                if not (supply.get('name') or '').strip():
+                    self._send_json(400, {'error': 'Supply name is required'})
+                    return
+                if not db.update_supply(supply_id, supply):
+                    self._send_json(404, {'error': 'Supply not found'})
+                    return
+                self._send_json(200, {'ok': True})
+                return
+            if action == 'delete':
+                supply_id = data.get('id')
+                try:
+                    supply_id = int(supply_id)
+                except (TypeError, ValueError):
+                    self._send_json(400, {'error': 'Invalid supply id'})
+                    return
+                if not db.delete_supply(supply_id):
+                    self._send_json(404, {'error': 'Supply not found'})
+                    return
+                self._send_json(200, {'ok': True})
+                return
+            self._send_json(400, {'error': 'Invalid action'})
+            return
+
+        if parsed.path == '/api/supply_adjust':
+            supply_id = data.get('id')
+            delta = data.get('delta')
+            try:
+                supply_id = int(supply_id)
+                delta = int(delta)
+            except (TypeError, ValueError):
+                self._send_json(400, {'error': 'Invalid supply adjustment'})
+                return
+            row = db.adjust_supply_quantity(supply_id, delta)
+            if not row:
+                self._send_json(404, {'error': 'Supply not found'})
+                return
+            self._send_json(200, {'row': row})
+            return
+
+        if parsed.path == '/api/expenses':
+            action = (data.get('action') or '').strip().lower()
+            if action not in ('create', 'update', 'delete'):
+                self._send_json(400, {'error': 'Invalid action'})
+                return
+            if action == 'delete':
+                expense_id = data.get('id')
+                try:
+                    expense_id = int(expense_id)
+                except (TypeError, ValueError):
+                    self._send_json(400, {'error': 'Invalid expense id'})
+                    return
+                if not db.delete_expense(expense_id):
+                    self._send_json(404, {'error': 'Expense not found'})
+                    return
+                self._send_json(200, {'ok': True})
+                return
+
+            expense = data.get('expense', {})
+            expense_date = (expense.get('expense_date') or '').strip()
+            if not EVENT_DATE_RE.match(expense_date):
+                self._send_json(400, {'error': 'Invalid expense date'})
+                return
+            try:
+                amount_value = Decimal(str(expense.get('amount') or ''))
+            except (InvalidOperation, TypeError):
+                self._send_json(400, {'error': 'Invalid expense amount'})
+                return
+            if amount_value < 0:
+                self._send_json(400, {'error': 'Expense amount must be positive'})
+                return
+            receipt_path = (expense.get('receipt_path') or '').strip()
+            if receipt_path:
+                rel_clean = safe_rel_path(receipt_path)
+                if not rel_clean:
+                    self._send_json(400, {'error': 'Invalid receipt path'})
+                    return
+            expense['expense_date'] = expense_date
+            expense['amount'] = f"{amount_value:.2f}"
+            if action == 'create':
+                row = db.insert_expense(expense)
+                if not row:
+                    self._send_json(500, {'error': 'Failed to save expense'})
+                    return
+                self._send_json(200, {'row': row})
+                return
+            expense_id = data.get('id')
+            try:
+                expense_id = int(expense_id)
+            except (TypeError, ValueError):
+                self._send_json(400, {'error': 'Invalid expense id'})
+                return
+            if not db.update_expense(expense_id, expense):
+                self._send_json(404, {'error': 'Expense not found'})
+                return
+            self._send_json(200, {'ok': True})
             return
 
         if parsed.path == '/api/save':

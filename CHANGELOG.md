@@ -2,6 +2,9 @@
 
 ## Unreleased
 
+## V2.8.11
+- Minor: Moved event image uploads onto the active event page.
+
 ## V2.8.10
 - Fix: Corrected event media upload filename handling.
 

@@ -549,6 +549,22 @@ class Handler(BaseHTTPRequestHandler):
             self._send_json(200, {'rows': rows})
             return
 
+        if parsed.path == '/api/sales_recent':
+            query = parse_qs(parsed.query)
+            limit_raw = query.get('limit', ['50'])[0]
+            try:
+                limit = int(limit_raw)
+            except (TypeError, ValueError):
+                self._send_json(400, {'error': 'Invalid limit'})
+                return
+            if limit <= 0:
+                self._send_json(400, {'error': 'Invalid limit'})
+                return
+            limit = min(limit, 200)
+            rows = db.fetch_recent_sales(limit)
+            self._send_json(200, {'rows': rows})
+            return
+
         if parsed.path == '/api/event_totals':
             query = parse_qs(parsed.query)
             event_id_raw = query.get('event_id', [''])[0]

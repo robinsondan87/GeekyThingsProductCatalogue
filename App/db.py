@@ -746,6 +746,35 @@ def fetch_sales(event_id: int) -> list:
             return cur.fetchall()
 
 
+def fetch_recent_sales(limit: int) -> list:
+    with get_connection() as conn:
+        with conn.cursor(row_factory=dict_row) as cur:
+            cur.execute(
+                """
+                SELECT s.id,
+                       s.event_id,
+                       e.name AS event_name,
+                       s.product_id,
+                       s.category,
+                       s.product_folder,
+                       s.sku,
+                       s.color,
+                       s.size,
+                       s.quantity,
+                       s.unit_price::text AS unit_price,
+                       s.override_price,
+                       s.payment_method,
+                       s.sold_at::text AS sold_at
+                FROM sales AS s
+                JOIN events AS e ON e.id = s.event_id
+                ORDER BY s.sold_at DESC, s.id DESC
+                LIMIT %s
+                """,
+                (limit,),
+            )
+            return cur.fetchall()
+
+
 def fetch_event_targets(event_id: int) -> list:
     with get_connection() as conn:
         with conn.cursor(row_factory=dict_row) as cur:

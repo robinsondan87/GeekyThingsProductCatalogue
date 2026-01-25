@@ -16,72 +16,13 @@ onMounted(() => {
   const eventSaveBtn = document.getElementById('eventSaveBtn')
   const eventCancelBtn = document.getElementById('eventCancelBtn')
   const eventList = document.getElementById('eventList')
-  const eventSelect = document.getElementById('eventSelect')
-  const totalsItems = document.getElementById('totalsItems')
-  const totalsRevenue = document.getElementById('totalsRevenue')
-  const paymentBreakdownBody = document.getElementById('paymentBreakdownBody')
-
-  const productSearch = document.getElementById('productSearch')
-  const productSelect = document.getElementById('productSelect')
-  const colorSelect = document.getElementById('colorSelect')
-  const sizeSelect = document.getElementById('sizeSelect')
-  const qtyInput = document.getElementById('qtyInput')
-  const paymentSelect = document.getElementById('paymentSelect')
-  const defaultPriceInput = document.getElementById('defaultPrice')
-  const overridePriceInput = document.getElementById('overridePrice')
-  const totalPriceEl = document.getElementById('totalPrice')
-  const saleStatus = document.getElementById('saleStatus')
-  const recordSaleBtn = document.getElementById('recordSaleBtn')
-  const salesBody = document.getElementById('salesTableBody')
-  const salesEmpty = document.getElementById('salesEmpty')
+  const recentSalesBody = document.getElementById('recentSalesBody')
+  const recentSalesEmpty = document.getElementById('recentSalesEmpty')
+  const recentSalesStatus = document.getElementById('recentSalesStatus')
   const logoutBtn = document.getElementById('logoutBtn')
-  const targetProductSearch = document.getElementById('targetProductSearch')
-  const targetProductSelect = document.getElementById('targetProductSelect')
-  const targetColorSelect = document.getElementById('targetColorSelect')
-  const targetSizeSelect = document.getElementById('targetSizeSelect')
-  const targetQtyInput = document.getElementById('targetQtyInput')
-  const targetSaveBtn = document.getElementById('targetSaveBtn')
-  const printTargetsBtn = document.getElementById('printTargetsBtn')
-  const printTallyBtn = document.getElementById('printTallyBtn')
-  const targetStatus = document.getElementById('targetStatus')
-  const targetTableBody = document.getElementById('targetTableBody')
-  const targetEmpty = document.getElementById('targetEmpty')
 
   let events = []
   let editingEventId = null
-  let products = []
-  let productOptions = []
-  let targetRows = []
-  const productsByKey = new Map()
-
-  const buildKey = (category, folder) => `${category}|||${folder}`
-
-  const parseList = (value) =>
-    (value || '')
-      .split(',')
-      .map((item) => item.trim())
-      .filter((item) => item.length)
-
-  const renderSelectOptions = (selectEl, items, placeholder) => {
-    const current = selectEl.value
-    selectEl.innerHTML = ''
-    const defaultOption = document.createElement('option')
-    defaultOption.value = ''
-    defaultOption.textContent = placeholder
-    selectEl.appendChild(defaultOption)
-    items
-      .slice()
-      .sort((a, b) => a.localeCompare(b))
-      .forEach((item) => {
-        const option = document.createElement('option')
-        option.value = item
-        option.textContent = item
-        selectEl.appendChild(option)
-      })
-    if (current) {
-      selectEl.value = current
-    }
-  }
 
   const setStatus = (el, message) => {
     el.textContent = message
@@ -98,49 +39,6 @@ onMounted(() => {
     today.setHours(0, 0, 0, 0)
     const eventDate = new Date(value)
     return eventDate >= today
-  }
-
-  const clearTotals = () => {
-    totalsItems.textContent = '0'
-    totalsRevenue.textContent = '0.00 GBP'
-    paymentBreakdownBody.innerHTML = '<tr><td colspan="2">No payments yet.</td></tr>'
-  }
-
-  const renderTotals = (totals) => {
-    totalsItems.textContent = String(totals.total_items ?? 0)
-    totalsRevenue.textContent = `${totals.total_revenue || '0.00'} GBP`
-    const payments = totals.payments || {}
-    paymentBreakdownBody.innerHTML = ''
-    const entries = Object.entries(payments)
-    if (!entries.length) {
-      paymentBreakdownBody.innerHTML = '<tr><td colspan="2">No payments yet.</td></tr>'
-      return
-    }
-    entries.forEach(([method, total]) => {
-      const row = document.createElement('tr')
-      const methodCell = document.createElement('td')
-      methodCell.textContent = method
-      const totalCell = document.createElement('td')
-      totalCell.textContent = `${total} GBP`
-      row.appendChild(methodCell)
-      row.appendChild(totalCell)
-      paymentBreakdownBody.appendChild(row)
-    })
-  }
-
-  const loadEventTotals = async () => {
-    const eventId = eventSelect.value
-    if (!eventId) {
-      clearTotals()
-      return
-    }
-    const response = await fetch(`/api/event_totals?event_id=${encodeURIComponent(eventId)}`)
-    if (!response.ok) {
-      clearTotals()
-      return
-    }
-    const payload = await response.json()
-    renderTotals(payload.totals || {})
   }
 
   const resetEventForm = () => {
@@ -165,20 +63,6 @@ onMounted(() => {
     eventNotesInput.value = event.notes || ''
     eventSaveBtn.textContent = 'Update Event'
     eventCancelBtn.hidden = false
-  }
-
-  const renderEventSelect = () => {
-    const current = eventSelect.value
-    eventSelect.innerHTML = '<option value="">Select event</option>'
-    events.forEach((event) => {
-      const option = document.createElement('option')
-      option.value = event.id
-      option.textContent = `${event.name} (${formatEventDate(event.event_date)})`
-      eventSelect.appendChild(option)
-    })
-    if (current && [...eventSelect.options].some((option) => option.value === current)) {
-      eventSelect.value = current
-    }
   }
 
   const renderEventList = () => {
@@ -221,10 +105,7 @@ onMounted(() => {
       selectBtn.className = 'btn ghost'
       selectBtn.textContent = 'Use'
       selectBtn.addEventListener('click', () => {
-        eventSelect.value = String(event.id)
-        loadSales().catch(console.error)
-        loadEventTotals().catch(console.error)
-        loadTargets().catch(console.error)
+        window.location.href = `/event?event_id=${encodeURIComponent(event.id)}`
       })
 
       const editBtn = document.createElement('button')
@@ -263,7 +144,6 @@ onMounted(() => {
     }
     const payload = await response.json()
     events = payload.events || []
-    renderEventSelect()
     renderEventList()
   }
 
@@ -309,160 +189,28 @@ onMounted(() => {
       setStatus(eventStatus, data.error || 'Failed to delete event.')
       return
     }
-    if (eventSelect.value === String(eventId)) {
-      eventSelect.value = ''
-      salesBody.innerHTML = ''
-      salesEmpty.hidden = false
-      clearTotals()
-      clearTargets()
-    }
     await loadEvents()
   }
 
-  const renderProductOptions = (filter) => {
-    const normalized = (filter || '').trim().toLowerCase()
-    const current = productSelect.value
-    productSelect.innerHTML = '<option value="">Select a product</option>'
-    productOptions
-      .filter((option) => option.label.toLowerCase().includes(normalized))
-      .forEach((option) => {
-        const el = document.createElement('option')
-        el.value = option.key
-        el.textContent = option.label
-        productSelect.appendChild(el)
-      })
-    if (current && [...productSelect.options].some((option) => option.value === current)) {
-      productSelect.value = current
-    } else {
-      productSelect.value = ''
-    }
-    refreshSuggestions()
-  }
-
-  const renderTargetOptions = (filter) => {
-    const normalized = (filter || '').trim().toLowerCase()
-    const current = targetProductSelect.value
-    targetProductSelect.innerHTML = '<option value="">Select a product</option>'
-    productOptions
-      .filter((option) => option.label.toLowerCase().includes(normalized))
-      .forEach((option) => {
-        const el = document.createElement('option')
-        el.value = option.key
-        el.textContent = option.label
-        targetProductSelect.appendChild(el)
-      })
-    if (current && [...targetProductSelect.options].some((option) => option.value === current)) {
-      targetProductSelect.value = current
-    } else {
-      targetProductSelect.value = ''
-    }
-    refreshTargetSuggestions()
-  }
-
-  const refreshTargetSuggestions = () => {
-    const selected = productsByKey.get(targetProductSelect.value) || null
-    const colors = selected ? parseList(selected.Colors) : []
-    const sizes = selected ? parseList(selected.Sizes) : []
-    renderSelectOptions(
-      targetColorSelect,
-      colors,
-      colors.length ? 'Select color' : 'No colors set'
-    )
-    renderSelectOptions(
-      targetSizeSelect,
-      sizes,
-      sizes.length ? 'Select size' : 'No sizes set'
-    )
-  }
-
-  const refreshSuggestions = () => {
-    const selected = productsByKey.get(productSelect.value) || null
-    const colors = selected ? parseList(selected.Colors) : []
-    const sizes = selected ? parseList(selected.Sizes) : []
-    renderSelectOptions(colorSelect, colors, colors.length ? 'Select color' : 'No colors set')
-    renderSelectOptions(sizeSelect, sizes, sizes.length ? 'Select size' : 'No sizes set')
-    updatePricingDefaults(selected)
-  }
-
-  const updatePricingDefaults = (selected) => {
-    const basePrice = selected ? parseFloat(selected['Sale Price'] || '0') : 0
-    defaultPriceInput.value = Number.isFinite(basePrice) ? basePrice.toFixed(2) : '0.00'
-    updateTotalPrice()
-  }
-
-  const getEffectivePrice = () => {
-    const overrideValue = overridePriceInput.value.trim()
-    if (!overrideValue) {
-      return parseFloat(defaultPriceInput.value) || 0
-    }
-    const parsed = parseFloat(overrideValue)
-    if (!Number.isFinite(parsed)) {
-      return null
-    }
-    return parsed
-  }
-
-  const updateTotalPrice = () => {
-    const qty = parseInt(qtyInput.value, 10) || 0
-    const price = getEffectivePrice()
-    if (price == null) {
-      totalPriceEl.textContent = 'Total: invalid override'
-      return
-    }
-    totalPriceEl.textContent = `Total: ${(price * qty).toFixed(2)} GBP`
-  }
-
-  const loadProducts = async () => {
-    const response = await fetch('/api/rows', { cache: 'no-store' })
+  const loadRecentSales = async () => {
+    const response = await fetch('/api/sales_recent?limit=50', { cache: 'no-store' })
     if (!response.ok) {
-      setStatus(saleStatus, 'Failed to load products.')
-      return
-    }
-    const payload = await response.json()
-    products = payload.rows || []
-    productsByKey.clear()
-    productOptions = []
-    const sorted = [...products].sort((a, b) => {
-      const keyA = `${a.category} ${a.product_folder}`.toLowerCase()
-      const keyB = `${b.category} ${b.product_folder}`.toLowerCase()
-      return keyA.localeCompare(keyB)
-    })
-    sorted.forEach((row) => {
-      const category = row.category || ''
-      const folder = row.product_folder || ''
-      if (!category || !folder) return
-      const key = buildKey(category, folder)
-      productsByKey.set(key, row)
-      const label = `${row.sku || 'No SKU'} · ${folder}`
-      productOptions.push({ key, label })
-    })
-    renderProductOptions('')
-    renderTargetOptions('')
-  }
-
-  const loadSales = async () => {
-    const eventId = eventSelect.value
-    if (!eventId) {
-      salesBody.innerHTML = ''
-      salesEmpty.hidden = false
-      clearTotals()
-      return
-    }
-    const response = await fetch(`/api/sales?event_id=${encodeURIComponent(eventId)}`)
-    if (!response.ok) {
-      setStatus(saleStatus, 'Failed to load sales.')
+      setStatus(recentSalesStatus, 'Failed to load recent sales.')
       return
     }
     const payload = await response.json()
     const rows = payload.rows || []
-    salesBody.innerHTML = ''
+    recentSalesBody.innerHTML = ''
     if (!rows.length) {
-      salesEmpty.hidden = false
+      recentSalesEmpty.hidden = false
       return
     }
-    salesEmpty.hidden = true
+    recentSalesEmpty.hidden = true
     rows.forEach((row) => {
       const tr = document.createElement('tr')
+
+      const eventCell = document.createElement('td')
+      eventCell.textContent = row.event_name || 'Event'
 
       const whenCell = document.createElement('td')
       const when = new Date(row.sold_at)
@@ -488,6 +236,7 @@ onMounted(() => {
       const overrideCell = document.createElement('td')
       overrideCell.textContent = row.override_price || '—'
 
+      tr.appendChild(eventCell)
       tr.appendChild(whenCell)
       tr.appendChild(productCell)
       tr.appendChild(variationCell)
@@ -495,290 +244,8 @@ onMounted(() => {
       tr.appendChild(priceCell)
       tr.appendChild(paymentCell)
       tr.appendChild(overrideCell)
-      salesBody.appendChild(tr)
+      recentSalesBody.appendChild(tr)
     })
-  }
-
-  const clearTargets = () => {
-    targetRows = []
-    targetTableBody.innerHTML = ''
-    targetEmpty.hidden = false
-  }
-
-  const renderTargets = (rows) => {
-    targetTableBody.innerHTML = ''
-    if (!rows.length) {
-      targetEmpty.hidden = false
-      return
-    }
-    targetEmpty.hidden = true
-    rows.forEach((row) => {
-      const tr = document.createElement('tr')
-
-      const productCell = document.createElement('td')
-      productCell.textContent = row.sku ? `${row.sku} · ${row.product_folder}` : row.product_folder
-
-      const variationCell = document.createElement('td')
-      const variationParts = [row.color, row.size].filter(Boolean)
-      variationCell.textContent = variationParts.length ? variationParts.join(' / ') : '—'
-
-      const targetCell = document.createElement('td')
-      targetCell.textContent = row.target_qty
-
-      const stockCell = document.createElement('td')
-      stockCell.textContent = row.current_qty
-
-      const deficitCell = document.createElement('td')
-      deficitCell.textContent = row.deficit
-
-      const actionsCell = document.createElement('td')
-      const actions = document.createElement('div')
-      actions.className = 'row-actions'
-      const deleteBtn = document.createElement('button')
-      deleteBtn.type = 'button'
-      deleteBtn.textContent = 'Remove'
-      deleteBtn.addEventListener('click', () => {
-        if (!confirm('Remove this target?')) return
-        deleteTarget(row.id).catch(console.error)
-      })
-      actions.appendChild(deleteBtn)
-      actionsCell.appendChild(actions)
-
-      tr.appendChild(productCell)
-      tr.appendChild(variationCell)
-      tr.appendChild(targetCell)
-      tr.appendChild(stockCell)
-      tr.appendChild(deficitCell)
-      tr.appendChild(actionsCell)
-      targetTableBody.appendChild(tr)
-    })
-  }
-
-  const loadTargets = async () => {
-    const eventId = eventSelect.value
-    if (!eventId) {
-      clearTargets()
-      return
-    }
-    const response = await fetch(`/api/event_targets?event_id=${encodeURIComponent(eventId)}`)
-    if (!response.ok) {
-      setStatus(targetStatus, 'Failed to load targets.')
-      return
-    }
-    const payload = await response.json()
-    targetRows = payload.rows || []
-    renderTargets(targetRows)
-  }
-
-  const saveTarget = async () => {
-    const eventId = eventSelect.value
-    if (!eventId) {
-      setStatus(targetStatus, 'Select an event first.')
-      return
-    }
-    const selected = productsByKey.get(targetProductSelect.value)
-    if (!selected) {
-      setStatus(targetStatus, 'Select a product first.')
-      return
-    }
-    const qty = parseInt(targetQtyInput.value, 10)
-    if (!qty || qty <= 0) {
-      setStatus(targetStatus, 'Target quantity must be greater than 0.')
-      return
-    }
-    const payload = {
-      event_id: eventId,
-      category: selected.category,
-      product_folder: selected.product_folder,
-      color: targetColorSelect.value.trim(),
-      size: targetSizeSelect.value.trim(),
-      target_qty: qty,
-    }
-    const response = await fetch('/api/event_targets', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(payload),
-    })
-    const data = await response.json()
-    if (!response.ok) {
-      setStatus(targetStatus, data.error || 'Failed to save target.')
-      return
-    }
-    setStatus(targetStatus, 'Target saved.')
-    await loadTargets()
-  }
-
-  const deleteTarget = async (targetId) => {
-    const response = await fetch('/api/event_targets', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ action: 'delete', id: targetId }),
-    })
-    const data = await response.json()
-    if (!response.ok) {
-      setStatus(targetStatus, data.error || 'Failed to delete target.')
-      return
-    }
-    await loadTargets()
-  }
-
-  const printDeficits = () => {
-    const deficits = targetRows.filter((row) => row.deficit > 0)
-    if (!deficits.length) {
-      setStatus(targetStatus, 'No deficits to print.')
-      return
-    }
-    const printWindow = window.open('', '_blank')
-    if (!printWindow) {
-      alert('Popup blocked. Allow popups to print.')
-      return
-    }
-    const rowsHtml = deficits
-      .map((row) => {
-        const variationParts = [row.color, row.size].filter(Boolean)
-        const variation = variationParts.length ? variationParts.join(' / ') : '—'
-        return `<tr><td>${row.sku ? row.sku + ' · ' : ''}${row.product_folder}</td><td>${variation}</td><td>${row.target_qty}</td><td>${row.current_qty}</td><td>${row.deficit}</td></tr>`
-      })
-      .join('')
-    const html = `
-      <html>
-        <head>
-          <title>Print Queue</title>
-          <style>
-            body { font-family: Arial, sans-serif; padding: 24px; color: #0f172a; }
-            h1 { font-size: 20px; margin-bottom: 12px; }
-            table { width: 100%; border-collapse: collapse; font-size: 12px; }
-            th, td { text-align: left; padding: 8px; border-bottom: 1px solid #e2e8f0; }
-            th { text-transform: uppercase; letter-spacing: 0.08em; font-size: 11px; color: #475569; }
-          </style>
-        </head>
-        <body>
-          <h1>Print Queue (Deficits)</h1>
-          <table>
-            <thead>
-              <tr>
-                <th>Product</th>
-                <th>Variation</th>
-                <th>Target</th>
-                <th>In Stock</th>
-                <th>Deficit</th>
-              </tr>
-            </thead>
-            <tbody>${rowsHtml}</tbody>
-          </table>
-        </body>
-      </html>
-    `
-    printWindow.document.open()
-    printWindow.document.write(html)
-    printWindow.document.close()
-    printWindow.focus()
-    printWindow.print()
-  }
-
-  const printTallySheet = () => {
-    if (!targetRows.length) {
-      setStatus(targetStatus, 'No targets available for tally sheet.')
-      return
-    }
-    const printWindow = window.open('', '_blank')
-    if (!printWindow) {
-      alert('Popup blocked. Allow popups to print.')
-      return
-    }
-    const rowsHtml = targetRows
-      .map((row) => {
-        const variationParts = [row.color, row.size].filter(Boolean)
-        const variation = variationParts.length ? variationParts.join(' / ') : '—'
-        return `<tr><td>${row.sku ? row.sku + ' · ' : ''}${row.product_folder}</td><td>${variation}</td><td>${row.target_qty}</td><td>________</td><td>________</td></tr>`
-      })
-      .join('')
-    const html = `
-      <html>
-        <head>
-          <title>Event Tally Sheet</title>
-          <style>
-            body { font-family: Arial, sans-serif; padding: 24px; color: #0f172a; }
-            h1 { font-size: 20px; margin-bottom: 12px; }
-            table { width: 100%; border-collapse: collapse; font-size: 12px; }
-            th, td { text-align: left; padding: 8px; border-bottom: 1px solid #e2e8f0; }
-            th { text-transform: uppercase; letter-spacing: 0.08em; font-size: 11px; color: #475569; }
-          </style>
-        </head>
-        <body>
-          <h1>Event Tally Sheet</h1>
-          <table>
-            <thead>
-              <tr>
-                <th>Product</th>
-                <th>Variation</th>
-                <th>Target</th>
-                <th>Counted</th>
-                <th>Sold</th>
-              </tr>
-            </thead>
-            <tbody>${rowsHtml}</tbody>
-          </table>
-        </body>
-      </html>
-    `
-    printWindow.document.open()
-    printWindow.document.write(html)
-    printWindow.document.close()
-    printWindow.focus()
-    printWindow.print()
-  }
-
-  const recordSale = async () => {
-    const eventId = eventSelect.value
-    if (!eventId) {
-      setStatus(saleStatus, 'Select an event first.')
-      return
-    }
-    const selected = productsByKey.get(productSelect.value)
-    if (!selected) {
-      setStatus(saleStatus, 'Select a product first.')
-      return
-    }
-    const quantity = parseInt(qtyInput.value, 10)
-    if (!quantity || quantity <= 0) {
-      setStatus(saleStatus, 'Quantity must be greater than 0.')
-      return
-    }
-    const price = getEffectivePrice()
-    if (price == null) {
-      setStatus(saleStatus, 'Override price must be a number.')
-      return
-    }
-    const payload = {
-      event_id: eventId,
-      category: selected.category,
-      product_folder: selected.product_folder,
-      sku: selected.sku,
-      color: colorSelect.value.trim(),
-      size: sizeSelect.value.trim(),
-      quantity,
-      unit_price: price.toFixed(2),
-      override_price: overridePriceInput.value.trim(),
-      payment_method: paymentSelect.value,
-    }
-    const response = await fetch('/api/sale', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(payload),
-    })
-    const data = await response.json()
-    if (!response.ok) {
-      setStatus(saleStatus, data.error || 'Failed to record sale.')
-      return
-    }
-    const stockNote = data.stock_adjusted ? '' : ' (stock not adjusted)'
-    setStatus(saleStatus, `Sale recorded${stockNote}.`)
-    overridePriceInput.value = ''
-    updateTotalPrice()
-    await loadSales()
-    await loadEventTotals()
-    await loadTargets()
   }
 
   eventSaveBtn.addEventListener('click', () => saveEvent().catch(console.error))
@@ -786,23 +253,6 @@ onMounted(() => {
     resetEventForm()
     setStatus(eventStatus, '')
   })
-  eventSelect.addEventListener('change', () => {
-    loadSales().catch(console.error)
-    loadEventTotals().catch(console.error)
-    loadTargets().catch(console.error)
-  })
-  productSearch.addEventListener('input', () => renderProductOptions(productSearch.value))
-  productSelect.addEventListener('change', refreshSuggestions)
-  targetProductSearch.addEventListener('input', () => renderTargetOptions(targetProductSearch.value))
-  targetProductSelect.addEventListener('change', refreshTargetSuggestions)
-  targetSaveBtn.addEventListener('click', () => saveTarget().catch(console.error))
-  printTargetsBtn.addEventListener('click', printDeficits)
-  printTallyBtn.addEventListener('click', printTallySheet)
-  colorSelect.addEventListener('change', updateTotalPrice)
-  sizeSelect.addEventListener('change', updateTotalPrice)
-  qtyInput.addEventListener('input', updateTotalPrice)
-  overridePriceInput.addEventListener('input', updateTotalPrice)
-  recordSaleBtn.addEventListener('click', () => recordSale().catch(console.error))
 
   logoutBtn.addEventListener('click', async () => {
     await fetch('/api/logout', { method: 'POST' })
@@ -810,10 +260,8 @@ onMounted(() => {
   })
 
   resetEventForm()
-  clearTotals()
-  clearTargets()
   loadEvents().catch(console.error)
-  loadProducts().then(loadSales).catch(console.error)
+  loadRecentSales().catch(console.error)
 })
 </script>
 
@@ -825,8 +273,8 @@ onMounted(() => {
         <strong>GeekyThings</strong>
       </div>
       <div class="nav-center">
-        <h1 class="title">Events & Sales</h1>
-        <p class="subtitle">Track craft fair events and record in-person sales.</p>
+        <h1 class="title">Events</h1>
+        <p class="subtitle">Manage craft fair events and review recent sales.</p>
         <p class="version">
           Version <a :href="changeLogUrl" target="_blank" rel="noopener noreferrer">{{ version }}</a>
         </p>
@@ -884,135 +332,13 @@ onMounted(() => {
     </section>
 
     <section class="card">
-      <h2>Active event</h2>
-      <div class="grid">
-        <div>
-          <label for="eventSelect">Event</label>
-          <select id="eventSelect"></select>
-        </div>
-        <div>
-          <label>Total items</label>
-          <div class="status" id="totalsItems">0</div>
-        </div>
-        <div>
-          <label>Total revenue</label>
-          <div class="status" id="totalsRevenue">0.00 GBP</div>
-        </div>
-      </div>
-      <div class="table-wrap" style="margin-top: 12px;">
-        <table>
-          <thead>
-            <tr>
-              <th>Payment method</th>
-              <th>Total</th>
-            </tr>
-          </thead>
-          <tbody id="paymentBreakdownBody"></tbody>
-        </table>
-      </div>
-    </section>
-
-    <section class="card">
-      <h2>Stock targets &amp; deficits</h2>
-      <div class="grid">
-        <div>
-          <label for="targetProductSearch">Search</label>
-          <input id="targetProductSearch" type="search" placeholder="Search products..." />
-        </div>
-        <div>
-          <label for="targetProductSelect">Product</label>
-          <select id="targetProductSelect"></select>
-        </div>
-        <div>
-          <label for="targetColorSelect">Color</label>
-          <select id="targetColorSelect"></select>
-        </div>
-        <div>
-          <label for="targetSizeSelect">Size</label>
-          <select id="targetSizeSelect"></select>
-        </div>
-        <div>
-          <label for="targetQtyInput">Target qty</label>
-          <input id="targetQtyInput" type="number" min="1" value="1" />
-        </div>
-      </div>
-      <div class="actions" style="margin-top: 12px;">
-        <button id="targetSaveBtn" class="btn" type="button">Save Target</button>
-        <button id="printTargetsBtn" class="btn ghost" type="button">Print Deficits</button>
-        <button id="printTallyBtn" class="btn ghost" type="button">Print Tally Sheet</button>
-      </div>
-      <div class="status" id="targetStatus"></div>
-      <div class="table-wrap" style="margin-top: 12px;">
-        <table>
-          <thead>
-            <tr>
-              <th>Product</th>
-              <th>Variation</th>
-              <th>Target</th>
-              <th>In stock</th>
-              <th>Deficit</th>
-              <th>Actions</th>
-            </tr>
-          </thead>
-          <tbody id="targetTableBody"></tbody>
-        </table>
-        <div class="empty" id="targetEmpty">No targets yet.</div>
-      </div>
-    </section>
-
-    <section class="card">
-      <h2>Quick sale</h2>
-      <div class="grid">
-        <div>
-          <label for="productSearch">Search</label>
-          <input id="productSearch" type="search" placeholder="Search products..." />
-        </div>
-        <div>
-          <label for="productSelect">Product</label>
-          <select id="productSelect"></select>
-        </div>
-        <div>
-          <label for="colorSelect">Color</label>
-          <select id="colorSelect"></select>
-        </div>
-        <div>
-          <label for="sizeSelect">Size</label>
-          <select id="sizeSelect"></select>
-        </div>
-        <div>
-          <label for="qtyInput">Quantity</label>
-          <input id="qtyInput" type="number" min="1" value="1" />
-        </div>
-        <div>
-          <label for="paymentSelect">Payment method</label>
-          <select id="paymentSelect">
-            <option value="Cash">Cash</option>
-            <option value="Card">Card</option>
-            <option value="Other">Other</option>
-          </select>
-        </div>
-        <div>
-          <label for="defaultPrice">Default price (GBP)</label>
-          <input id="defaultPrice" type="text" disabled />
-        </div>
-        <div>
-          <label for="overridePrice">Override price (GBP)</label>
-          <input id="overridePrice" type="text" placeholder="Optional override" />
-        </div>
-      </div>
-      <div class="actions" style="margin-top: 12px;">
-        <button id="recordSaleBtn" class="btn secondary" type="button">Record Sale</button>
-        <div class="status" id="totalPrice">Total: 0.00 GBP</div>
-      </div>
-      <div class="status" id="saleStatus"></div>
-    </section>
-
-    <section class="card">
       <h2>Recent sales</h2>
+      <div class="status" id="recentSalesStatus"></div>
       <div class="table-wrap">
         <table>
           <thead>
             <tr>
+              <th>Event</th>
               <th>Time</th>
               <th>Product</th>
               <th>Variation</th>
@@ -1022,9 +348,9 @@ onMounted(() => {
               <th>Override</th>
             </tr>
           </thead>
-          <tbody id="salesTableBody"></tbody>
+          <tbody id="recentSalesBody"></tbody>
         </table>
-        <div class="empty" id="salesEmpty">No sales recorded yet.</div>
+        <div class="empty" id="recentSalesEmpty">No sales recorded yet.</div>
       </div>
     </section>
   </main>

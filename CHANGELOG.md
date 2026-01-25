@@ -2,6 +2,9 @@
 
 ## Unreleased
 
+## V2.8.5
+- Minor: Split active-event sales into a dedicated page and show recent sales on Events.
+
 ## V2.8.4
 - Fix: Avoided JSON serialization errors for sales prices in API responses.
 

@@ -10,6 +10,7 @@
 - Minor: Show product folder as SKU-stripped product title on the main page.
 - Minor: Offer naming-convention defaults when renaming 3MF files.
 - Minor: Render product tags as chips like colours and sizes on the product page.
+- Minor: Expanded the product README editor with a toolbar and live Markdown preview.
 
 ## V2.8.16
 - Fix: Event totals now use override price when provided.

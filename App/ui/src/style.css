@@ -229,7 +229,92 @@ textarea {
 }
 
 #readme {
-  min-height: 320px;
+  min-height: 520px;
+}
+
+.readme-editor {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.readme-toolbar {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.readme-toolbar .btn {
+  padding: 6px 10px;
+  border-radius: 10px;
+  font-size: 12px;
+}
+
+.readme-split {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+  gap: 12px;
+}
+
+.readme-preview {
+  background: var(--panel-3);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  padding: 12px;
+  min-height: 520px;
+  overflow: auto;
+}
+
+.readme-preview h1,
+.readme-preview h2,
+.readme-preview h3,
+.readme-preview h4,
+.readme-preview h5,
+.readme-preview h6 {
+  margin: 0 0 8px;
+}
+
+.readme-preview p {
+  margin: 0 0 10px;
+}
+
+.readme-preview ul {
+  margin: 0 0 10px 18px;
+  padding: 0;
+}
+
+.readme-preview a {
+  color: var(--accent);
+}
+
+.readme-preview code {
+  background: rgba(255, 255, 255, 0.06);
+  padding: 1px 4px;
+  border-radius: 6px;
+  font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+}
+
+.readme-preview pre {
+  margin: 0 0 12px;
+  padding: 12px;
+  border-radius: 10px;
+  background: rgba(0, 0, 0, 0.35);
+  overflow: auto;
+}
+
+.readme-preview pre code {
+  background: transparent;
+  padding: 0;
+}
+
+.readme-muted {
+  color: var(--muted);
+}
+
+@media (max-width: 1100px) {
+  .readme-split {
+    grid-template-columns: 1fr;
+  }
 }
 
 .table-wrap {

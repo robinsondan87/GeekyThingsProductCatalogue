@@ -44,6 +44,8 @@ const params = new URLSearchParams(window.location.search);
       const openFolderBtn = document.getElementById("openFolderBtn");
       const statusEl = document.getElementById("status");
       const readmeArea = document.getElementById("readme");
+      const readmeToolbar = document.getElementById("readmeToolbar");
+      const readmePreview = document.getElementById("readmePreview");
       const saveReadmeBtn = document.getElementById("saveReadmeBtn");
       const mediaGrid = document.getElementById("mediaGrid");
       const threeMfList = document.getElementById("threeMfList");
@@ -575,6 +577,172 @@ const params = new URLSearchParams(window.location.search);
         statusEl.textContent = "Pricing saved.";
       };
 
+      const escapeHtml = (value) =>
+        (value || "")
+          .replace(/&/g, "&amp;")
+          .replace(/</g, "&lt;")
+          .replace(/>/g, "&gt;")
+          .replace(/"/g, "&quot;")
+          .replace(/'/g, "&#39;");
+
+      const inlineMarkdown = (value) => {
+        const placeholders = [];
+        let text = escapeHtml(value);
+        text = text.replace(/`([^`]+)`/g, (_, code) => {
+          const token = `__CODE_${placeholders.length}__`;
+          placeholders.push(`<code>${code}</code>`);
+          return token;
+        });
+        text = text
+          .replace(/\*\*([^*]+)\*\*/g, "<strong>$1</strong>")
+          .replace(/\*([^*]+)\*/g, "<em>$1</em>")
+          .replace(/\[([^\]]+)\]\(([^)]+)\)/g, '<a href="$2" target="_blank" rel="noopener noreferrer">$1</a>');
+        placeholders.forEach((html, index) => {
+          text = text.replace(`__CODE_${index}__`, html);
+        });
+        return text;
+      };
+
+      const renderMarkdown = (value) => {
+        const lines = (value || "").replace(/\r\n/g, "\n").split("\n");
+        const html = [];
+        let inList = false;
+        let inCode = false;
+        let codeLines = [];
+
+        const flushList = () => {
+          if (!inList) return;
+          html.push("</ul>");
+          inList = false;
+        };
+
+        const flushCode = () => {
+          if (!inCode) return;
+          html.push(`<pre><code>${escapeHtml(codeLines.join("\n"))}</code></pre>`);
+          inCode = false;
+          codeLines = [];
+        };
+
+        lines.forEach((rawLine) => {
+          const line = rawLine || "";
+          const trimmed = line.trim();
+
+          if (trimmed.startsWith("```")) {
+            if (inCode) {
+              flushCode();
+            } else {
+              flushList();
+              inCode = true;
+              codeLines = [];
+            }
+            return;
+          }
+
+          if (inCode) {
+            codeLines.push(line);
+            return;
+          }
+
+          const listMatch = line.match(/^\s*[-*]\s+(.*)$/);
+          if (listMatch) {
+            if (!inList) {
+              html.push("<ul>");
+              inList = true;
+            }
+            html.push(`<li>${inlineMarkdown(listMatch[1])}</li>`);
+            return;
+          }
+
+          flushList();
+
+          if (!trimmed) {
+            html.push("");
+            return;
+          }
+
+          const headingMatch = line.match(/^(#{1,6})\s+(.*)$/);
+          if (headingMatch) {
+            const level = headingMatch[1].length;
+            html.push(`<h${level}>${inlineMarkdown(headingMatch[2])}</h${level}>`);
+            return;
+          }
+
+          html.push(`<p>${inlineMarkdown(line)}</p>`);
+        });
+
+        flushList();
+        flushCode();
+
+        return html.join("\n");
+      };
+
+      const updateReadmePreview = () => {
+        if (!readmePreview) return;
+        const markdown = readmeArea.value || "";
+        const rendered = renderMarkdown(markdown);
+        readmePreview.innerHTML = rendered || "<p class=\"readme-muted\">Nothing to preview yet.</p>";
+      };
+
+      const wrapSelection = (prefix, suffix, placeholder) => {
+        const start = readmeArea.selectionStart ?? 0;
+        const end = readmeArea.selectionEnd ?? start;
+        const selected = readmeArea.value.slice(start, end);
+        const content = selected || placeholder;
+        const next = `${prefix}${content}${suffix}`;
+        readmeArea.setRangeText(next, start, end, "end");
+        const caretStart = start + prefix.length;
+        const caretEnd = caretStart + content.length;
+        readmeArea.setSelectionRange(caretStart, caretEnd);
+        readmeArea.focus();
+        updateReadmePreview();
+      };
+
+      const prefixLines = (prefix, fallback) => {
+        const value = readmeArea.value;
+        const start = readmeArea.selectionStart ?? 0;
+        const end = readmeArea.selectionEnd ?? start;
+        const lineStart = value.lastIndexOf("\n", start - 1) + 1;
+        const lineEndIndex = value.indexOf("\n", end);
+        const lineEnd = lineEndIndex === -1 ? value.length : lineEndIndex;
+        const segment = value.slice(lineStart, lineEnd);
+        const lines = (segment || fallback).split("\n");
+        const prefixed = lines.map((line) => (line.trim() ? `${prefix}${line}` : line)).join("\n");
+        readmeArea.setRangeText(prefixed, lineStart, lineEnd, "end");
+        readmeArea.focus();
+        updateReadmePreview();
+      };
+
+      const applyReadmeAction = (action) => {
+        if (!action) return;
+        if (action === "bold") {
+          wrapSelection("**", "**", "bold text");
+          return;
+        }
+        if (action === "italic") {
+          wrapSelection("*", "*", "italic text");
+          return;
+        }
+        if (action === "link") {
+          wrapSelection("[", "](https://example.com)", "link text");
+          return;
+        }
+        if (action === "code") {
+          wrapSelection("```\n", "\n```", "code");
+          return;
+        }
+        if (action === "h2") {
+          prefixLines("## ", "Heading");
+          return;
+        }
+        if (action === "list") {
+          prefixLines("- ", "- item");
+          return;
+        }
+        if (action === "check") {
+          prefixLines("- [ ] ", "- [ ] item");
+        }
+      };
+
       const loadReadme = async () => {
         const response = await fetch("/api/readme", {
           method: "POST",
@@ -589,6 +757,7 @@ const params = new URLSearchParams(window.location.search);
         const payload = await response.json();
         if (!response.ok) return;
         readmeArea.value = payload.content || "";
+        updateReadmePreview();
       };
 
       const loadMedia = async () => {
@@ -1197,6 +1366,13 @@ const params = new URLSearchParams(window.location.search);
       renameBtn.addEventListener("click", () => renameFolder().catch(console.error));
       openFolderBtn.addEventListener("click", openFolder);
       saveReadmeBtn.addEventListener("click", () => saveReadme().catch(console.error));
+      readmeArea.addEventListener("input", updateReadmePreview);
+      if (readmeToolbar) {
+        readmeToolbar.querySelectorAll("button[data-md]").forEach((button) => {
+          button.addEventListener("click", () => applyReadmeAction(button.dataset.md));
+        });
+      }
+      updateReadmePreview();
       [costToMakeInput, salePriceInput, postagePriceInput].forEach((input) => {
         input.addEventListener("input", updateBasePricingSummary);
       });
@@ -1629,7 +1805,21 @@ const params = new URLSearchParams(window.location.search);
 
       <section class="card">
         <label for="readme">README.md</label>
-        <textarea id="readme"></textarea>
+        <div class="readme-editor">
+          <div class="readme-toolbar" id="readmeToolbar">
+            <button class="btn ghost" type="button" data-md="h2">H2</button>
+            <button class="btn ghost" type="button" data-md="bold">Bold</button>
+            <button class="btn ghost" type="button" data-md="italic">Italic</button>
+            <button class="btn ghost" type="button" data-md="link">Link</button>
+            <button class="btn ghost" type="button" data-md="code">Code</button>
+            <button class="btn ghost" type="button" data-md="list">List</button>
+            <button class="btn ghost" type="button" data-md="check">Checklist</button>
+          </div>
+          <div class="readme-split">
+            <textarea id="readme"></textarea>
+            <div class="readme-preview" id="readmePreview"></div>
+          </div>
+        </div>
         <div class="actions" style="margin-top: 12px;">
           <button class="btn" id="saveReadmeBtn" type="button">Save README</button>
         </div>

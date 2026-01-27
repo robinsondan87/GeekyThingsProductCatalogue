@@ -669,6 +669,20 @@ const params = new URLSearchParams(window.location.search);
             if (!text) return;
             navigator.clipboard?.writeText(text).catch(() => {});
           });
+          const renameBtn = document.createElement("button");
+          renameBtn.className = "btn ghost";
+          renameBtn.type = "button";
+          renameBtn.textContent = "Rename";
+          renameBtn.addEventListener("click", async () => {
+            const promptedName = window.prompt("Rename 3MF filename", file.name || "");
+            if (promptedName === null) return;
+            const finalName = sanitizeUploadName(promptedName);
+            if (!finalName) {
+              statusEl.textContent = "Rename cancelled: invalid filename.";
+              return;
+            }
+            await renameFile(file.rel_path, finalName);
+          });
           const removeBtn = document.createElement("button");
           removeBtn.className = "btn ghost";
           removeBtn.type = "button";
@@ -681,6 +695,7 @@ const params = new URLSearchParams(window.location.search);
           actions.appendChild(openLink);
           actions.appendChild(downloadLink);
           actions.appendChild(copyBtn);
+          actions.appendChild(renameBtn);
           actions.appendChild(removeBtn);
 
           row.appendChild(info);
@@ -1238,6 +1253,27 @@ const params = new URLSearchParams(window.location.search);
         }
         statusEl.textContent = "File moved to _Deleted.";
         await loadMedia();
+        await load3mf();
+      };
+
+      const renameFile = async (relPath, newName) => {
+        const response = await fetch("/api/rename_file", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            category: originalCategory,
+            folder_name: originalFolder,
+            status: statusParam,
+            rel_path: relPath,
+            new_name: newName,
+          }),
+        });
+        const payload = await response.json();
+        if (!response.ok) {
+          statusEl.textContent = payload.error || "Rename failed.";
+          return;
+        }
+        statusEl.textContent = `Renamed to ${payload.name || newName}.`;
         await load3mf();
       };
 

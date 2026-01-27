@@ -1100,6 +1100,51 @@ class Handler(BaseHTTPRequestHandler):
             self._send_json(200, {'ok': True})
             return
 
+        if parsed.path == '/api/rename_file':
+            category = safe_path_component(data.get('category', ''))
+            folder_name = safe_path_component(data.get('folder_name', ''))
+            status = data.get('status', '')
+            rel_path = data.get('rel_path', '')
+            new_name = data.get('new_name', '')
+            if not category or not folder_name or not rel_path:
+                self._send_json(400, {'error': 'Missing category/folder_name/rel_path'})
+                return
+            base_path = product_dir(category, folder_name, status).resolve()
+            rel_clean = safe_rel_path(rel_path)
+            if not rel_clean:
+                self._send_json(403, {'error': 'Invalid path'})
+                return
+            target_path = (base_path / rel_clean).resolve()
+            if not target_path.is_relative_to(base_path):
+                self._send_json(403, {'error': 'Invalid path'})
+                return
+            if not target_path.exists() or not target_path.is_file():
+                self._send_json(404, {'error': 'File not found'})
+                return
+            if '_Deleted' in target_path.parts:
+                self._send_json(409, {'error': 'Cannot rename deleted files'})
+                return
+            cleaned_name = sanitize_upload_filename(new_name)
+            if not cleaned_name:
+                self._send_json(400, {'error': 'Invalid filename'})
+                return
+            ext = target_path.suffix.lower()
+            if ext and not cleaned_name.lower().endswith(ext):
+                cleaned_name = f"{cleaned_name}{ext}"
+            if cleaned_name == target_path.name:
+                rel_out = target_path.relative_to(base_path).as_posix()
+                self._send_json(200, {'ok': True, 'name': target_path.name, 'rel_path': rel_out})
+                return
+            unique_name = unique_filename(target_path.parent, cleaned_name)
+            if not unique_name:
+                self._send_json(409, {'error': 'Failed to create unique filename'})
+                return
+            dest_path = target_path.parent / unique_name
+            target_path.rename(dest_path)
+            rel_out = dest_path.relative_to(base_path).as_posix()
+            self._send_json(200, {'ok': True, 'name': dest_path.name, 'rel_path': rel_out})
+            return
+
         if parsed.path == '/api/ukca_create':
             category = safe_path_component(data.get('category', ''))
             folder_name = safe_path_component(data.get('folder_name', ''))

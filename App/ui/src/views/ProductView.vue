@@ -87,6 +87,23 @@ const params = new URLSearchParams(window.location.search);
         en71: "EN71-1 Compliance Pack",
       };
 
+      const escapeRegex = (value) => (value || "").replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+      const stripSkuPrefix = (folderName, sku) => {
+        const folder = (folderName || "").trim();
+        if (!folder || !sku) return folder;
+        const skuPrefixPattern = new RegExp(`^${escapeRegex(sku)}\\s*-\\s*`, "i");
+        return folder.replace(skuPrefixPattern, "").trim() || folder;
+      };
+      const composeFolderName = (title, sku, fallbackFolder = "") => {
+        const cleanTitle = (title || "").trim();
+        const cleanSku = (sku || "").trim();
+        if (!cleanTitle) return fallbackFolder || "";
+        if (!cleanSku) return cleanTitle;
+        const skuPrefixPattern = new RegExp(`^${escapeRegex(cleanSku)}\\s*-\\s*`, "i");
+        if (skuPrefixPattern.test(cleanTitle)) return cleanTitle;
+        return `${cleanSku} - ${cleanTitle}`.trim();
+      };
+
       const defaultEn71Data = () => ({
         productName: productFolderInput.value || "",
         sku: skuInput.value || "",
@@ -226,12 +243,13 @@ const params = new URLSearchParams(window.location.search);
         const row = rows[rowIndex];
         originalCategory = row.category || originalCategory;
         originalFolder = row.product_folder || originalFolder;
-        productTitle.textContent = row.product_folder || "Product Details";
+        const displayTitle = stripSkuPrefix(row.product_folder, row.sku);
+        productTitle.textContent = displayTitle || row.product_folder || "Product Details";
         categoryInput.value = row.category || "";
         skuInput.value = row.sku || "";
         currentUkcaStatus = row.UKCA || "No";
         updateUkcaDisplay();
-        productFolderInput.value = row.product_folder || "";
+        productFolderInput.value = displayTitle || row.product_folder || "";
         tagsInput.value = row.tags || "";
         costToMakeInput.value = row["Cost To Make"] || "";
         salePriceInput.value = row["Sale Price"] || "";
@@ -938,7 +956,11 @@ const params = new URLSearchParams(window.location.search);
 
         const row = {
           category: categoryInput.value,
-          product_folder: productFolderInput.value.trim(),
+          product_folder: composeFolderName(
+            productFolderInput.value,
+            skuInput.value,
+            originalFolder
+          ),
           sku: skuInput.value.trim(),
           UKCA: currentUkcaStatus,
           Listings: selectedListings.join(", "),
@@ -972,8 +994,10 @@ const params = new URLSearchParams(window.location.search);
         statusEl.textContent = "Details saved.";
         originalCategory = updatedRow.category;
         originalFolder = updatedRow.product_folder;
+        const updatedDisplayTitle = stripSkuPrefix(updatedRow.product_folder, updatedRow.sku);
         categoryInput.value = updatedRow.category || categoryInput.value;
-        productFolderInput.value = updatedRow.product_folder || productFolderInput.value;
+        productFolderInput.value = updatedDisplayTitle || updatedRow.product_folder || productFolderInput.value;
+        productTitle.textContent = updatedDisplayTitle || updatedRow.product_folder || productTitle.textContent;
         const statusQuery = statusParam ? `&status=${encodeURIComponent(statusParam)}` : "";
         history.replaceState(
           {},
@@ -983,7 +1007,11 @@ const params = new URLSearchParams(window.location.search);
       };
 
       const renameFolder = async () => {
-        const newName = productFolderInput.value.trim();
+        const newName = composeFolderName(
+          productFolderInput.value,
+          skuInput.value,
+          originalFolder
+        );
         if (!newName || newName === originalFolder) return;
         const response = await fetch("/api/rename", {
           method: "POST",
@@ -1300,7 +1328,6 @@ const params = new URLSearchParams(window.location.search);
         );
         const threeMfCount = threeMfFiles.length;
         const folderBase = (originalFolder || "").trim();
-        const escapeRegex = (value) => value.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
         let defaultBase = folderBase || "3mf";
         if (sku && folderBase) {
           const skuPrefixPattern = new RegExp(`^${escapeRegex(sku)}\\s*-\\s*`, "i");
@@ -1447,7 +1474,7 @@ const params = new URLSearchParams(window.location.search);
         </div>
         <div class="grid" style="margin-top: 12px;">
           <div>
-            <label for="productFolder">Product folder</label>
+            <label for="productFolder">Product title</label>
             <input id="productFolder" type="text" />
           </div>
           <div>

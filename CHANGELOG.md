@@ -9,6 +9,7 @@
 - Minor: Hide base pricing fields when size variations exist.
 - Minor: Show product folder as SKU-stripped product title on the main page.
 - Minor: Offer naming-convention defaults when renaming 3MF files.
+- Minor: Render product tags as chips like colours and sizes on the product page.
 
 ## V2.8.16
 - Fix: Event totals now use override price when provided.

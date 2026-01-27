@@ -18,6 +18,7 @@ const params = new URLSearchParams(window.location.search);
       const ukcaAddBtn = document.getElementById("ukcaAddBtn");
       const productFolderInput = document.getElementById("productFolder");
       const tagsInput = document.getElementById("tags");
+      const tagsList = document.getElementById("tagsList");
       const costToMakeInput = document.getElementById("costToMake");
       const salePriceInput = document.getElementById("salePrice");
       const postagePriceInput = document.getElementById("postagePrice");
@@ -77,6 +78,7 @@ const params = new URLSearchParams(window.location.search);
       let originalFolder = folderParam;
       let currentUkcaStatus = "No";
       let ukcaPackFiles = [];
+      let currentTags = [];
       let currentColors = [];
       let currentSizes = [];
       let pricingData = { base: {}, sizes: [] };
@@ -251,7 +253,9 @@ const params = new URLSearchParams(window.location.search);
         currentUkcaStatus = row.UKCA || "No";
         updateUkcaDisplay();
         productFolderInput.value = displayTitle || row.product_folder || "";
-        tagsInput.value = row.tags || "";
+        currentTags = parseList(row.tags || "");
+        renderChips(currentTags, tagsList, removeTag);
+        tagsInput.value = "";
         costToMakeInput.value = row["Cost To Make"] || "";
         salePriceInput.value = row["Sale Price"] || "";
         postagePriceInput.value = row["Postage Price"] || "";
@@ -370,6 +374,11 @@ const params = new URLSearchParams(window.location.search);
       const removeColor = (value) => {
         currentColors = currentColors.filter((item) => item !== value);
         renderChips(currentColors, colorsList, removeColor);
+      };
+
+      const removeTag = (value) => {
+        currentTags = currentTags.filter((item) => item !== value);
+        renderChips(currentTags, tagsList, removeTag);
       };
 
       const removeSize = (value) => {
@@ -964,6 +973,15 @@ const params = new URLSearchParams(window.location.search);
       };
 
       const saveDetails = async () => {
+        const pendingTags = parseList(tagsInput.value);
+        if (pendingTags.length) {
+          pendingTags.forEach((value) => {
+            addToList(value, currentTags, (list) => {
+              currentTags = list;
+            }, tagsList, removeTag);
+          });
+          tagsInput.value = "";
+        }
         const selectedListings = listingOptions.filter((platform) => {
           if (platform === "Facebook") return facebookUrlInput.value.trim();
           if (platform === "TikTok") return tiktokUrlInput.value.trim();
@@ -982,7 +1000,7 @@ const params = new URLSearchParams(window.location.search);
           sku: skuInput.value.trim(),
           UKCA: currentUkcaStatus,
           Listings: selectedListings.join(", "),
-          tags: tagsInput.value.trim(),
+          tags: currentTags.join(", "),
           Colors: currentColors.join(", "),
           Sizes: currentSizes.join(", "),
           "Cost To Make": costToMakeInput.value.trim(),
@@ -1182,6 +1200,22 @@ const params = new URLSearchParams(window.location.search);
       [costToMakeInput, salePriceInput, postagePriceInput].forEach((input) => {
         input.addEventListener("input", updateBasePricingSummary);
       });
+      const addTagsFromInput = () => {
+        const values = parseList(tagsInput.value);
+        if (!values.length) return;
+        values.forEach((value) => {
+          addToList(value, currentTags, (list) => {
+            currentTags = list;
+          }, tagsList, removeTag);
+        });
+        tagsInput.value = "";
+      };
+      tagsInput.addEventListener("keydown", (event) => {
+        if (event.key !== "Enter" && event.key !== ",") return;
+        event.preventDefault();
+        addTagsFromInput();
+      });
+      tagsInput.addEventListener("blur", addTagsFromInput);
       colorsInput.addEventListener("keydown", (event) => {
         if (event.key !== "Enter") return;
         event.preventDefault();
@@ -1507,7 +1541,8 @@ const params = new URLSearchParams(window.location.search);
           </div>
           <div>
             <label for="tags">Tags</label>
-            <input id="tags" type="text" placeholder="comma,separated,tags" />
+            <input id="tags" type="text" placeholder="Add tag and press Enter" />
+            <div class="variant-list" id="tagsList"></div>
           </div>
         </div>
         <div class="grid" style="margin-top: 12px;">

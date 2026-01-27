@@ -1263,7 +1263,17 @@ const params = new URLSearchParams(window.location.search);
           file.name.toLowerCase().endsWith(".3mf")
         );
         const threeMfCount = threeMfFiles.length;
-        const defaultBase = (sku ? `${sku} - ${originalFolder}` : originalFolder).trim() || "3mf";
+        const folderBase = (originalFolder || "").trim();
+        const escapeRegex = (value) => value.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+        let defaultBase = folderBase || "3mf";
+        if (sku && folderBase) {
+          const skuPrefixPattern = new RegExp(`^${escapeRegex(sku)}\\s*-\\s*`, "i");
+          if (!skuPrefixPattern.test(folderBase)) {
+            defaultBase = `${sku} - ${folderBase}`.trim();
+          }
+        } else if (sku && !folderBase) {
+          defaultBase = sku;
+        }
 
         let useProvidedNames = false;
         let skipped = 0;

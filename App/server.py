@@ -94,6 +94,13 @@ def sanitize_filename(name: str) -> str:
     return cleaned
 
 
+def sanitize_upload_filename(name: str) -> str:
+    # Keep user-friendly names but strip path separators/control chars.
+    cleaned = (name or '').replace('/', '-').replace('\\', '-')
+    cleaned = re.sub(r'[\x00-\x1f\x7f]+', '', cleaned).strip()
+    return ' '.join(cleaned.split())
+
+
 def normalize_status(value: str) -> str:
     return db.normalize_status(value)
 
@@ -837,6 +844,7 @@ class Handler(BaseHTTPRequestHandler):
             folder_name = safe_path_component(fields.get('folder_name', ''))
             status = fields.get('status', '')
             sku = (fields.get('sku', '') or '').strip()
+            use_provided_names = (fields.get('use_provided_names', '') or '').strip() == '1'
             if not category or not folder_name:
                 self._send_json(400, {'error': 'Missing category/folder_name'})
                 return
@@ -854,7 +862,13 @@ class Handler(BaseHTTPRequestHandler):
                 else:
                     dest_dir = product_dir(category, folder_name, status) / 'MISC'
                 dest_dir.mkdir(parents=True, exist_ok=True)
-                new_name = next_sku_filename(dest_dir, sku, ext) or name
+                if ext == '.3mf' and use_provided_names:
+                    candidate_name = sanitize_upload_filename(name)
+                    if candidate_name and not candidate_name.lower().endswith(ext):
+                        candidate_name = f"{candidate_name}{ext}"
+                    new_name = candidate_name or name
+                else:
+                    new_name = next_sku_filename(dest_dir, sku, ext) or name
                 new_name = unique_filename(dest_dir, new_name)
                 if not new_name:
                     self._send_json(409, {'error': 'Failed to create unique filename'})

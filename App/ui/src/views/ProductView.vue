@@ -1241,14 +1241,73 @@ const params = new URLSearchParams(window.location.search);
         await load3mf();
       };
 
+      const sanitizeUploadName = (value) => {
+        const cleaned = (value || "")
+          .replace(/[\\/]/g, "-")
+          .replace(/[\x00-\x1f\x7f]+/g, "")
+          .trim();
+        return cleaned.split(/\s+/).join(" ");
+      };
+
       const uploadFiles = async (files) => {
         if (!files || !files.length) return;
+        const fileList = Array.from(files);
         const formData = new FormData();
         formData.append("category", originalCategory);
         formData.append("folder_name", originalFolder);
         formData.append("status", statusParam);
-        formData.append("sku", skuInput.value.trim());
-        Array.from(files).forEach((file) => formData.append("files", file));
+        const sku = skuInput.value.trim();
+        formData.append("sku", sku);
+
+        const threeMfFiles = fileList.filter((file) =>
+          file.name.toLowerCase().endsWith(".3mf")
+        );
+        const threeMfCount = threeMfFiles.length;
+        const defaultBase = (sku ? `${sku} - ${originalFolder}` : originalFolder).trim() || "3mf";
+
+        let useProvidedNames = false;
+        let skipped = 0;
+        let appendedCount = 0;
+        let threeMfIndex = 0;
+
+        for (const file of fileList) {
+          const lowerName = file.name.toLowerCase();
+          const ext = lowerName.endsWith(".3mf") ? ".3mf" : (file.name.match(/\.[^./]+$/)?.[0] || "");
+          let uploadFile = file;
+
+          if (lowerName.endsWith(".3mf")) {
+            const suffix = threeMfCount > 1 ? ` - ${String(threeMfIndex + 1).padStart(2, "0")}` : "";
+            const defaultName = `${defaultBase}${suffix}${ext || ".3mf"}`;
+            const promptedName = window.prompt("3MF filename", defaultName);
+            threeMfIndex += 1;
+            if (promptedName === null) {
+              skipped += 1;
+              continue;
+            }
+            let finalName = sanitizeUploadName(promptedName) || defaultName;
+            const ensuredExt = ext || ".3mf";
+            if (!finalName.toLowerCase().endsWith(ensuredExt)) {
+              finalName = `${finalName}${ensuredExt}`;
+            }
+            uploadFile = new File([file], finalName, {
+              type: file.type,
+              lastModified: file.lastModified,
+            });
+            useProvidedNames = true;
+          }
+
+          formData.append("files", uploadFile);
+          appendedCount += 1;
+        }
+
+        if (!appendedCount) {
+          statusEl.textContent = "Upload cancelled.";
+          return;
+        }
+        if (useProvidedNames) {
+          formData.append("use_provided_names", "1");
+        }
+
         statusEl.textContent = "Uploading files...";
         try {
           const response = await fetch("/api/upload", {
@@ -1260,7 +1319,10 @@ const params = new URLSearchParams(window.location.search);
             statusEl.textContent = payload.error || "Upload failed.";
             return;
           }
-          statusEl.textContent = `Uploaded ${payload.saved?.length || 0} file(s).`;
+          const savedCount = payload.saved?.length || 0;
+          statusEl.textContent = skipped
+            ? `Uploaded ${savedCount} file(s). Skipped ${skipped} cancelled 3MF rename(s).`
+            : `Uploaded ${savedCount} file(s).`;
           await loadMedia();
           await load3mf();
         } catch (error) {

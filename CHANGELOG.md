@@ -2,6 +2,7 @@
 
 ## Unreleased
 - Minor: Increased product README editor default height.
+- Minor: Prompt for 3MF upload names with a SKU-prefilled default.
 
 ## V2.8.16
 - Fix: Event totals now use override price when provided.

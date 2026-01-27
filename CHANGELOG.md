@@ -7,6 +7,7 @@
 - Minor: Added rename action for existing 3MF files on the product page.
 - Minor: Show product folder as a SKU-stripped product title in the UI.
 - Minor: Hide base pricing fields when size variations exist.
+- Minor: Show product folder as SKU-stripped product title on the main page.
 
 ## V2.8.16
 - Fix: Event totals now use override price when provided.

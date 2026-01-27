@@ -69,6 +69,24 @@ onMounted(() => {
         return "No";
       };
 
+      const escapeRegex = (value) => (value || "").replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+      const stripSkuPrefix = (folderName, sku) => {
+        const folder = (folderName || "").trim();
+        const cleanSku = (sku || "").trim();
+        if (!folder || !cleanSku) return folder;
+        const skuPrefixPattern = new RegExp(`^${escapeRegex(cleanSku)}\\s*-\\s*`, "i");
+        return folder.replace(skuPrefixPattern, "").trim() || folder;
+      };
+      const composeFolderName = (title, sku, fallbackFolder = "") => {
+        const cleanTitle = (title || "").trim();
+        const cleanSku = (sku || "").trim();
+        if (!cleanTitle) return fallbackFolder || "";
+        if (!cleanSku) return cleanTitle;
+        const skuPrefixPattern = new RegExp(`^${escapeRegex(cleanSku)}\\s*-\\s*`, "i");
+        if (skuPrefixPattern.test(cleanTitle)) return cleanTitle;
+        return `${cleanSku} - ${cleanTitle}`.trim();
+      };
+
       const getListingsForRow = (row) => {
         const facebookUrl = row[headers.indexOf("Facebook URL")] || "";
         const tiktokUrl = row[headers.indexOf("TikTok URL")] || "";
@@ -263,11 +281,12 @@ onMounted(() => {
         const row = document.createElement("tr");
         getVisibleHeaders().forEach((header, visibleIndex) => {
           const headerIndex = headers.indexOf(header);
+          const displayHeader = header === "product_folder" ? "Product title" : header;
           const th = document.createElement("th");
           const button = document.createElement("button");
           const indicator =
             sortIndex === headerIndex ? (sortDirection === 1 ? "▲" : "▼") : "↕";
-          button.textContent = `${header} ${indicator}`;
+          button.textContent = `${displayHeader} ${indicator}`;
           button.addEventListener("click", () => {
             if (sortIndex === headerIndex) {
               sortDirection *= -1;
@@ -291,6 +310,7 @@ onMounted(() => {
         filterRow.className = "filters";
         getVisibleHeaders().forEach((header) => {
           const colIndex = headers.indexOf(header);
+          const displayHeader = header === "product_folder" ? "Product title" : header;
           const th = document.createElement("th");
           if (header === "Listings") {
             const select = document.createElement("select");
@@ -337,7 +357,7 @@ onMounted(() => {
           } else {
             const input = document.createElement("input");
             input.type = "search";
-            input.placeholder = `Filter ${header}`;
+            input.placeholder = `Filter ${displayHeader}`;
             input.value = columnFilters.get(colIndex) || "";
             input.addEventListener("input", (event) => {
               const value = event.target.value.trim();
@@ -383,10 +403,14 @@ onMounted(() => {
         }
 
         if (query) {
+          const folderValue = folderIndex > -1 ? row[folderIndex] || "" : "";
+          const skuValue = skuIndex > -1 ? row[skuIndex] || "" : "";
+          const folderTitle = stripSkuPrefix(folderValue, skuValue);
           const combined = [
             row[categoryIndex] || "",
-            row[folderIndex] || "",
-            skuIndex > -1 ? row[skuIndex] || "" : "",
+            folderValue,
+            folderTitle,
+            skuValue,
             tagsIndex > -1 ? row[tagsIndex] || "" : "",
             listingsIndex > -1 ? getListingsForRow(row).map((item) => item.name).join(", ") : "",
           ]
@@ -439,6 +463,7 @@ onMounted(() => {
         }
         const productFolderIndex = headers.indexOf("product_folder");
         const categoryIndex = headers.indexOf("category");
+        const skuIndex = headers.indexOf("sku");
         indexedRows.forEach(({ row, index: rowIndex }) => {
           if (!applyFilter(row)) return;
           const tr = document.createElement("tr");
@@ -489,15 +514,26 @@ onMounted(() => {
               const wrapper = document.createElement("div");
               wrapper.className = "path-cell";
               const input = document.createElement("input");
-              input.value = row[colIndex] ?? "";
+              const getSkuValue = () =>
+                (skuIndex > -1 ? rows[rowIndex][skuIndex] || "" : "");
+              const setInputFromFolder = (folderName) => {
+                input.value = stripSkuPrefix(folderName, getSkuValue());
+              };
+              setInputFromFolder(row[colIndex] ?? "");
               input.addEventListener("input", (event) => {
-                rows[rowIndex][colIndex] = event.target.value;
+                const skuValue = getSkuValue();
+                const currentFull = rows[rowIndex][colIndex] ?? "";
+                rows[rowIndex][colIndex] = composeFolderName(
+                  event.target.value,
+                  skuValue,
+                  currentFull
+                );
                 scheduleSave();
               });
               input.addEventListener("blur", async (event) => {
                 if (viewMode !== "live") return;
                 const category = rows[rowIndex][categoryIndex] || "";
-                const newName = event.target.value.trim();
+                const newName = (rows[rowIndex][colIndex] || "").trim();
                 const oldName = originalNames[rowIndex] || "";
                 if (!category || !newName || !oldName) return;
                 if (newName === oldName) return;
@@ -515,17 +551,18 @@ onMounted(() => {
                   const payload = await response.json();
                   if (!response.ok) {
                     rows[rowIndex][colIndex] = oldName;
-                    event.target.value = oldName;
+                    setInputFromFolder(oldName);
                     statusEl.textContent = payload.error || "Rename failed.";
                     return;
                   }
                   originalNames[rowIndex] = newName;
+                  setInputFromFolder(newName);
                   statusEl.textContent = "Folder renamed.";
                   setTimeout(updateStatus, 1500);
                 } catch (error) {
                   console.error(error);
                   rows[rowIndex][colIndex] = oldName;
-                  event.target.value = oldName;
+                  setInputFromFolder(oldName);
                   statusEl.textContent = "Rename failed.";
                 }
               });
@@ -697,7 +734,8 @@ onMounted(() => {
 
           const title = document.createElement("div");
           title.className = "folder-title";
-          title.textContent = item.product_folder || "(untitled)";
+          const displayTitle = stripSkuPrefix(item.product_folder, item.sku);
+          title.textContent = displayTitle || item.product_folder || "(untitled)";
 
           const meta = document.createElement("div");
           meta.className = "folder-meta";

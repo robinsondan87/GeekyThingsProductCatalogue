@@ -21,6 +21,7 @@ const params = new URLSearchParams(window.location.search);
       const costToMakeInput = document.getElementById("costToMake");
       const salePriceInput = document.getElementById("salePrice");
       const postagePriceInput = document.getElementById("postagePrice");
+      const basePricingSection = document.getElementById("basePricingSection");
       const onlinePrice = document.getElementById("onlinePrice");
       const inPersonPrice = document.getElementById("inPersonPrice");
       const colorsInput = document.getElementById("colorsInput");
@@ -259,6 +260,7 @@ const params = new URLSearchParams(window.location.search);
         currentSizes = parseList(row.Sizes || "");
         renderChips(currentColors, colorsList, removeColor);
         renderChips(currentSizes, sizesList, removeSize);
+        updatePricingVisibility();
         facebookUrlInput.value = row["Facebook URL"] || "";
         tiktokUrlInput.value = row["TikTok URL"] || "";
         ebayUrlInput.value = row["Ebay URL"] || "";
@@ -374,6 +376,7 @@ const params = new URLSearchParams(window.location.search);
         currentSizes = currentSizes.filter((item) => item !== value);
         renderChips(currentSizes, sizesList, removeSize);
         renderSizePricing();
+        updatePricingVisibility();
       };
 
       const populateSuggestions = () => {
@@ -412,6 +415,11 @@ const params = new URLSearchParams(window.location.search);
         const postage = parsePrice(postagePriceInput.value);
         inPersonPrice.textContent = `In-person price: ${formatPrice(sale)} GBP`;
         onlinePrice.textContent = `Online price: ${formatPrice(sale + postage)} GBP`;
+      };
+
+      const updatePricingVisibility = () => {
+        if (!basePricingSection) return;
+        basePricingSection.hidden = currentSizes.length > 0;
       };
 
       const renderSizePricing = () => {
@@ -506,6 +514,7 @@ const params = new URLSearchParams(window.location.search);
         }
         pricingData = payload.pricing || { base: {}, sizes: [] };
         renderSizePricing();
+        updatePricingVisibility();
       };
 
       const collectSizePricing = () => {
@@ -1179,6 +1188,7 @@ const params = new URLSearchParams(window.location.search);
           currentSizes = list;
         }, sizesList, removeSize);
         renderSizePricing();
+        updatePricingVisibility();
         sizesInput.value = "";
       });
       ukcaAddBtn.addEventListener("click", () => {
@@ -1496,23 +1506,25 @@ const params = new URLSearchParams(window.location.search);
             <div class="variant-list" id="sizesList"></div>
           </div>
         </div>
-        <div class="grid" style="margin-top: 12px;">
-          <div>
-            <label for="costToMake">Cost to make</label>
-            <input id="costToMake" type="number" min="0" step="0.01" placeholder="0.00" />
+        <div id="basePricingSection">
+          <div class="grid" style="margin-top: 12px;">
+            <div>
+              <label for="costToMake">Cost to make</label>
+              <input id="costToMake" type="number" min="0" step="0.01" placeholder="0.00" />
+            </div>
+            <div>
+              <label for="salePrice">Sale price</label>
+              <input id="salePrice" type="number" min="0" step="0.01" placeholder="0.00" />
+            </div>
+            <div>
+              <label for="postagePrice">Postage price</label>
+              <input id="postagePrice" type="number" min="0" step="0.01" placeholder="0.00" />
+            </div>
           </div>
-          <div>
-            <label for="salePrice">Sale price</label>
-            <input id="salePrice" type="number" min="0" step="0.01" placeholder="0.00" />
+          <div class="price-summary" style="margin-top: 10px;">
+            <span id="inPersonPrice">In-person price: 0.00 GBP</span>
+            <span id="onlinePrice">Online price: 0.00 GBP</span>
           </div>
-          <div>
-            <label for="postagePrice">Postage price</label>
-            <input id="postagePrice" type="number" min="0" step="0.01" placeholder="0.00" />
-          </div>
-        </div>
-        <div class="price-summary" style="margin-top: 10px;">
-          <span id="inPersonPrice">In-person price: 0.00 GBP</span>
-          <span id="onlinePrice">Online price: 0.00 GBP</span>
         </div>
         <div class="table-wrap" style="margin-top: 12px;">
           <table class="pricing-table">

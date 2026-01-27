@@ -701,7 +701,16 @@ const params = new URLSearchParams(window.location.search);
           renameBtn.type = "button";
           renameBtn.textContent = "Rename";
           renameBtn.addEventListener("click", async () => {
-            const promptedName = window.prompt("Rename 3MF filename", file.name || "");
+            const extMatch = (file.name || "").match(/\.[^./]+$/);
+            const ext = extMatch?.[0] || ".3mf";
+            const namingBase = buildNamingConventionBase();
+            const useConvention = window.confirm(
+              "Use naming convention (SKU - Product Title)?"
+            );
+            const defaultName = useConvention
+              ? `${namingBase}${ext}`
+              : (file.name || `${namingBase}${ext}`);
+            const promptedName = window.prompt("Rename 3MF filename", defaultName);
             if (promptedName === null) return;
             const finalName = sanitizeUploadName(promptedName);
             if (!finalName) {
@@ -1321,6 +1330,15 @@ const params = new URLSearchParams(window.location.search);
           .replace(/[\x00-\x1f\x7f]+/g, "")
           .trim();
         return cleaned.split(/\s+/).join(" ");
+      };
+
+      const buildNamingConventionBase = () => {
+        const sku = skuInput.value.trim();
+        const fallbackTitle = stripSkuPrefix(originalFolder, sku);
+        const titleInput = productFolderInput.value.trim();
+        const title = stripSkuPrefix(titleInput || fallbackTitle, sku);
+        const base = sku && title ? `${sku} - ${title}` : sku || title || "3mf";
+        return sanitizeUploadName(base) || base;
       };
 
       const uploadFiles = async (files) => {

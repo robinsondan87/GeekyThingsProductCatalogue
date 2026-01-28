@@ -2263,6 +2263,46 @@ class Handler(BaseHTTPRequestHandler):
             self._send_json(200, {'ok': True})
             return
 
+        if parsed.path == '/api/product_meta':
+            category = safe_path_component(data.get('category', ''))
+            folder_name = safe_path_component(data.get('folder_name', ''))
+            if not category or not folder_name:
+                self._send_json(400, {'error': 'Missing category/folder_name'})
+                return
+            existing = db.fetch_product(category, folder_name)
+            if not existing:
+                self._send_json(404, {'error': 'Product not found'})
+                return
+
+            def normalize_field(value) -> str:
+                if value is None:
+                    return ''
+                if isinstance(value, list):
+                    return ', '.join([str(item).strip() for item in value if str(item).strip()])
+                return str(value).strip()
+
+            updated = dict(existing)
+            if 'tags' in data:
+                updated['tags'] = normalize_field(data.get('tags'))
+            if 'colors' in data or 'Colors' in data:
+                updated['Colors'] = normalize_field(data.get('colors', data.get('Colors')))
+            if 'sizes' in data or 'Sizes' in data:
+                updated['Sizes'] = normalize_field(data.get('sizes', data.get('Sizes')))
+
+            if not db.update_product(category, folder_name, updated):
+                self._send_json(404, {'error': 'Product not found'})
+                return
+
+            readme_content = data.get('readme')
+            if readme_content is not None:
+                status = data.get('status', existing.get('Status') or 'Live')
+                readme_path = product_dir(category, folder_name, status) / 'README.md'
+                readme_path.write_text(str(readme_content), encoding='utf-8')
+
+            refreshed = db.fetch_product(category, folder_name)
+            self._send_json(200, {'ok': True, 'row': refreshed or updated})
+            return
+
         if parsed.path == '/api/pricing':
             category = safe_path_component(data.get('category', ''))
             folder_name = safe_path_component(data.get('folder_name', ''))

@@ -14,6 +14,7 @@
 - Minor: Highlight supplies below reorder point in red and at reorder in amber.
 - Minor: Added README content for Omnipod application clip helper.
 - Minor: Added Omnipod clip tags and colour options to the catalog.
+- Minor: Added API endpoint to update product tags/colours/sizes/readme in one call.
 
 ## V2.8.16
 - Fix: Event totals now use override price when provided.

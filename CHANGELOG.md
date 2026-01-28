@@ -1,6 +1,8 @@
 # Changelog
 
 ## Unreleased
+- Minor: Simplified main table by hiding colour/size columns and using compact tag editing.
+- Minor: Consolidated main table row actions into a dropdown.
 - Minor: Added Completed filter on the main page and moved the checkbox to the top row on product details.
 - Minor: Added a Completed checkbox field to products for tracking listing completion.
 - Minor: Added packaged geekythings-listings skill artifact.

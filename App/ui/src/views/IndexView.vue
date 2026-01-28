@@ -36,7 +36,7 @@ onMounted(() => {
       let headers = [];
       let rows = [];
       const dropdownColumns = new Set([]);
-      const chipColumns = new Set(["tags", "Colors", "Sizes"]);
+      const chipColumns = new Set(["Colors", "Sizes"]);
       const listingOptions = ["Facebook", "TikTok", "Ebay", "Etsy"];
       const columnFilters = new Map();
       let sortIndex = -1;
@@ -53,6 +53,8 @@ onMounted(() => {
         "Cost To Make",
         "Sale Price",
         "Postage Price",
+        "Colors",
+        "Sizes",
       ]);
       let viewMode = "live";
 
@@ -617,6 +619,15 @@ onMounted(() => {
               });
               wrapper.appendChild(input);
               td.appendChild(wrapper);
+            } else if (header === "tags") {
+              const input = document.createElement("input");
+              input.value = row[colIndex] ?? "";
+              input.placeholder = "tag1, tag2";
+              input.addEventListener("input", (event) => {
+                rows[rowIndex][colIndex] = event.target.value;
+                scheduleSave();
+              });
+              td.appendChild(input);
             } else if (chipColumns.has(header)) {
               const wrapper = document.createElement("div");
               wrapper.className = "chip-editor";
@@ -676,25 +687,36 @@ onMounted(() => {
           });
           const actions = document.createElement("td");
           actions.className = "row-actions";
-          const viewBtn = document.createElement("button");
-          viewBtn.type = "button";
-          viewBtn.textContent = "View";
-          viewBtn.addEventListener("click", () => {
+          const actionSelect = document.createElement("select");
+          actionSelect.className = "row-action-select";
+          const placeholder = document.createElement("option");
+          placeholder.value = "";
+          placeholder.textContent = "Actions";
+          actionSelect.appendChild(placeholder);
+          const viewOption = document.createElement("option");
+          viewOption.value = "view";
+          viewOption.textContent = "View";
+          actionSelect.appendChild(viewOption);
+          const draftOption = document.createElement("option");
+          draftOption.value = "draft";
+          draftOption.textContent = "To Draft";
+          actionSelect.appendChild(draftOption);
+          const archiveOption = document.createElement("option");
+          archiveOption.value = "archive";
+          archiveOption.textContent = "Archive";
+          actionSelect.appendChild(archiveOption);
+          actionSelect.addEventListener("change", async (event) => {
+            const action = event.target.value;
+            event.target.value = "";
             const category = rows[rowIndex][categoryIndex] || "";
             const productFolder = rows[rowIndex][productFolderIndex] || "";
-            if (!category || !productFolder) return;
-            const url = `/product?category=${encodeURIComponent(category)}&folder=${encodeURIComponent(productFolder)}`;
-            window.location.href = url;
-          });
-          actions.appendChild(viewBtn);
-          if (viewMode === "live") {
-            const draftBtn = document.createElement("button");
-            draftBtn.type = "button";
-            draftBtn.textContent = "To Draft";
-            draftBtn.addEventListener("click", async () => {
-              const category = rows[rowIndex][categoryIndex] || "";
-              const productFolder = rows[rowIndex][productFolderIndex] || "";
-              if (!category || !productFolder) return;
+            if (!category || !productFolder || !action) return;
+            if (action === "view") {
+              const url = `/product?category=${encodeURIComponent(category)}&folder=${encodeURIComponent(productFolder)}`;
+              window.location.href = url;
+              return;
+            }
+            if (action === "draft") {
               if (!confirm("Move this item back to Draft?")) return;
               try {
                 const response = await fetch("/api/move_to_draft", {
@@ -715,41 +737,35 @@ onMounted(() => {
                 console.error(error);
                 alert("Move failed.");
               }
-            });
-            actions.appendChild(draftBtn);
-          }
-          const deleteBtn = document.createElement("button");
-          deleteBtn.type = "button";
-          deleteBtn.textContent = "Archive";
-          deleteBtn.addEventListener("click", async () => {
-            const category = rows[rowIndex][categoryIndex] || "";
-            const productFolder = rows[rowIndex][productFolderIndex] || "";
-            if (!category || !productFolder) return;
-            if (!confirm("Move this folder to _Archive?")) return;
-            try {
-              const response = await fetch("/api/archive", {
-                method: "POST",
-                headers: { "Content-Type": "application/json" },
-                body: JSON.stringify({
-                  category,
-                  folder_name: productFolder,
-                }),
-              });
-              const payload = await response.json();
-              if (!response.ok) {
-                alert(payload.error || "Archive failed.");
-                return;
+              return;
+            }
+            if (action === "archive") {
+              if (!confirm("Move this folder to _Archive?")) return;
+              try {
+                const response = await fetch("/api/archive", {
+                  method: "POST",
+                  headers: { "Content-Type": "application/json" },
+                  body: JSON.stringify({
+                    category,
+                    folder_name: productFolder,
+                  }),
+                });
+                const payload = await response.json();
+                if (!response.ok) {
+                  alert(payload.error || "Archive failed.");
+                  return;
+                }
+                rows.splice(rowIndex, 1);
+                originalNames.splice(rowIndex, 1);
+                renderBody();
+                updateStatus();
+              } catch (error) {
+                console.error(error);
+                alert("Archive failed.");
               }
-              rows.splice(rowIndex, 1);
-              originalNames.splice(rowIndex, 1);
-              renderBody();
-              updateStatus();
-            } catch (error) {
-              console.error(error);
-              alert("Archive failed.");
             }
           });
-          actions.appendChild(deleteBtn);
+          actions.appendChild(actionSelect);
           tr.appendChild(actions);
           fragment.appendChild(tr);
         });

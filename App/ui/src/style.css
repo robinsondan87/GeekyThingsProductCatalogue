@@ -485,6 +485,17 @@ tbody tr:hover {
   grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
 }
 
+.checkbox-field {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  justify-content: flex-end;
+}
+
+.checkbox-field label {
+  margin: 0;
+}
+
 .url-grid {
   display: grid;
   gap: 12px;

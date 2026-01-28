@@ -1712,6 +1712,10 @@ const params = new URLSearchParams(window.location.search);
               <button class="btn ghost" id="ukcaAddBtn" type="button">Add UKCA Pack</button>
             </div>
           </div>
+          <div class="checkbox-field">
+            <label for="completedFlag">Completed</label>
+            <input id="completedFlag" type="checkbox" />
+          </div>
         </div>
         <div class="grid" style="margin-top: 12px;">
           <div>
@@ -1796,12 +1800,6 @@ const params = new URLSearchParams(window.location.search);
           <div>
             <label for="etsyUrl">Etsy URL</label>
             <input id="etsyUrl" type="url" placeholder="https://..." />
-          </div>
-        </div>
-        <div class="grid" style="margin-top: 12px;">
-          <div>
-            <label for="completedFlag">Completed</label>
-            <input id="completedFlag" type="checkbox" />
           </div>
         </div>
         <div class="actions" style="margin-top: 16px;">

@@ -8,6 +8,7 @@ const changeLogUrl = CHANGELOG_URL
 onMounted(() => {
       const searchInput = document.getElementById("searchInput");
       const ukcaFilter = document.getElementById("ukcaFilter");
+      const completedFilter = document.getElementById("completedFilter");
       const viewTabs = document.getElementById("viewTabs");
       const tableView = document.getElementById("tableView");
       const folderView = document.getElementById("folderView");
@@ -466,6 +467,17 @@ onMounted(() => {
 
       const setUkcaFilter = (value) => {
         const colIndex = headers.indexOf("UKCA");
+        if (colIndex === -1) return;
+        if (!value) {
+          columnFilters.delete(colIndex);
+        } else {
+          columnFilters.set(colIndex, value);
+        }
+        renderBody();
+        updateStatus();
+      };
+      const setCompletedFilter = (value) => {
+        const colIndex = headers.indexOf("Completed");
         if (colIndex === -1) return;
         if (!value) {
           columnFilters.delete(colIndex);
@@ -1010,6 +1022,9 @@ onMounted(() => {
       ukcaFilter.addEventListener("change", (event) => {
         setUkcaFilter(event.target.value);
       });
+      completedFilter.addEventListener("change", (event) => {
+        setCompletedFilter(event.target.value);
+      });
       autoLoadDefault();
 
       const autoRefresh = () => {
@@ -1078,6 +1093,11 @@ onMounted(() => {
             <option value="">UKCA: Any</option>
             <option value="Yes">UKCA: Yes</option>
             <option value="No">UKCA: No</option>
+          </select>
+          <select id="completedFilter" aria-label="Filter by completion status">
+            <option value="">Completed: Any</option>
+            <option value="Yes">Completed: Yes</option>
+            <option value="No">Completed: No</option>
           </select>
         </div>
         <div class="status" id="status">No file loaded.</div>

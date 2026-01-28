@@ -13,6 +13,7 @@
 - Minor: Expanded the product README editor with a toolbar and live Markdown preview.
 - Minor: Highlight supplies below reorder point in red and at reorder in amber.
 - Minor: Added README content for Omnipod application clip helper.
+- Minor: Added Omnipod clip tags and colour options to the catalog.
 
 ## V2.8.16
 - Fix: Event totals now use override price when provided.

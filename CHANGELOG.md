@@ -1,6 +1,7 @@
 # Changelog
 
 ## Unreleased
+- Minor: Added README content for GT-BKS-00001 Suriel with Tea.
 - Minor: Simplified main table by hiding colour/size columns and using compact tag editing.
 - Minor: Consolidated main table row actions into a dropdown.
 - Minor: Added Completed filter on the main page and moved the checkbox to the top row on product details.

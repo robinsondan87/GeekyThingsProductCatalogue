@@ -39,6 +39,7 @@ const params = new URLSearchParams(window.location.search);
       const tiktokUrlInput = document.getElementById("tiktokUrl");
       const ebayUrlInput = document.getElementById("ebayUrl");
       const etsyUrlInput = document.getElementById("etsyUrl");
+      const completedInput = document.getElementById("completedFlag");
       const saveDetailsBtn = document.getElementById("saveDetailsBtn");
       const renameBtn = document.getElementById("renameBtn");
       const openFolderBtn = document.getElementById("openFolderBtn");
@@ -271,6 +272,7 @@ const params = new URLSearchParams(window.location.search);
         tiktokUrlInput.value = row["TikTok URL"] || "";
         ebayUrlInput.value = row["Ebay URL"] || "";
         etsyUrlInput.value = row["Etsy URL"] || "";
+        completedInput.checked = String(row.Completed || "").trim().toLowerCase() === "yes";
 
         listingGroup.innerHTML = "";
         const updateListingLinks = () => {
@@ -1179,6 +1181,7 @@ const params = new URLSearchParams(window.location.search);
           "TikTok URL": tiktokUrlInput.value.trim(),
           "Ebay URL": ebayUrlInput.value.trim(),
           "Etsy URL": etsyUrlInput.value.trim(),
+          Completed: completedInput.checked ? "Yes" : "No",
         };
 
         const response = await fetch("/api/update_row", {
@@ -1793,6 +1796,12 @@ const params = new URLSearchParams(window.location.search);
           <div>
             <label for="etsyUrl">Etsy URL</label>
             <input id="etsyUrl" type="url" placeholder="https://..." />
+          </div>
+        </div>
+        <div class="grid" style="margin-top: 12px;">
+          <div>
+            <label for="completedFlag">Completed</label>
+            <input id="completedFlag" type="checkbox" />
           </div>
         </div>
         <div class="actions" style="margin-top: 16px;">

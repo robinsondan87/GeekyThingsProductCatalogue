@@ -1,6 +1,7 @@
 # Changelog
 
 ## Unreleased
+- Minor: Added a Completed checkbox field to products for tracking listing completion.
 - Minor: Added packaged geekythings-listings skill artifact.
 - Minor: Added repo-scoped geekythings-listings skill for listing creation/update workflows.
 - Minor: Increased product README editor default height.

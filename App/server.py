@@ -2167,6 +2167,8 @@ class Handler(BaseHTTPRequestHandler):
                 return
             if 'Status' not in row and 'status' not in row:
                 row['Status'] = existing.get('Status')
+            if 'Completed' not in row and 'completed' not in row:
+                row['Completed'] = existing.get('Completed', '')
             row['category'] = new_category
             row['product_folder'] = new_folder
             old_path = product_dir(old_category, old_product_folder, old_status)
@@ -2376,6 +2378,7 @@ class Handler(BaseHTTPRequestHandler):
                 'Cost To Make': '',
                 'Sale Price': '',
                 'Postage Price': '',
+                'Completed': '',
                 'Status': 'Draft',
                 'Facebook URL': '',
                 'TikTok URL': '',

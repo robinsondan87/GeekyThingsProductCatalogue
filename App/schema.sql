@@ -11,6 +11,7 @@ CREATE TABLE IF NOT EXISTS products (
     ebay_url TEXT NOT NULL DEFAULT '',
     etsy_url TEXT NOT NULL DEFAULT '',
     status TEXT NOT NULL DEFAULT 'Live',
+    completed TEXT NOT NULL DEFAULT '',
     colors TEXT NOT NULL DEFAULT '',
     sizes TEXT NOT NULL DEFAULT '',
     cost_to_make TEXT NOT NULL DEFAULT '',
@@ -24,6 +25,9 @@ CREATE UNIQUE INDEX IF NOT EXISTS products_category_folder_key
     ON products (category, product_folder);
 CREATE INDEX IF NOT EXISTS products_sku_idx
     ON products (sku);
+
+ALTER TABLE products
+    ADD COLUMN IF NOT EXISTS completed TEXT NOT NULL DEFAULT '';
 
 CREATE TABLE IF NOT EXISTS product_pricing (
     product_id BIGINT PRIMARY KEY REFERENCES products(id) ON DELETE CASCADE,

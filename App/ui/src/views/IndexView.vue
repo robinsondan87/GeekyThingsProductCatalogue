@@ -68,6 +68,11 @@ onMounted(() => {
         if (lowered === "n/a" || lowered === "na") return "N/A";
         return "No";
       };
+      const normalizeCompleted = (value) => {
+        const lowered = String(value || "").trim().toLowerCase();
+        if (lowered === "yes" || lowered === "true" || lowered === "1") return "Yes";
+        return "No";
+      };
 
       const escapeRegex = (value) => (value || "").replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
       const stripSkuPrefix = (folderName, sku) => {
@@ -333,6 +338,27 @@ onMounted(() => {
               updateStatus();
             });
             th.appendChild(select);
+          } else if (header === "Completed") {
+            const select = document.createElement("select");
+            const options = ["", "Yes", "No"];
+            options.forEach((value) => {
+              const option = document.createElement("option");
+              option.value = value;
+              option.textContent = value === "" ? "All" : value;
+              select.appendChild(option);
+            });
+            select.value = columnFilters.get(colIndex) || "";
+            select.addEventListener("change", (event) => {
+              const value = event.target.value;
+              if (value) {
+                columnFilters.set(colIndex, value);
+              } else {
+                columnFilters.delete(colIndex);
+              }
+              renderBody();
+              updateStatus();
+            });
+            th.appendChild(select);
           } else if (dropdownColumns.has(header)) {
             const select = document.createElement("select");
             const options = ["", "Yes", "No", "N/A"];
@@ -426,6 +452,8 @@ onMounted(() => {
             if (!cell.toLowerCase().includes(value.toLowerCase())) return false;
           } else if (headers[colIndex] === "UKCA") {
             if (normalizeUkca(cell) !== value) return false;
+          } else if (headers[colIndex] === "Completed") {
+            if (normalizeCompleted(cell) !== value) return false;
           } else if (dropdownColumns.has(headers[colIndex])) {
             if (cell !== value) return false;
           } else if (!cell.toLowerCase().includes(value.toLowerCase())) {
@@ -496,6 +524,15 @@ onMounted(() => {
               }`;
               badge.textContent = value;
               td.appendChild(badge);
+            } else if (header === "Completed") {
+              const checkbox = document.createElement("input");
+              checkbox.type = "checkbox";
+              checkbox.checked = normalizeCompleted(row[colIndex]) === "Yes";
+              checkbox.addEventListener("change", (event) => {
+                rows[rowIndex][colIndex] = event.target.checked ? "Yes" : "No";
+                scheduleSave();
+              });
+              td.appendChild(checkbox);
             } else if (dropdownColumns.has(header)) {
               const select = document.createElement("select");
               ["No", "Yes", "N/A"].forEach((optionValue) => {

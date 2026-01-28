@@ -1,6 +1,7 @@
 # Changelog
 
 ## Unreleased
+- Minor: Added repo-scoped geekythings-listings skill for listing creation/update workflows.
 - Minor: Increased product README editor default height.
 - Minor: Prompt for 3MF upload names with a SKU-prefilled default.
 - Fix: Avoid duplicating SKU when the product folder already includes it.

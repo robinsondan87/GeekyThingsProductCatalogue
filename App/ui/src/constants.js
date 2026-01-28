@@ -1,2 +1,2 @@
-export const APP_VERSION = 'v2.8.26'
+export const APP_VERSION = 'v2.8.27'
 export const CHANGELOG_URL = 'https://github.com/robinsondan87/GeekyThingsProductCatalogue/blob/main/CHANGELOG.md'

@@ -321,6 +321,14 @@ textarea {
   overflow-x: auto;
 }
 
+.supply-row-low {
+  background: rgba(239, 68, 68, 0.12);
+}
+
+.supply-row-equal {
+  background: rgba(245, 158, 11, 0.12);
+}
+
 table {
   width: 100%;
   border-collapse: collapse;

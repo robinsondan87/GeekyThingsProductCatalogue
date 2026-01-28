@@ -88,8 +88,14 @@ onMounted(() => {
     supplyEmpty.hidden = true
     rows.forEach((row) => {
       const tr = document.createElement('tr')
-      if (row.quantity <= row.reorder_point && row.reorder_point > 0) {
-        tr.style.background = 'rgba(245, 158, 11, 0.08)'
+      const reorderPoint = row.reorder_point || 0
+      const quantity = row.quantity ?? 0
+      if (reorderPoint > 0) {
+        if (quantity < reorderPoint) {
+          tr.classList.add('supply-row-low')
+        } else if (quantity === reorderPoint) {
+          tr.classList.add('supply-row-equal')
+        }
       }
 
       const nameCell = document.createElement('td')

@@ -1,6 +1,7 @@
 # Changelog
 
 ## Unreleased
+- Minor: Local dev script now uses .venv python automatically if present.
 - Fix: Local dev script status now detects running services via HTTP probes.
 - Fix: Backend starts without pyotp unless TOTP is enabled.
 - Minor: Exposed Postgres port in docker-compose for local backend connections.

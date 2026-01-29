@@ -50,12 +50,16 @@ start_backend() {
     echo "Backend already running (pid $(cat "$BACKEND_PID"))"
     return
   fi
-  if ! command -v python3 >/dev/null 2>&1; then
+  local python_bin="python3"
+  if [[ -x "$ROOT_DIR/.venv/bin/python" ]]; then
+    python_bin="$ROOT_DIR/.venv/bin/python"
+  fi
+  if ! command -v "$python_bin" >/dev/null 2>&1; then
     echo "python3 not found." >&2
     exit 1
   fi
   echo "Starting backend..."
-  (cd "$ROOT_DIR" && PYTHONUNBUFFERED=1 nohup python3 App/server.py > "$LOG_DIR/backend.log" 2>&1 & echo $! > "$BACKEND_PID")
+  (cd "$ROOT_DIR" && PYTHONUNBUFFERED=1 nohup "$python_bin" App/server.py > "$LOG_DIR/backend.log" 2>&1 & echo $! > "$BACKEND_PID")
 }
 
 start_frontend() {

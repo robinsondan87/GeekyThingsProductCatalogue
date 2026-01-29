@@ -2,6 +2,7 @@
 
 ## Workflow expectation
 - After making changes, update `CHANGELOG.md` with a brief summary.
+- Exception: product content-only updates (README/tags/colours/sizes/pricing/listing URLs) do not require a changelog entry.
 - Then commit and push to git.
 - Always bump the app version in `App/ui/src/constants.js` for every push.
 - Do not ask for `git add` or `git commit` commands or commit messages; do them automatically.

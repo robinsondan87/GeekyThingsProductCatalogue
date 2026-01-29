@@ -1,6 +1,7 @@
 # Changelog
 
 ## Unreleased
+- Minor: Documented that product content-only updates do not require a changelog entry.
 - Minor: Updated GT-TCH-00011 README details, tags, colours, and Etsy link from live listing.
 - Minor: Docker compose now runs only the database service by default.
 - Fix: Disabled auth toggle and removed 3MF token fallback for local file opens.

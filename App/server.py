@@ -33,6 +33,7 @@ AUTH_USERNAME = os.environ.get('AUTH_USERNAME')
 AUTH_PASSWORD = os.environ.get('AUTH_PASSWORD')
 AUTH_TOTP_SECRET = os.environ.get('AUTH_TOTP_SECRET')
 AUTH_COOKIE_SECURE = os.environ.get('AUTH_COOKIE_SECURE', '').lower() in ('1', 'true', 'yes')
+AUTH_DISABLED = os.environ.get('AUTH_DISABLED', '').lower() in ('1', 'true', 'yes')
 SESSION_TTL_SECONDS = int(os.environ.get('SESSION_TTL_SECONDS', '43200'))
 SESSIONS = {}
 FILE_TOKENS = {}
@@ -391,7 +392,7 @@ def check_credentials(username: str, password: str) -> bool:
 
 
 def auth_enabled() -> bool:
-    return bool(AUTH_USERNAME and AUTH_PASSWORD)
+    return bool(AUTH_USERNAME and AUTH_PASSWORD) and not AUTH_DISABLED
 
 
 def open_path_in_os(path: Path) -> tuple[bool, str | None]:

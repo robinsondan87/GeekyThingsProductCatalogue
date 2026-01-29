@@ -837,25 +837,9 @@ const params = new URLSearchParams(window.location.search);
           openLink.addEventListener("click", async () => {
             try {
               const localOpened = await openLocalPath(file.rel_path, "File");
-              if (localOpened) return;
-              const response = await fetch("/api/file_token", {
-                method: "POST",
-                headers: { "Content-Type": "application/json" },
-                body: JSON.stringify({
-                  category: originalCategory,
-                  folder_name: originalFolder,
-                  status: statusParam,
-                  rel_path: file.rel_path,
-                }),
-              });
-              const payload = await response.json();
-              if (!response.ok) {
-                statusEl.textContent = payload.error || "Failed to open file.";
-                return;
+              if (!localOpened) {
+                statusEl.textContent = "Failed to open file locally.";
               }
-              const tokenUrl = `${window.location.origin}/files-token/${payload.token}/${encodeURIComponent(file.name)}`;
-              const targetUrl = `bambustudioopen://${encodeURIComponent(tokenUrl)}`;
-              window.open(targetUrl, "_blank");
             } catch (error) {
               console.error(error);
               statusEl.textContent = "Failed to open file.";

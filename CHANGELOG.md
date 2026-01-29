@@ -1,6 +1,7 @@
 # Changelog
 
 ## Unreleased
+- Fix: Open 3MF/file actions now use OS-opened local paths to avoid temp downloads.
 - Minor: Added column visibility controls on the main page and local 3MF open/folder actions.
 - Minor: Added README content for GT-BKS-00001 Suriel with Tea.
 - Minor: Simplified main table by hiding colour/size columns and using compact tag editing.

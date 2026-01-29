@@ -8,6 +8,8 @@ import time
 import secrets
 import hmac
 import pyotp
+import subprocess
+import sys
 from decimal import Decimal, InvalidOperation
 from email import message_from_bytes
 from email.policy import default
@@ -387,6 +389,21 @@ def check_credentials(username: str, password: str) -> bool:
 
 def auth_enabled() -> bool:
     return bool(AUTH_USERNAME and AUTH_PASSWORD)
+
+
+def open_path_in_os(path: Path) -> tuple[bool, str | None]:
+    if not OPEN_FOLDER_ENABLED:
+        return False, 'Open folder is disabled in this environment.'
+    try:
+        if sys.platform == 'darwin':
+            subprocess.Popen(['open', str(path)])
+        elif sys.platform.startswith('win'):
+            os.startfile(str(path))
+        else:
+            subprocess.Popen(['xdg-open', str(path)])
+        return True, None
+    except Exception as exc:
+        return False, str(exc)
 
 
 def parse_multipart_form_data(content_type: str, body: bytes) -> tuple[dict, list]:
@@ -1061,6 +1078,44 @@ class Handler(BaseHTTPRequestHandler):
                 return
             token = create_file_token(target_path)
             self._send_json(200, {'token': token})
+            return
+        if parsed.path == '/api/open_path':
+            length = int(self.headers.get('Content-Length', '0'))
+            body = self.rfile.read(length) if length > 0 else b''
+            try:
+                data = json.loads(body.decode('utf-8') or '{}')
+            except json.JSONDecodeError:
+                self._send_json(400, {'error': 'Invalid JSON'})
+                return
+            category = safe_path_component(data.get('category', ''))
+            folder_name = safe_path_component(data.get('folder_name', ''))
+            status = data.get('status', '')
+            rel_path = data.get('rel_path', '')
+            open_parent = bool(data.get('open_parent'))
+            if not category or not folder_name:
+                self._send_json(400, {'error': 'Missing category/folder_name'})
+                return
+            base_path = product_dir(category, folder_name, status).resolve()
+            target_path = base_path
+            if rel_path:
+                rel_clean = safe_rel_path(rel_path)
+                if not rel_clean:
+                    self._send_json(403, {'error': 'Invalid path'})
+                    return
+                target_path = (base_path / rel_clean).resolve()
+                if not target_path.is_relative_to(base_path):
+                    self._send_json(403, {'error': 'Invalid path'})
+                    return
+            if open_parent:
+                target_path = target_path.parent
+            if not target_path.exists():
+                self._send_json(404, {'error': 'Path not found'})
+                return
+            ok, error = open_path_in_os(target_path)
+            if not ok:
+                self._send_json(409, {'error': error or 'Failed to open path'})
+                return
+            self._send_json(200, {'ok': True})
             return
         length = int(self.headers.get('Content-Length', '0'))
         body = self.rfile.read(length) if length > 0 else b''

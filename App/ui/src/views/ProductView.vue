@@ -836,7 +836,7 @@ const params = new URLSearchParams(window.location.search);
           openLink.textContent = "Open";
           openLink.addEventListener("click", async () => {
             try {
-              const localOpened = await openLocalPath(file.abs_path, "File");
+              const localOpened = await openLocalPath(file.rel_path, "File");
               if (localOpened) return;
               const response = await fetch("/api/file_token", {
                 method: "POST",
@@ -867,11 +867,7 @@ const params = new URLSearchParams(window.location.search);
           openFolderBtn.type = "button";
           openFolderBtn.textContent = "Open Folder";
           openFolderBtn.addEventListener("click", async () => {
-            const fullPath = file.abs_path || "";
-            if (!fullPath) return;
-            const folderPath = fullPath.split("/").slice(0, -1).join("/");
-            if (!folderPath) return;
-            await openLocalPath(folderPath, "Folder");
+            await openLocalPath(file.rel_path, "Folder", true);
           });
 
           const downloadLink = document.createElement("a");
@@ -1258,16 +1254,25 @@ const params = new URLSearchParams(window.location.search);
         await load3mf();
       };
 
-      const openLocalPath = async (rawPath, label) => {
+      const openLocalPath = async (relPath, label, openParent = false) => {
         try {
           await loadConfig();
           if (!openFolderEnabled) return false;
-          if (!rawPath) return false;
-          const url = encodeURI(`file://${rawPath}`);
-          const popup = window.open(url, "_blank");
-          if (!popup) {
-            navigator.clipboard?.writeText(rawPath).catch(() => {});
-            alert(`Popup blocked. ${label} path copied to clipboard.`);
+          const response = await fetch("/api/open_path", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+              category: originalCategory,
+              folder_name: originalFolder,
+              status: statusParam,
+              rel_path: relPath || "",
+              open_parent: openParent,
+            }),
+          });
+          const payload = await response.json();
+          if (!response.ok) {
+            statusEl.textContent = payload.error || `Failed to open ${label}.`;
+            return false;
           }
           return true;
         } catch (error) {
@@ -1292,8 +1297,7 @@ const params = new URLSearchParams(window.location.search);
             statusEl.textContent = "Open folder path not available.";
             return;
           }
-          const rawPath = `${basePath}/${originalCategory}/${originalFolder}`;
-          await openLocalPath(rawPath, "Folder");
+          await openLocalPath("", "Folder");
         };
         openWithConfig().catch(console.error);
       };

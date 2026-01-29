@@ -22,6 +22,29 @@ is_running() {
   return 1
 }
 
+http_ok() {
+  local url="$1"
+  if ! command -v curl >/dev/null 2>&1; then
+    return 1
+  fi
+  local code
+  code="$(curl -s -o /dev/null -w "%{http_code}" "$url" || true)"
+  [[ "$code" =~ ^2|3 ]]
+}
+
+frontend_port_from_log() {
+  if [[ ! -f "$LOG_DIR/frontend.log" ]]; then
+    return 1
+  fi
+  local match
+  match="$(grep -Eo 'http://localhost:[0-9]+' "$LOG_DIR/frontend.log" | tail -n 1 || true)"
+  if [[ -n "$match" ]]; then
+    echo "${match##http://localhost:}"
+    return 0
+  fi
+  return 1
+}
+
 start_backend() {
   if is_running "$BACKEND_PID"; then
     echo "Backend already running (pid $(cat "$BACKEND_PID"))"
@@ -73,13 +96,37 @@ stop_frontend() {
 }
 
 status() {
+  local backend_running=false
+  local frontend_running=false
+  local frontend_port=""
   if is_running "$BACKEND_PID"; then
-    echo "Backend: running (pid $(cat "$BACKEND_PID"))"
+    backend_running=true
+  elif http_ok "http://localhost:8555/api/session"; then
+    backend_running=true
+  fi
+  if is_running "$FRONTEND_PID"; then
+    frontend_running=true
+  else
+    if frontend_port="$(frontend_port_from_log)"; then
+      if http_ok "http://localhost:${frontend_port}/"; then
+        frontend_running=true
+      fi
+    elif http_ok "http://localhost:5173/"; then
+      frontend_running=true
+      frontend_port="5173"
+    fi
+  fi
+  if [[ "$backend_running" == "true" ]]; then
+    echo "Backend: running"
   else
     echo "Backend: stopped"
   fi
-  if is_running "$FRONTEND_PID"; then
-    echo "Frontend: running (pid $(cat "$FRONTEND_PID"))"
+  if [[ "$frontend_running" == "true" ]]; then
+    if [[ -n "$frontend_port" ]]; then
+      echo "Frontend: running (port ${frontend_port})"
+    else
+      echo "Frontend: running"
+    fi
   else
     echo "Frontend: stopped"
   fi

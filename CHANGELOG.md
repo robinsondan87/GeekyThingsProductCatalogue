@@ -1,6 +1,8 @@
 # Changelog
 
 ## Unreleased
+- Fix: Local dev script status now detects running services via HTTP probes.
+- Fix: Backend starts without pyotp unless TOTP is enabled.
 - Minor: Exposed Postgres port in docker-compose for local backend connections.
 - Minor: Added local dev helper script to start/stop/restart backend and frontend.
 - Fix: Open 3MF/file actions now use OS-opened local paths to avoid temp downloads.

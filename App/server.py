@@ -7,7 +7,10 @@ import shutil
 import time
 import secrets
 import hmac
-import pyotp
+try:
+    import pyotp
+except ModuleNotFoundError:  # Optional for TOTP-enabled auth
+    pyotp = None
 import subprocess
 import sys
 from decimal import Decimal, InvalidOperation
@@ -1020,6 +1023,9 @@ class Handler(BaseHTTPRequestHandler):
                 self._send_unauthorized()
                 return
             if AUTH_TOTP_SECRET:
+                if pyotp is None:
+                    self._send_json(500, {'error': 'TOTP enabled but pyotp is not installed'})
+                    return
                 totp_code = (data.get('totp') or '').strip()
                 totp = pyotp.TOTP(AUTH_TOTP_SECRET)
                 if not totp.verify(totp_code, valid_window=1):

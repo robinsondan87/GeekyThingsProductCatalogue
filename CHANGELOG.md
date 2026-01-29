@@ -1,6 +1,7 @@
 # Changelog
 
 ## Unreleased
+- Minor: Added local dev helper script to start/stop/restart backend and frontend.
 - Fix: Open 3MF/file actions now use OS-opened local paths to avoid temp downloads.
 - Minor: Added column visibility controls on the main page and local 3MF open/folder actions.
 - Minor: Added README content for GT-BKS-00001 Suriel with Tea.

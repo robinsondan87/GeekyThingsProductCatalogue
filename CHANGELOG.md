@@ -1,6 +1,7 @@
 # Changelog
 
 ## Unreleased
+- Fix: Local dev script now loads .env for DATABASE_URL/auth settings.
 - Minor: Local dev script now uses .venv python automatically if present.
 - Fix: Local dev script status now detects running services via HTTP probes.
 - Fix: Backend starts without pyotp unless TOTP is enabled.

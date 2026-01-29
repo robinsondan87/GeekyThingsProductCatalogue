@@ -10,6 +10,13 @@ FRONTEND_PID="$PID_DIR/frontend.pid"
 
 mkdir -p "$PID_DIR" "$LOG_DIR"
 
+if [[ -f "$ROOT_DIR/.env" ]]; then
+  set -a
+  # shellcheck disable=SC1090
+  source "$ROOT_DIR/.env"
+  set +a
+fi
+
 is_running() {
   local pid_file="$1"
   if [[ -f "$pid_file" ]]; then

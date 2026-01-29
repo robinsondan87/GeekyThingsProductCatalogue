@@ -836,6 +836,8 @@ const params = new URLSearchParams(window.location.search);
           openLink.textContent = "Open";
           openLink.addEventListener("click", async () => {
             try {
+              const localOpened = await openLocalPath(file.abs_path, "File");
+              if (localOpened) return;
               const response = await fetch("/api/file_token", {
                 method: "POST",
                 headers: { "Content-Type": "application/json" },
@@ -858,6 +860,18 @@ const params = new URLSearchParams(window.location.search);
               console.error(error);
               statusEl.textContent = "Failed to open file.";
             }
+          });
+
+          const openFolderBtn = document.createElement("button");
+          openFolderBtn.className = "btn ghost";
+          openFolderBtn.type = "button";
+          openFolderBtn.textContent = "Open Folder";
+          openFolderBtn.addEventListener("click", async () => {
+            const fullPath = file.abs_path || "";
+            if (!fullPath) return;
+            const folderPath = fullPath.split("/").slice(0, -1).join("/");
+            if (!folderPath) return;
+            await openLocalPath(folderPath, "Folder");
           });
 
           const downloadLink = document.createElement("a");
@@ -909,6 +923,7 @@ const params = new URLSearchParams(window.location.search);
           });
 
           actions.appendChild(openLink);
+          actions.appendChild(openFolderBtn);
           actions.appendChild(downloadLink);
           actions.appendChild(copyBtn);
           actions.appendChild(renameBtn);
@@ -1243,6 +1258,24 @@ const params = new URLSearchParams(window.location.search);
         await load3mf();
       };
 
+      const openLocalPath = async (rawPath, label) => {
+        try {
+          await loadConfig();
+          if (!openFolderEnabled) return false;
+          if (!rawPath) return false;
+          const url = encodeURI(`file://${rawPath}`);
+          const popup = window.open(url, "_blank");
+          if (!popup) {
+            navigator.clipboard?.writeText(rawPath).catch(() => {});
+            alert(`Popup blocked. ${label} path copied to clipboard.`);
+          }
+          return true;
+        } catch (error) {
+          console.error(error);
+          return false;
+        }
+      };
+
       const openFolder = () => {
         const openWithConfig = async () => {
           await loadConfig();
@@ -1260,12 +1293,7 @@ const params = new URLSearchParams(window.location.search);
             return;
           }
           const rawPath = `${basePath}/${originalCategory}/${originalFolder}`;
-          const url = encodeURI(`file://${rawPath}`);
-          const popup = window.open(url, "_blank");
-          if (!popup) {
-            navigator.clipboard?.writeText(rawPath).catch(() => {});
-            alert("Popup blocked. Path copied to clipboard.");
-          }
+          await openLocalPath(rawPath, "Folder");
         };
         openWithConfig().catch(console.error);
       };

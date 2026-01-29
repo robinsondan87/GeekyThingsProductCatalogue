@@ -1,6 +1,7 @@
 # Changelog
 
 ## Unreleased
+- Minor: Added column visibility controls on the main page and local 3MF open/folder actions.
 - Minor: Added README content for GT-BKS-00001 Suriel with Tea.
 - Minor: Simplified main table by hiding colour/size columns and using compact tag editing.
 - Minor: Consolidated main table row actions into a dropdown.

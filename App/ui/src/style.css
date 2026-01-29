@@ -146,6 +146,60 @@ main {
   justify-content: space-between;
 }
 
+.columns-menu {
+  position: relative;
+}
+
+.columns-menu summary {
+  list-style: none;
+  background: var(--panel-3);
+  color: var(--text);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  padding: 8px 14px;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.columns-menu summary::-webkit-details-marker {
+  display: none;
+}
+
+.columns-menu summary::marker {
+  content: "";
+}
+
+.columns-list {
+  position: absolute;
+  right: 0;
+  top: calc(100% + 8px);
+  min-width: 220px;
+  background: var(--panel);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  padding: 12px;
+  display: grid;
+  gap: 8px;
+  box-shadow: var(--shadow);
+  z-index: 20;
+}
+
+.columns-option {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  font-size: 13px;
+}
+
+.columns-option input:disabled + span {
+  opacity: 0.6;
+}
+
+.columns-empty {
+  font-size: 12px;
+  color: var(--muted);
+}
+
 .tabs {
   display: flex;
   flex-wrap: wrap;

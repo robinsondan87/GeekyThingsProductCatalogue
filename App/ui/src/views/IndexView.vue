@@ -9,6 +9,8 @@ onMounted(() => {
       const searchInput = document.getElementById("searchInput");
       const ukcaFilter = document.getElementById("ukcaFilter");
       const completedFilter = document.getElementById("completedFilter");
+      const columnsMenu = document.getElementById("columnsMenu");
+      const columnsList = document.getElementById("columnsList");
       const viewTabs = document.getElementById("viewTabs");
       const tableView = document.getElementById("tableView");
       const folderView = document.getElementById("folderView");
@@ -43,8 +45,8 @@ onMounted(() => {
       let sortDirection = 1;
       let columnWidths = [];
       let originalNames = [];
-      const hiddenColumns = new Set([
-        "id",
+      const alwaysHiddenColumns = new Set(["id"]);
+      const defaultHiddenColumns = new Set([
         "Facebook URL",
         "TikTok URL",
         "Ebay URL",
@@ -56,6 +58,8 @@ onMounted(() => {
         "Colors",
         "Sizes",
       ]);
+      const lockedColumns = new Set(["category", "product_folder"]);
+      const hiddenColumns = new Set([...alwaysHiddenColumns, ...defaultHiddenColumns]);
       let viewMode = "live";
 
       const normalizeStatus = (value) => {
@@ -110,6 +114,64 @@ onMounted(() => {
 
       const getVisibleHeaders = () => headers.filter((header) => !hiddenColumns.has(header));
       let readmeRowIndex = null;
+
+      const loadHiddenColumns = () => {
+        const stored = localStorage.getItem("gt-hidden-columns");
+        if (!stored) return;
+        try {
+          const parsed = JSON.parse(stored);
+          if (!Array.isArray(parsed)) return;
+          hiddenColumns.clear();
+          alwaysHiddenColumns.forEach((col) => hiddenColumns.add(col));
+          parsed.forEach((col) => hiddenColumns.add(col));
+        } catch (error) {
+          console.error(error);
+        }
+      };
+
+      const saveHiddenColumns = () => {
+        const payload = [...hiddenColumns].filter((col) => !alwaysHiddenColumns.has(col));
+        localStorage.setItem("gt-hidden-columns", JSON.stringify(payload));
+      };
+
+      const renderColumnsMenu = () => {
+        if (!columnsList) return;
+        columnsList.innerHTML = "";
+        if (!headers.length) {
+          const empty = document.createElement("span");
+          empty.className = "columns-empty";
+          empty.textContent = "Columns load after refresh.";
+          columnsList.appendChild(empty);
+          return;
+        }
+        headers.forEach((header) => {
+          if (alwaysHiddenColumns.has(header)) return;
+          const option = document.createElement("label");
+          option.className = "columns-option";
+          const checkbox = document.createElement("input");
+          checkbox.type = "checkbox";
+          checkbox.checked = !hiddenColumns.has(header);
+          if (lockedColumns.has(header)) {
+            checkbox.disabled = true;
+          }
+          checkbox.addEventListener("change", () => {
+            if (checkbox.checked) {
+              hiddenColumns.delete(header);
+            } else {
+              hiddenColumns.add(header);
+            }
+            saveHiddenColumns();
+            renderHeader();
+            renderBody();
+            updateStatus();
+          });
+          const text = document.createElement("span");
+          text.textContent = header === "product_folder" ? "Product title" : header;
+          option.appendChild(checkbox);
+          option.appendChild(text);
+          columnsList.appendChild(option);
+        });
+      };
 
       const parseCSV = (text) => {
         const output = [];
@@ -781,6 +843,7 @@ onMounted(() => {
         isDirty = false;
         renderHeader();
         renderBody();
+        renderColumnsMenu();
         updateStatus();
         emptyState.style.display = headers.length ? "none" : "block";
         fileHandle = null;
@@ -901,6 +964,7 @@ onMounted(() => {
           isDirty = false;
           renderHeader();
           renderBody();
+          renderColumnsMenu();
           updateStatus();
           emptyState.style.display = headers.length ? "none" : "block";
           statusEl.textContent = "Auto-loaded products via server.";
@@ -1041,6 +1105,7 @@ onMounted(() => {
       completedFilter.addEventListener("change", (event) => {
         setCompletedFilter(event.target.value);
       });
+      loadHiddenColumns();
       autoLoadDefault();
 
       const autoRefresh = () => {
@@ -1115,6 +1180,10 @@ onMounted(() => {
             <option value="Yes">Completed: Yes</option>
             <option value="No">Completed: No</option>
           </select>
+          <details id="columnsMenu" class="columns-menu">
+            <summary>Columns</summary>
+            <div class="columns-list" id="columnsList"></div>
+          </details>
         </div>
         <div class="status" id="status">No file loaded.</div>
       </div>

@@ -1,6 +1,7 @@
 # Changelog
 
 ## Unreleased
+- Minor: Docker compose now runs only the database service by default.
 - Fix: Disabled auth toggle and removed 3MF token fallback for local file opens.
 - Fix: Local dev script now loads .env for DATABASE_URL/auth settings.
 - Minor: Local dev script now uses .venv python automatically if present.

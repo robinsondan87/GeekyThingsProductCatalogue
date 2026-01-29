@@ -5,6 +5,8 @@ services:
       POSTGRES_DB: ${POSTGRES_DB:-geekythings}
       POSTGRES_USER: ${POSTGRES_USER:-geekythings}
       POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-geekythings}
+    ports:
+      - "5432:5432"
     volumes:
       - geekythings-db:/var/lib/postgresql/data
 

@@ -35,7 +35,7 @@ http_ok() {
     return 1
   fi
   local code
-  code="$(curl -s -o /dev/null -w "%{http_code}" "$url" || true)"
+  code="$(curl -s --connect-timeout 2 --max-time 3 -o /dev/null -w "%{http_code}" "$url" || true)"
   [[ "$code" =~ ^2|3 ]]
 }
 

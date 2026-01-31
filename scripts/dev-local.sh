@@ -52,6 +52,28 @@ frontend_port_from_log() {
   return 1
 }
 
+ports_listening_pids() {
+  local port="$1"
+  if ! command -v lsof >/dev/null 2>&1; then
+    return 1
+  fi
+  lsof -tiTCP:"$port" -sTCP:LISTEN 2>/dev/null || true
+}
+
+kill_pids() {
+  local pids=("$@")
+  if [[ ${#pids[@]} -eq 0 ]]; then
+    return
+  fi
+  kill "${pids[@]}" 2>/dev/null || true
+  sleep 0.5
+  for pid in "${pids[@]}"; do
+    if kill -0 "$pid" 2>/dev/null; then
+      kill -9 "$pid" 2>/dev/null || true
+    fi
+  done
+}
+
 start_backend() {
   if is_running "$BACKEND_PID"; then
     echo "Backend already running (pid $(cat "$BACKEND_PID"))"
@@ -87,10 +109,16 @@ stop_backend() {
     local pid
     pid="$(cat "$BACKEND_PID")"
     echo "Stopping backend (pid $pid)..."
-    kill "$pid" 2>/dev/null || true
+    kill_pids "$pid"
     rm -f "$BACKEND_PID"
   else
     echo "Backend not running."
+  fi
+  local port_pids
+  port_pids=($(ports_listening_pids 8555))
+  if [[ ${#port_pids[@]} -gt 0 ]]; then
+    echo "Stopping backend listeners on :8555 (${port_pids[*]})..."
+    kill_pids "${port_pids[@]}"
   fi
 }
 
@@ -99,11 +127,29 @@ stop_frontend() {
     local pid
     pid="$(cat "$FRONTEND_PID")"
     echo "Stopping frontend (pid $pid)..."
-    kill "$pid" 2>/dev/null || true
+    kill_pids "$pid"
     rm -f "$FRONTEND_PID"
   else
     echo "Frontend not running."
   fi
+  local port
+  if port="$(frontend_port_from_log)"; then
+    local port_pids
+    port_pids=($(ports_listening_pids "$port"))
+    if [[ ${#port_pids[@]} -gt 0 ]]; then
+      echo "Stopping frontend listeners on :${port} (${port_pids[*]})..."
+      kill_pids "${port_pids[@]}"
+    fi
+    return
+  fi
+  for port in 5173 5174 5175 5176 5177 5178 5179 5180 5190; do
+    local port_pids
+    port_pids=($(ports_listening_pids "$port"))
+    if [[ ${#port_pids[@]} -gt 0 ]]; then
+      echo "Stopping frontend listeners on :${port} (${port_pids[*]})..."
+      kill_pids "${port_pids[@]}"
+    fi
+  done
 }
 
 status() {

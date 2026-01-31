@@ -57,6 +57,7 @@ CATEGORY_PREFIXES = {
     'Health & Medical': 'GT-HLT',
     'Home & Living': 'GT-HOM',
     'Jewelry & Accessories': 'GT-JWL',
+    'Fidgets': 'GT-FDG',
     'Office & Storage': 'GT-OFF',
     'Tools & Workshop': 'GT-TLW',
     'Toys & Games': 'GT-TOY',

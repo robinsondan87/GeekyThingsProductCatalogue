@@ -1,6 +1,7 @@
 # Changelog
 
 ## Unreleased
+- Minor: Added Fidgets category prefix and created draft listing for GT-FDG-00001 (Mini-Fidget - Baby Ladybug).
 - Fix: Add curl timeouts in local dev status checks to prevent hangs.
 - Minor: Removed Facebook URL field from product data and UI (TikTok/Ebay/Etsy only).
 - Minor: Documented that product content-only updates do not require a changelog entry.

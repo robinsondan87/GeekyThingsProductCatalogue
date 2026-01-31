@@ -1,6 +1,8 @@
 # Changelog
 
 ## Unreleased
+- Fix: Stop scans all Vite ports even when the stored port is stale; status checks listening ports too.
+- Fix: Track frontend dev port in `.pids` to stop the correct Vite server.
 - Fix: Ensure local dev stop fully kills backend/frontend processes by port.
 - Fix: Allow forcing a specific macOS app for .3mf opens via OPEN_3MF_APP.
 - Fix: Resolve draft/archived product media and 3MF operations when status query is missing.

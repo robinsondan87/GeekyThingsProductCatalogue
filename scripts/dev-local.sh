@@ -7,6 +7,7 @@ LOG_DIR="$ROOT_DIR/.logs"
 
 BACKEND_PID="$PID_DIR/backend.pid"
 FRONTEND_PID="$PID_DIR/frontend.pid"
+FRONTEND_PORT_FILE="$PID_DIR/frontend.port"
 
 mkdir -p "$PID_DIR" "$LOG_DIR"
 
@@ -49,6 +50,31 @@ frontend_port_from_log() {
     echo "${match##http://localhost:}"
     return 0
   fi
+  return 1
+}
+
+frontend_port_from_file() {
+  if [[ -f "$FRONTEND_PORT_FILE" ]]; then
+    local port
+    port="$(cat "$FRONTEND_PORT_FILE")"
+    if [[ -n "$port" ]]; then
+      echo "$port"
+      return 0
+    fi
+  fi
+  return 1
+}
+
+first_free_port() {
+  local port="$1"
+  local max="${2:-5195}"
+  while [[ "$port" -le "$max" ]]; do
+    if [[ -z "$(ports_listening_pids "$port")" ]]; then
+      echo "$port"
+      return 0
+    fi
+    port=$((port + 1))
+  done
   return 1
 }
 
@@ -101,7 +127,14 @@ start_frontend() {
     exit 1
   fi
   echo "Starting frontend..."
-  (cd "$ROOT_DIR/App/ui" && nohup npm run dev > "$LOG_DIR/frontend.log" 2>&1 & echo $! > "$FRONTEND_PID")
+  local desired_port="${FRONTEND_PORT:-5175}"
+  local port
+  if ! port="$(first_free_port "$desired_port")"; then
+    echo "No free port available starting from ${desired_port}." >&2
+    exit 1
+  fi
+  echo "$port" > "$FRONTEND_PORT_FILE"
+  (cd "$ROOT_DIR/App/ui" && nohup npm run dev -- --port "$port" > "$LOG_DIR/frontend.log" 2>&1 & echo $! > "$FRONTEND_PID")
 }
 
 stop_backend() {
@@ -133,14 +166,25 @@ stop_frontend() {
     echo "Frontend not running."
   fi
   local port
+  local killed=false
+  if port="$(frontend_port_from_file)"; then
+    local port_pids
+    port_pids=($(ports_listening_pids "$port"))
+    if [[ ${#port_pids[@]} -gt 0 ]]; then
+      echo "Stopping frontend listeners on :${port} (${port_pids[*]})..."
+      kill_pids "${port_pids[@]}"
+      killed=true
+    fi
+    rm -f "$FRONTEND_PORT_FILE"
+  fi
   if port="$(frontend_port_from_log)"; then
     local port_pids
     port_pids=($(ports_listening_pids "$port"))
     if [[ ${#port_pids[@]} -gt 0 ]]; then
       echo "Stopping frontend listeners on :${port} (${port_pids[*]})..."
       kill_pids "${port_pids[@]}"
+      killed=true
     fi
-    return
   fi
   for port in 5173 5174 5175 5176 5177 5178 5179 5180 5190; do
     local port_pids
@@ -148,8 +192,10 @@ stop_frontend() {
     if [[ ${#port_pids[@]} -gt 0 ]]; then
       echo "Stopping frontend listeners on :${port} (${port_pids[*]})..."
       kill_pids "${port_pids[@]}"
+      killed=true
     fi
   done
+  rm -f "$FRONTEND_PORT_FILE"
 }
 
 status() {
@@ -164,13 +210,28 @@ status() {
   if is_running "$FRONTEND_PID"; then
     frontend_running=true
   else
-    if frontend_port="$(frontend_port_from_log)"; then
+    if frontend_port="$(frontend_port_from_file)"; then
       if http_ok "http://localhost:${frontend_port}/"; then
         frontend_running=true
       fi
-    elif http_ok "http://localhost:5173/"; then
-      frontend_running=true
-      frontend_port="5173"
+    elif frontend_port="$(frontend_port_from_log)"; then
+      if http_ok "http://localhost:${frontend_port}/"; then
+        frontend_running=true
+      fi
+    fi
+    if [[ "$frontend_running" == "false" ]]; then
+      for port in 5173 5174 5175 5176 5177 5178 5179 5180 5190; do
+        if http_ok "http://localhost:${port}/"; then
+          frontend_running=true
+          frontend_port="$port"
+          break
+        fi
+        if [[ -n "$(ports_listening_pids "$port")" ]]; then
+          frontend_running=true
+          frontend_port="$port"
+          break
+        fi
+      done
     fi
   fi
   if [[ "$backend_running" == "true" ]]; then

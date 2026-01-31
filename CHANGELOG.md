@@ -1,6 +1,7 @@
 # Changelog
 
 ## Unreleased
+- Fix: Allow forcing a specific macOS app for .3mf opens via OPEN_3MF_APP.
 - Fix: Resolve draft/archived product media and 3MF operations when status query is missing.
 - Minor: Added Fidgets category prefix and created draft listing for GT-FDG-00001 (Mini-Fidget - Baby Ladybug).
 - Fix: Add curl timeouts in local dev status checks to prevent hangs.

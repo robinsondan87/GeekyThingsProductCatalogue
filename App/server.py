@@ -48,6 +48,7 @@ if OPEN_FOLDER_ENABLED is None:
     OPEN_FOLDER_ENABLED = not RUNNING_IN_DOCKER
 else:
     OPEN_FOLDER_ENABLED = OPEN_FOLDER_ENABLED.lower() in ('1', 'true', 'yes')
+OPEN_3MF_APP = (os.environ.get('OPEN_3MF_APP') or '').strip()
 UPLOAD_MAX_BYTES = int(os.environ.get('UPLOAD_MAX_BYTES', str(100 * 1024 * 1024)))
 CATEGORY_PREFIXES = {
     'Automotive': 'GT-AUT',
@@ -401,7 +402,10 @@ def open_path_in_os(path: Path) -> tuple[bool, str | None]:
         return False, 'Open folder is disabled in this environment.'
     try:
         if sys.platform == 'darwin':
-            subprocess.Popen(['open', str(path)])
+            if OPEN_3MF_APP and path.is_file() and path.suffix.lower() == '.3mf':
+                subprocess.Popen(['open', '-a', OPEN_3MF_APP, str(path)])
+            else:
+                subprocess.Popen(['open', str(path)])
         elif sys.platform.startswith('win'):
             os.startfile(str(path))
         else:

@@ -10,6 +10,7 @@ const params = new URLSearchParams(window.location.search);
       const categoryParam = params.get("category") || "";
       const folderParam = params.get("folder") || "";
       const statusParam = (params.get("status") || "").toLowerCase();
+      let effectiveStatusParam = statusParam;
 
       const productTitle = document.getElementById("productTitle");
       const categoryInput = document.getElementById("category");
@@ -248,6 +249,12 @@ const params = new URLSearchParams(window.location.search);
         const row = rows[rowIndex];
         originalCategory = row.category || originalCategory;
         originalFolder = row.product_folder || originalFolder;
+        const normalizedRowStatus = String(row.Status || "").trim().toLowerCase();
+        if (normalizedRowStatus === "draft" || normalizedRowStatus === "archived") {
+          effectiveStatusParam = normalizedRowStatus;
+        } else {
+          effectiveStatusParam = "";
+        }
         const displayTitle = stripSkuPrefix(row.product_folder, row.sku);
         productTitle.textContent = displayTitle || row.product_folder || "Product Details";
         categoryInput.value = row.category || "";
@@ -313,6 +320,15 @@ const params = new URLSearchParams(window.location.search);
         });
 
         populateSuggestions();
+
+        const statusQuery = effectiveStatusParam ? `&status=${encodeURIComponent(effectiveStatusParam)}` : "";
+        if (effectiveStatusParam !== statusParam) {
+          history.replaceState(
+            {},
+            "",
+            `/product?category=${encodeURIComponent(originalCategory)}&folder=${encodeURIComponent(originalFolder)}${statusQuery}`
+          );
+        }
 
         await loadPricing();
         await loadReadme();
@@ -513,7 +529,7 @@ const params = new URLSearchParams(window.location.search);
           body: JSON.stringify({
             category: originalCategory,
             folder_name: originalFolder,
-            status: statusParam,
+            status: effectiveStatusParam,
             action: "read",
           }),
         });
@@ -561,7 +577,7 @@ const params = new URLSearchParams(window.location.search);
           body: JSON.stringify({
             category: originalCategory,
             folder_name: originalFolder,
-            status: statusParam,
+            status: effectiveStatusParam,
             action: "write",
             pricing: pricingPayload,
           }),
@@ -749,7 +765,7 @@ const params = new URLSearchParams(window.location.search);
           body: JSON.stringify({
             category: originalCategory,
             folder_name: originalFolder,
-            status: statusParam,
+            status: effectiveStatusParam,
             action: "read",
           }),
         });
@@ -761,7 +777,7 @@ const params = new URLSearchParams(window.location.search);
 
       const loadMedia = async () => {
         const response = await fetch(
-          `/api/media?category=${encodeURIComponent(originalCategory)}&folder=${encodeURIComponent(originalFolder)}&status=${encodeURIComponent(statusParam)}`
+          `/api/media?category=${encodeURIComponent(originalCategory)}&folder=${encodeURIComponent(originalFolder)}&status=${encodeURIComponent(effectiveStatusParam)}`
         );
         if (!response.ok) return;
         const payload = await response.json();
@@ -801,7 +817,7 @@ const params = new URLSearchParams(window.location.search);
 
       const load3mf = async () => {
         const response = await fetch(
-          `/api/3mf?category=${encodeURIComponent(originalCategory)}&folder=${encodeURIComponent(originalFolder)}&status=${encodeURIComponent(statusParam)}`
+          `/api/3mf?category=${encodeURIComponent(originalCategory)}&folder=${encodeURIComponent(originalFolder)}&status=${encodeURIComponent(effectiveStatusParam)}`
         );
         if (!response.ok) return;
         const payload = await response.json();
@@ -918,7 +934,7 @@ const params = new URLSearchParams(window.location.search);
           return;
         }
         const response = await fetch(
-          `/api/ukca_pack?category=${encodeURIComponent(originalCategory)}&folder=${encodeURIComponent(originalFolder)}&status=${encodeURIComponent(statusParam)}`
+          `/api/ukca_pack?category=${encodeURIComponent(originalCategory)}&folder=${encodeURIComponent(originalFolder)}&status=${encodeURIComponent(effectiveStatusParam)}`
         );
         if (!response.ok) return;
         const payload = await response.json();
@@ -1122,7 +1138,7 @@ const params = new URLSearchParams(window.location.search);
           body: JSON.stringify({
             category: originalCategory,
             folder_name: originalFolder,
-            status: statusParam,
+            status: effectiveStatusParam,
             action: "read",
             file: fileKey,
           }),
@@ -1196,7 +1212,7 @@ const params = new URLSearchParams(window.location.search);
         categoryInput.value = updatedRow.category || categoryInput.value;
         productFolderInput.value = updatedDisplayTitle || updatedRow.product_folder || productFolderInput.value;
         productTitle.textContent = updatedDisplayTitle || updatedRow.product_folder || productTitle.textContent;
-        const statusQuery = statusParam ? `&status=${encodeURIComponent(statusParam)}` : "";
+        const statusQuery = effectiveStatusParam ? `&status=${encodeURIComponent(effectiveStatusParam)}` : "";
         history.replaceState(
           {},
           "",
@@ -1218,7 +1234,7 @@ const params = new URLSearchParams(window.location.search);
             category: originalCategory,
             old_name: originalFolder,
             new_name: newName,
-            status: statusParam,
+            status: effectiveStatusParam,
           }),
         });
         const payload = await response.json();
@@ -1243,7 +1259,7 @@ const params = new URLSearchParams(window.location.search);
             body: JSON.stringify({
               category: originalCategory,
               folder_name: originalFolder,
-              status: statusParam,
+              status: effectiveStatusParam,
               rel_path: relPath || "",
               open_parent: openParent,
             }),
@@ -1267,9 +1283,9 @@ const params = new URLSearchParams(window.location.search);
             statusEl.textContent = "Open folder is disabled in this environment.";
             return;
           }
-          const basePath = statusParam === "draft"
+          const basePath = effectiveStatusParam === "draft"
             ? folderPaths.drafts
-            : statusParam === "archived"
+            : effectiveStatusParam === "archived"
               ? folderPaths.archived
               : folderPaths.categories;
           if (!basePath) {
@@ -1288,7 +1304,7 @@ const params = new URLSearchParams(window.location.search);
           body: JSON.stringify({
             category: originalCategory,
             folder_name: originalFolder,
-            status: statusParam,
+            status: effectiveStatusParam,
             action: "write",
             content: readmeArea.value,
           }),
@@ -1323,7 +1339,7 @@ const params = new URLSearchParams(window.location.search);
         const payload = {
           category: originalCategory,
           folder_name: originalFolder,
-          status: statusParam,
+          status: effectiveStatusParam,
           product_name: ukcaProductName.value.trim(),
           sku: ukcaSku.value.trim(),
           materials: ukcaMaterials.value.trim(),
@@ -1361,7 +1377,7 @@ const params = new URLSearchParams(window.location.search);
           body: JSON.stringify({
             category: originalCategory,
             folder_name: originalFolder,
-            status: statusParam,
+            status: effectiveStatusParam,
             action: "write",
             file: fileKey,
             content,
@@ -1448,7 +1464,7 @@ const params = new URLSearchParams(window.location.search);
 
       const printUkcaPack = async () => {
         const response = await fetch(
-          `/api/ukca_pack?category=${encodeURIComponent(originalCategory)}&folder=${encodeURIComponent(originalFolder)}&status=${encodeURIComponent(statusParam)}`
+          `/api/ukca_pack?category=${encodeURIComponent(originalCategory)}&folder=${encodeURIComponent(originalFolder)}&status=${encodeURIComponent(effectiveStatusParam)}`
         );
         if (!response.ok) return;
         const payload = await response.json();
@@ -1467,7 +1483,7 @@ const params = new URLSearchParams(window.location.search);
             body: JSON.stringify({
               category: originalCategory,
               folder_name: originalFolder,
-              status: statusParam,
+              status: effectiveStatusParam,
               action: "read",
               file: file.key,
             }),
@@ -1513,7 +1529,7 @@ const params = new URLSearchParams(window.location.search);
           body: JSON.stringify({
             category: originalCategory,
             folder_name: originalFolder,
-            status: statusParam,
+            status: effectiveStatusParam,
             rel_path: relPath,
           }),
         });
@@ -1534,7 +1550,7 @@ const params = new URLSearchParams(window.location.search);
           body: JSON.stringify({
             category: originalCategory,
             folder_name: originalFolder,
-            status: statusParam,
+            status: effectiveStatusParam,
             rel_path: relPath,
             new_name: newName,
           }),
@@ -1571,7 +1587,7 @@ const params = new URLSearchParams(window.location.search);
         const formData = new FormData();
         formData.append("category", originalCategory);
         formData.append("folder_name", originalFolder);
-        formData.append("status", statusParam);
+        formData.append("status", effectiveStatusParam);
         const sku = skuInput.value.trim();
         formData.append("sku", sku);
 

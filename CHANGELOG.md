@@ -1,6 +1,7 @@
 # Changelog
 
 ## Unreleased
+- Fix: Resolve draft/archived product media and 3MF operations when status query is missing.
 - Minor: Added Fidgets category prefix and created draft listing for GT-FDG-00001 (Mini-Fidget - Baby Ladybug).
 - Fix: Add curl timeouts in local dev status checks to prevent hangs.
 - Minor: Removed Facebook URL field from product data and UI (TikTok/Ebay/Etsy only).

@@ -180,7 +180,7 @@ stop_frontend() {
       killed=true
     fi
   fi
-  for port in 5173 5174 5175 5176 5177 5178 5179 5180 5190; do
+  for port in {5173..5195}; do
     local port_pids
     port_pids=($(ports_listening_pids "$port"))
     if [[ ${#port_pids[@]} -gt 0 ]]; then
@@ -221,7 +221,7 @@ status() {
       fi
     fi
     if [[ "$frontend_running" == "false" ]]; then
-      for port in 5173 5174 5175 5176 5177 5178 5179 5180 5190; do
+      for port in {5173..5195}; do
         if http_ok "http://localhost:${port}/"; then
           frontend_running=true
           frontend_port="$port"

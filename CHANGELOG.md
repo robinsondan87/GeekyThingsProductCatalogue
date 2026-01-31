@@ -1,6 +1,7 @@
 # Changelog
 
 ## Unreleased
+- Fix: Vite dev server now enforces port 5175 with strictPort (no auto-increment).
 - Fix: Frontend dev server now uses a fixed port with strictPort (no auto-increment).
 - Fix: Stop also kills Vite processes by command line if ports remain active.
 - Fix: Stop scans all Vite ports even when the stored port is stale; status checks listening ports too.

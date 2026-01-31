@@ -35,7 +35,6 @@ const params = new URLSearchParams(window.location.search);
       const savePricingBtn = document.getElementById("savePricingBtn");
       const listingGroup = document.getElementById("listingGroup");
       const listingLinks = document.getElementById("listingLinks");
-      const facebookUrlInput = document.getElementById("facebookUrl");
       const tiktokUrlInput = document.getElementById("tiktokUrl");
       const ebayUrlInput = document.getElementById("ebayUrl");
       const etsyUrlInput = document.getElementById("etsyUrl");
@@ -69,7 +68,7 @@ const params = new URLSearchParams(window.location.search);
       const ukcaPackList = document.getElementById("ukcaPackList");
       const printUkcaBtn = document.getElementById("printUkcaBtn");
 
-      const listingOptions = ["Facebook", "TikTok", "Ebay", "Etsy"];
+      const listingOptions = ["TikTok", "Ebay", "Etsy"];
       let openFolderEnabled = false;
       let folderPaths = { categories: "", drafts: "", archived: "" };
       let configLoaded = false;
@@ -268,7 +267,6 @@ const params = new URLSearchParams(window.location.search);
         renderChips(currentColors, colorsList, removeColor);
         renderChips(currentSizes, sizesList, removeSize);
         updatePricingVisibility();
-        facebookUrlInput.value = row["Facebook URL"] || "";
         tiktokUrlInput.value = row["TikTok URL"] || "";
         ebayUrlInput.value = row["Ebay URL"] || "";
         etsyUrlInput.value = row["Etsy URL"] || "";
@@ -278,7 +276,6 @@ const params = new URLSearchParams(window.location.search);
         const updateListingLinks = () => {
           listingLinks.innerHTML = "";
           const urlMap = {
-            Facebook: facebookUrlInput.value.trim(),
             TikTok: tiktokUrlInput.value.trim(),
             Ebay: ebayUrlInput.value.trim(),
             Etsy: etsyUrlInput.value.trim(),
@@ -311,7 +308,7 @@ const params = new URLSearchParams(window.location.search);
           listingGroup.appendChild(label);
         });
         updateListingLinks();
-        [facebookUrlInput, tiktokUrlInput, ebayUrlInput, etsyUrlInput].forEach((input) => {
+        [tiktokUrlInput, ebayUrlInput, etsyUrlInput].forEach((input) => {
           input.addEventListener("input", updateListingLinks);
         });
 
@@ -1149,7 +1146,6 @@ const params = new URLSearchParams(window.location.search);
           tagsInput.value = "";
         }
         const selectedListings = listingOptions.filter((platform) => {
-          if (platform === "Facebook") return facebookUrlInput.value.trim();
           if (platform === "TikTok") return tiktokUrlInput.value.trim();
           if (platform === "Ebay") return ebayUrlInput.value.trim();
           if (platform === "Etsy") return etsyUrlInput.value.trim();
@@ -1172,7 +1168,6 @@ const params = new URLSearchParams(window.location.search);
           "Cost To Make": costToMakeInput.value.trim(),
           "Sale Price": salePriceInput.value.trim(),
           "Postage Price": postagePriceInput.value.trim(),
-          "Facebook URL": facebookUrlInput.value.trim(),
           "TikTok URL": tiktokUrlInput.value.trim(),
           "Ebay URL": ebayUrlInput.value.trim(),
           "Etsy URL": etsyUrlInput.value.trim(),
@@ -1801,10 +1796,6 @@ const params = new URLSearchParams(window.location.search);
           <div class="listing-links" id="listingLinks"></div>
         </div>
         <div class="url-grid">
-          <div>
-            <label for="facebookUrl">Facebook URL</label>
-            <input id="facebookUrl" type="url" placeholder="https://..." />
-          </div>
           <div>
             <label for="tiktokUrl">TikTok URL</label>
             <input id="tiktokUrl" type="url" placeholder="https://..." />

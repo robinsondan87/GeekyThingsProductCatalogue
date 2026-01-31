@@ -39,7 +39,7 @@ onMounted(() => {
       let rows = [];
       const dropdownColumns = new Set([]);
       const chipColumns = new Set(["Colors", "Sizes"]);
-      const listingOptions = ["Facebook", "TikTok", "Ebay", "Etsy"];
+      const listingOptions = ["TikTok", "Ebay", "Etsy"];
       const columnFilters = new Map();
       let sortIndex = -1;
       let sortDirection = 1;
@@ -47,7 +47,6 @@ onMounted(() => {
       let originalNames = [];
       const alwaysHiddenColumns = new Set(["id"]);
       const defaultHiddenColumns = new Set([
-        "Facebook URL",
         "TikTok URL",
         "Ebay URL",
         "Etsy URL",
@@ -100,12 +99,10 @@ onMounted(() => {
       };
 
       const getListingsForRow = (row) => {
-        const facebookUrl = row[headers.indexOf("Facebook URL")] || "";
         const tiktokUrl = row[headers.indexOf("TikTok URL")] || "";
         const ebayUrl = row[headers.indexOf("Ebay URL")] || "";
         const etsyUrl = row[headers.indexOf("Etsy URL")] || "";
         const listings = [];
-        if (facebookUrl) listings.push({ name: "Facebook", url: facebookUrl });
         if (tiktokUrl) listings.push({ name: "TikTok", url: tiktokUrl });
         if (ebayUrl) listings.push({ name: "Ebay", url: ebayUrl });
         if (etsyUrl) listings.push({ name: "Etsy", url: etsyUrl });

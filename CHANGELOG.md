@@ -1,6 +1,7 @@
 # Changelog
 
 ## Unreleased
+- Minor: Removed Facebook URL field from product data and UI (TikTok/Ebay/Etsy only).
 - Minor: Documented that product content-only updates do not require a changelog entry.
 - Minor: Updated GT-TCH-00011 README details, tags, colours, and Etsy link from live listing.
 - Minor: Docker compose now runs only the database service by default.

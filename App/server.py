@@ -2442,7 +2442,6 @@ class Handler(BaseHTTPRequestHandler):
                 'Postage Price': '',
                 'Completed': '',
                 'Status': 'Draft',
-                'Facebook URL': '',
                 'TikTok URL': '',
                 'Ebay URL': '',
                 'Etsy URL': '',

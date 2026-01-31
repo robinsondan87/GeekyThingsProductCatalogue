@@ -6,7 +6,6 @@ CREATE TABLE IF NOT EXISTS products (
     ukca TEXT NOT NULL DEFAULT 'No',
     listings TEXT NOT NULL DEFAULT '',
     tags TEXT NOT NULL DEFAULT '',
-    facebook_url TEXT NOT NULL DEFAULT '',
     tiktok_url TEXT NOT NULL DEFAULT '',
     ebay_url TEXT NOT NULL DEFAULT '',
     etsy_url TEXT NOT NULL DEFAULT '',

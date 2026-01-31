@@ -86,6 +86,14 @@ ports_listening_pids() {
   lsof -tiTCP:"$port" -sTCP:LISTEN 2>/dev/null || true
 }
 
+frontend_process_pids() {
+  if command -v pgrep >/dev/null 2>&1; then
+    pgrep -f "$ROOT_DIR/App/ui/node_modules/.bin/vite" 2>/dev/null || true
+    return
+  fi
+  ps ax -o pid=,command= | awk '/vite/ && /App\/ui/ {print $1}' || true
+}
+
 kill_pids() {
   local pids=("$@")
   if [[ ${#pids[@]} -eq 0 ]]; then
@@ -195,6 +203,13 @@ stop_frontend() {
       killed=true
     fi
   done
+  local proc_pids
+  proc_pids=($(frontend_process_pids))
+  if [[ ${#proc_pids[@]} -gt 0 ]]; then
+    echo "Stopping frontend vite processes (${proc_pids[*]})..."
+    kill_pids "${proc_pids[@]}"
+    killed=true
+  fi
   rm -f "$FRONTEND_PORT_FILE"
 }
 

@@ -1,6 +1,7 @@
 # Changelog
 
 ## Unreleased
+- Fix: Stop also kills Vite processes by command line if ports remain active.
 - Fix: Stop scans all Vite ports even when the stored port is stale; status checks listening ports too.
 - Fix: Track frontend dev port in `.pids` to stop the correct Vite server.
 - Fix: Ensure local dev stop fully kills backend/frontend processes by port.

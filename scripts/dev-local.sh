@@ -65,19 +65,6 @@ frontend_port_from_file() {
   return 1
 }
 
-first_free_port() {
-  local port="$1"
-  local max="${2:-5195}"
-  while [[ "$port" -le "$max" ]]; do
-    if [[ -z "$(ports_listening_pids "$port")" ]]; then
-      echo "$port"
-      return 0
-    fi
-    port=$((port + 1))
-  done
-  return 1
-}
-
 ports_listening_pids() {
   local port="$1"
   if ! command -v lsof >/dev/null 2>&1; then
@@ -136,13 +123,12 @@ start_frontend() {
   fi
   echo "Starting frontend..."
   local desired_port="${FRONTEND_PORT:-5175}"
-  local port
-  if ! port="$(first_free_port "$desired_port")"; then
-    echo "No free port available starting from ${desired_port}." >&2
+  if [[ -n "$(ports_listening_pids "$desired_port")" ]]; then
+    echo "Frontend port ${desired_port} is already in use. Stop the running Vite server or pick a different FRONTEND_PORT." >&2
     exit 1
   fi
-  echo "$port" > "$FRONTEND_PORT_FILE"
-  (cd "$ROOT_DIR/App/ui" && nohup npm run dev -- --port "$port" > "$LOG_DIR/frontend.log" 2>&1 & echo $! > "$FRONTEND_PID")
+  echo "$desired_port" > "$FRONTEND_PORT_FILE"
+  (cd "$ROOT_DIR/App/ui" && nohup npm run dev -- --port "$desired_port" --strictPort > "$LOG_DIR/frontend.log" 2>&1 & echo $! > "$FRONTEND_PID")
 }
 
 stop_backend() {
